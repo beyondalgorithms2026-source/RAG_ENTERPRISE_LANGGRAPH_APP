@@ -144,9 +144,22 @@ def _content_dict(value: Any) -> dict[str, Any]:
 
 
 def _short_error_text(value: Any) -> str | None:
+    parsed = _safe_json_parse(value)
+    if isinstance(parsed, dict):
+        nested_error = _safe_json_parse(parsed.get("error"))
+        if isinstance(nested_error, dict):
+            message = nested_error.get("message") or nested_error.get("detail") or nested_error.get("error")
+            status_code = nested_error.get("status_code")
+            if message:
+                suffix = f" (status_code={status_code})" if status_code else ""
+                return f"{str(message).strip()}{suffix}"[:360]
+        message = parsed.get("message") or parsed.get("detail")
+        if message:
+            return str(message).strip()[:360]
     text = json.dumps(value, sort_keys=True) if isinstance(value, (dict, list)) else str(value or "")
     if not text.strip():
         return None
+    text = re.sub(r'"traceback"\s*:\s*".*?(?=",\s*"|\}\s*$)', '"traceback": "[redacted]"', text)
     cleaned = re.sub(r'File "[^"]+"', 'File "[path-redacted]"', text)
     cleaned = re.sub(r"/Users/[^\\s\"']+", "[path-redacted]", cleaned)
     cleaned = re.sub(r"\s+", " ", cleaned).strip()
