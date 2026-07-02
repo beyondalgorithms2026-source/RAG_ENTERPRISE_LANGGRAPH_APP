@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import asyncio
+
 from rag_enterprise_langgraph.orchestrator import (
+    EnterpriseRagOrchestrator,
     classify_failure,
     exact_phrase_bias,
     extract_anchor_terms,
@@ -22,3 +25,20 @@ def test_anchor_terms_and_phrase_bias_extract_distinctive_query_terms():
     assert "Rent" in anchors
     assert "Walton" in anchors
     assert exact_phrase_bias(question, anchors) == "Ben Franklin"
+
+
+def test_orchestrator_returns_structured_tool_error_when_tool_call_raises():
+    orchestrator = EnterpriseRagOrchestrator(quiet_mcp=False)
+
+    async def fail_tool_call(name, arguments):  # noqa: ANN001, ARG001
+        raise OSError("backend unavailable")
+
+    orchestrator._call_tool = fail_tool_call  # type: ignore[method-assign]
+
+    result = asyncio.run(orchestrator.run("What did the source say?"))
+
+    assert result.grounding_status == "tool_error"
+    assert result.portfolio_safe is False
+    assert result.tools_used == ["ask_grounded"]
+    assert result.execution_timeline[0]["result_status"] == "tool_error"
+    assert "backend unavailable" in result.error

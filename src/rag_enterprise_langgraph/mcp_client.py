@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager, contextmanager
-import io
+import subprocess
 from typing import Any
 
 from langchain_mcp_adapters.client import MultiServerMCPClient
@@ -60,9 +60,8 @@ def suppress_mcp_stdio_stderr(enabled: bool = True):
 
     @asynccontextmanager
     async def quiet_stdio_client(server, errlog=None):  # noqa: ANN001
-        with io.StringIO() as buffer:
-            async with original_mcp_stdio_client(server, errlog=buffer) as streams:
-                yield streams
+        async with original_mcp_stdio_client(server, errlog=subprocess.DEVNULL) as streams:
+            yield streams
 
     adapter_sessions.stdio_client = quiet_stdio_client
     mcp_stdio.stdio_client = quiet_stdio_client

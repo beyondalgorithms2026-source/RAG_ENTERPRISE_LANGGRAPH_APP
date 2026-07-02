@@ -355,7 +355,15 @@ class EnterpriseRagOrchestrator:
 
         async def call(name: str, purpose: str, arguments: dict[str, Any]) -> dict[str, Any]:
             with suppress_mcp_stdio_stderr(self.quiet_mcp):
-                content, output = await self._call_tool(name, arguments)
+                try:
+                    content, output = await self._call_tool(name, arguments)
+                except Exception as exc:
+                    content = {
+                        "is_error": True,
+                        "error": str(exc),
+                        "exception_type": exc.__class__.__name__,
+                    }
+                    output = {"tool_name": name, "tool_call_id": None, "content": content}
             tool_outputs.append(output)
             tools_used.append(name)
             timeline.append(
