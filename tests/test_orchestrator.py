@@ -13,6 +13,7 @@ from rag_enterprise_langgraph.orchestrator import (
 def test_classify_failure_detects_backend_auth_and_timeout():
     assert classify_failure({"error": "HTTP Error 401: Unauthorized"}) == "backend_auth_failed"
     assert classify_failure({"message": "timed out"}) == "backend_timeout"
+    assert classify_failure({"message": "timed out", "traceback": "HTTP/1.1 401 Unauthorized"}) == "backend_timeout"
     assert classify_failure({"is_error": True, "error": "tool failed"}) == "tool_error"
 
 

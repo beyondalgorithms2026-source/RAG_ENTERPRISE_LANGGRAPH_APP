@@ -157,10 +157,10 @@ def classify_failure(value: Any) -> str | None:
     text = json.dumps(value, sort_keys=True).lower() if isinstance(value, (dict, list)) else str(value or "").lower()
     if not text:
         return None
-    if "401" in text or "403" in text or "unauthorized" in text or "authentication" in text:
-        return "backend_auth_failed"
     if "timed out" in text or "timeout" in text:
         return "backend_timeout"
+    if "401" in text or "403" in text or "unauthorized" in text or "authentication" in text:
+        return "backend_auth_failed"
     if "is_error" in text or '"error"' in text or "traceback" in text or "jsonrpc" in text:
         return "tool_error"
     return None
