@@ -1,0 +1,3 @@
+[console_scripts]
+rag-enterprise-agent = rag_enterprise_langgraph.cli:main
+rag-enterprise-api = rag_enterprise_langgraph.server:main

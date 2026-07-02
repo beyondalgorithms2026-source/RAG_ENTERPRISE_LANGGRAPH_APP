@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rag-enterprise-langgraph"
+version = "0.1.0"
+description = "Minimal LangGraph app that uses the rag-enterprise-mcp server as its tool layer."
+requires-python = ">=3.10"
+dependencies = [
+  "fastapi>=0.136,<0.137",
+  "langchain>=1.3.2,<1.4",
+  "langchain-mcp-adapters>=0.2.2,<0.3",
+  "langchain-openai>=1.2.2,<1.3",
+  "langgraph>=1.2.2,<1.3",
+  "python-dotenv>=1.2,<2",
+  "pydantic-settings>=2.14.1,<3",
+  "uvicorn>=0.48,<0.49",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=9.0,<10"]
+
+[project.scripts]
+rag-enterprise-agent = "rag_enterprise_langgraph.cli:main"
+rag-enterprise-api = "rag_enterprise_langgraph.server:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
