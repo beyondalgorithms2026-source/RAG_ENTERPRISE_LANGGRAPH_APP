@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Iterable, Sequence
 
 from rag_enterprise_langgraph.agent import AgentRunResult, RagEnterpriseAgent
+from rag_enterprise_langgraph.orchestrator import EnterpriseRagOrchestrator, overall_status
 
 
 REQUIRED_MCP_TOOLS = ("ask_grounded", "search_documents", "get_document_excerpt")
@@ -56,16 +57,32 @@ def _redacted_key(key: str) -> bool:
     return any(word in lowered for word in secret_words) and not any(flag in lowered for flag in present_flags)
 
 
-def redact_for_sharing(value: Any) -> Any:
+def _sanitize_text(value: str) -> str:
+    import re
+
+    text = re.sub(r'File "[^"]+"', 'File "[path-redacted]"', value)
+    return re.sub(r"/Users/[^\\s\"']+", "[path-redacted]", text)
+
+
+def redact_for_sharing(value: Any, *, include_debug: bool = False) -> Any:
     if isinstance(value, dict):
         redacted: dict[str, Any] = {}
         for key, item in value.items():
-            redacted[str(key)] = "[redacted]" if _redacted_key(str(key)) else redact_for_sharing(item)
+            key_text = str(key)
+            if not include_debug and key_text in {"debug_info", "traceback", "raw"}:
+                continue
+            redacted[key_text] = (
+                "[redacted]"
+                if _redacted_key(key_text)
+                else redact_for_sharing(item, include_debug=include_debug)
+            )
         return redacted
     if isinstance(value, list):
-        return [redact_for_sharing(item) for item in value]
+        return [redact_for_sharing(item, include_debug=include_debug) for item in value]
     if isinstance(value, tuple):
-        return [redact_for_sharing(item) for item in value]
+        return [redact_for_sharing(item, include_debug=include_debug) for item in value]
+    if isinstance(value, str):
+        return _sanitize_text(value)
     return value
 
 
@@ -107,6 +124,16 @@ def _first_content_value(tool_outputs: list[dict[str, Any]], key: str) -> Any:
     return None
 
 
+def _citations_in_output(output: dict[str, Any]) -> list[dict[str, Any]]:
+    citations = _content_dict(output).get("citations")
+    return [item for item in citations if isinstance(item, dict)] if isinstance(citations, list) else []
+
+
+def _results_in_output(output: dict[str, Any]) -> list[dict[str, Any]]:
+    results = _content_dict(output).get("results")
+    return [item for item in results if isinstance(item, dict)] if isinstance(results, list) else []
+
+
 def _answer_status(result: AgentRunResult, citation_count: int) -> str:
     if result.error:
         return "error"
@@ -132,9 +159,23 @@ def summarize_result(result: AgentRunResult) -> dict[str, Any]:
         "question": result.question,
         "answer": result.answer,
         "answer_status": _answer_status(result, len(citations)),
+        "grounding_status": _answer_status(result, len(citations)),
         "tools_used": tools_used,
+        "execution_timeline": [
+            {
+                "step": index,
+                "tool_name": output.get("tool_name"),
+                "purpose": "agent_tool_call",
+                "result_status": "tool_error" if _content_dict(output).get("is_error") else "completed",
+                "citation_count": len(_citations_in_output(output)),
+                "result_count": len(_results_in_output(output)),
+            }
+            for index, output in enumerate(tool_outputs, start=1)
+        ],
         "citation_count": len(citations),
         "citations": citations,
+        "evidence": citations,
+        "evidence_count": len(citations),
         "used_chunks_count": _first_content_value(tool_outputs, "used_chunks_count"),
         "mode": _first_content_value(tool_outputs, "mode"),
         "latency_ms": _first_content_value(tool_outputs, "latency_ms"),
@@ -152,14 +193,22 @@ def required_tool_status(tool_names: Sequence[str]) -> dict[str, bool]:
 async def build_demo_proof(
     *,
     agent: RagEnterpriseAgent | None = None,
+    orchestrator: EnterpriseRagOrchestrator | None = None,
     questions: Sequence[str] | None = None,
+    include_debug: bool = False,
+    max_recovery_steps: int = 3,
 ) -> dict[str, Any]:
+    runtime_orchestrator = orchestrator or (None if agent else EnterpriseRagOrchestrator())
     runtime_agent = agent or RagEnterpriseAgent()
     resolved_questions = list(questions or DEFAULT_DEMO_QUESTIONS)
     diagnostics: dict[str, Any]
     check_error: str | None = None
     try:
-        diagnostics = await runtime_agent.check_configuration()
+        diagnostics = (
+            await runtime_orchestrator.check_configuration()
+            if runtime_orchestrator
+            else await runtime_agent.check_configuration()
+        )
     except Exception as exc:
         diagnostics = {}
         check_error = str(exc)
@@ -167,16 +216,26 @@ async def build_demo_proof(
     tool_names = [str(item) for item in diagnostics.get("mcp_tool_names", [])] if diagnostics else []
     runs: list[dict[str, Any]] = []
     for question in resolved_questions:
-        result = await runtime_agent.run(question)
-        runs.append(summarize_result(result))
+        if runtime_orchestrator:
+            run = (await runtime_orchestrator.run(question, max_recovery_steps=max_recovery_steps)).to_dict()
+        else:
+            result = await runtime_agent.run(question)
+            run = summarize_result(result)
+        if not include_debug:
+            run.pop("tool_outputs", None)
+        runs.append(redact_for_sharing(run, include_debug=include_debug))
 
     errors = [run["error"] for run in runs if run.get("error")]
     if check_error:
         errors.insert(0, check_error)
+    status = overall_status(runs)
+    if check_error and status == "ok":
+        status = "error"
 
     return {
-        "status": "ok" if not errors else "error",
-        "diagnostics": redact_for_sharing(diagnostics),
+        "status": status,
+        "overall_status": status,
+        "diagnostics": redact_for_sharing(diagnostics, include_debug=include_debug),
         "diagnostics_error": check_error,
         "mcp_tools": tool_names,
         "required_tool_status": required_tool_status(tool_names),
@@ -184,6 +243,7 @@ async def build_demo_proof(
         "runs": runs,
         "security_boundary_summary": list(SECURITY_BOUNDARY_SUMMARY),
         "errors": errors,
+        "include_debug": include_debug,
     }
 
 
@@ -222,7 +282,19 @@ def render_text_report(proof: dict[str, Any]) -> str:
     for index, run in enumerate(proof.get("runs", []), start=1):
         tools = ", ".join(run.get("tools_used") or []) or "-"
         lines.append(f"{index}. {run.get('question')}")
-        lines.append(f"   Status: {run.get('answer_status')} | Tools: {tools} | Citations: {run.get('citation_count', 0)}")
+        lines.append(
+            f"   Status: {run.get('grounding_status') or run.get('answer_status')} | "
+            f"Tools: {tools} | Citations: {run.get('citation_count', 0)} | "
+            f"Evidence: {run.get('evidence_count', 0)}"
+        )
+        timeline = run.get("execution_timeline") or []
+        if timeline:
+            lines.append("   Execution Timeline:")
+            for step in timeline:
+                lines.append(
+                    f"   - {step.get('step')}. {step.get('tool_name')} -> "
+                    f"{step.get('purpose')} -> {step.get('result_status')}"
+                )
         if run.get("latency_ms") is not None:
             lines.append(f"   Latency: {run.get('latency_ms')} ms")
         if run.get("error"):
@@ -266,7 +338,7 @@ def render_markdown_report(proof: dict[str, Any]) -> str:
     for tool_name in discovered:
         lines.append(f"| `{tool_name}` | discovered |")
 
-    lines.extend(["", "## Demo Run Summary", "", "| # | Question | Status | Tools | Citations | Chunks | Mode | Latency |", "| --- | --- | --- | --- | ---: | ---: | --- | ---: |"])
+    lines.extend(["", "## Demo Run Summary", "", "| # | Question | Status | Tools | Citations | Evidence | Chunks | Mode | Latency |", "| --- | --- | --- | --- | ---: | ---: | ---: | --- | ---: |"])
     for index, run in enumerate(proof.get("runs", []), start=1):
         tools = ", ".join(f"`{tool}`" for tool in run.get("tools_used") or []) or "-"
         lines.append(
@@ -275,9 +347,10 @@ def render_markdown_report(proof: dict[str, Any]) -> str:
                 [
                     str(index),
                     _table_value(run.get("question")),
-                    _table_value(run.get("answer_status")),
+                    _table_value(run.get("grounding_status") or run.get("answer_status")),
                     tools,
                     _table_value(run.get("citation_count")),
+                    _table_value(run.get("evidence_count")),
                     _table_value(run.get("used_chunks_count")),
                     _table_value(run.get("mode")),
                     _table_value(run.get("latency_ms")),
@@ -292,24 +365,40 @@ def render_markdown_report(proof: dict[str, Any]) -> str:
             [
                 f"### {index}. {_table_value(run.get('question'))}",
                 "",
-                f"**Status:** `{_table_value(run.get('answer_status'))}`",
+                f"**Status:** `{_table_value(run.get('grounding_status') or run.get('answer_status'))}`",
+                "",
+                "**Execution Timeline**",
+                "",
+            ]
+        )
+        timeline = run.get("execution_timeline") or []
+        if timeline:
+            for step in timeline:
+                lines.append(
+                    f"- {step.get('step')}. `{step.get('tool_name')}` -> "
+                    f"{step.get('purpose')} -> `{step.get('result_status')}`"
+                )
+        else:
+            lines.append("- No tool timeline captured.")
+        lines.extend(
+            [
                 "",
                 "**Answer**",
                 "",
                 run.get("answer") or "[no final answer produced]",
                 "",
-                "**Citations**",
+                "**Citations / Evidence**",
                 "",
             ]
         )
-        citations = run.get("citations") or []
-        if not citations:
-            lines.append("- No citations returned.")
-        for citation in citations:
-            file_name = citation.get("file_name") or citation.get("source_id") or "source"
-            citation_id = citation.get("citation_id") or citation.get("chunk_id") or "citation"
-            locator = citation.get("locator") or citation.get("heading") or ""
-            snippet = _truncate(citation.get("snippet"), 240)
+        evidence_items = (run.get("citations") or []) + (run.get("evidence") or [])
+        if not evidence_items:
+            lines.append("- No citations or excerpt-backed evidence returned.")
+        for evidence in evidence_items:
+            file_name = evidence.get("file_name") or evidence.get("source_id") or "source"
+            citation_id = evidence.get("citation_id") or evidence.get("chunk_id") or evidence.get("evidence_type") or "evidence"
+            locator = evidence.get("locator") or evidence.get("heading") or ""
+            snippet = _truncate(evidence.get("snippet"), 240)
             lines.append(f"- `{citation_id}` {file_name} {f'({locator})' if locator else ''}: {snippet}")
         if run.get("error"):
             lines.extend(["", "**Error**", "", f"`{run['error']}`"])

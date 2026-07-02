@@ -20,6 +20,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--check-config", action="store_true", help="Print redacted runtime diagnostics and loaded MCP tool names.")
     parser.add_argument("--demo-proof", action="store_true", help="Run the editable portfolio demo proof flow.")
     parser.add_argument("--output", help="Write demo proof Markdown to this path, for example demo-proof.md.")
+    parser.add_argument("--include-debug", action="store_true", help="Include sanitized debug payloads in demo-proof JSON/Markdown.")
+    parser.add_argument("--max-recovery-steps", type=int, default=3, help="Maximum demo-proof recovery steps after the first grounded call.")
     parser.add_argument(
         "--question",
         dest="demo_questions",
@@ -39,6 +41,8 @@ async def _run(
     output: str | None,
     demo_questions: list[str],
     questions_file: str | None,
+    include_debug: bool,
+    max_recovery_steps: int,
 ) -> int:
     agent = RagEnterpriseAgent()
     if demo_proof:
@@ -47,7 +51,11 @@ async def _run(
             questions=demo_questions,
             questions_file=questions_file,
         )
-        proof = await build_demo_proof(agent=agent, questions=questions)
+        proof = await build_demo_proof(
+            questions=questions,
+            include_debug=include_debug,
+            max_recovery_steps=max_recovery_steps,
+        )
         if output:
             output_path = write_markdown_report(proof, output)
             if not as_json:
@@ -56,7 +64,7 @@ async def _run(
             print(json.dumps(proof, indent=2, sort_keys=True))
         else:
             print(render_text_report(proof))
-        return 1 if proof["status"] == "error" else 0
+        return 1 if proof["status"] in {"error", "partial"} else 0
 
     if check_config:
         print(json.dumps(await agent.check_configuration(), indent=2, sort_keys=True))
@@ -88,6 +96,8 @@ def main() -> int:
             args.output,
             args.demo_questions,
             args.questions_file,
+            args.include_debug,
+            args.max_recovery_steps,
         )
     )
 

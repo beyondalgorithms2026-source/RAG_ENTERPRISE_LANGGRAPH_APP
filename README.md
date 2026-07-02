@@ -88,7 +88,9 @@ curl -X POST http://127.0.0.1:8080/ask \
 
 ## Portfolio demo proof
 
-Run a screenshot-friendly proof flow:
+Run a screenshot-friendly proof flow. This path uses the shared orchestrator:
+`ask_grounded` first, then bounded recovery with `search_documents` and
+`get_document_excerpt` when the first pass is weak, not found, or uncited.
 
 ```bash
 PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.cli --demo-proof
@@ -109,10 +111,29 @@ PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.cli --demo-proof 
   --output demo-proof.md
 ```
 
-The API also exposes the same redacted proof shape:
+Useful proof flags:
+
+```bash
+PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.cli --demo-proof \
+  --question "What Percentage of Rent to Sales did Sam Walton's first Ben Franklin cost?" \
+  --max-recovery-steps 3
+```
+
+Use `--include-debug` only for internal troubleshooting. Normal proof output
+hides raw debug payloads, tracebacks, local paths, and secrets.
+
+The API also exposes the same orchestrated proof shape:
 
 ```bash
 curl http://127.0.0.1:8080/demo-proof
+```
+
+And a single-question orchestrated answer endpoint:
+
+```bash
+curl -X POST http://127.0.0.1:8080/ask-orchestrated \
+  -H "Content-Type: application/json" \
+  -d '{"question":"What seminar did Sam Walton enroll himself in in Poughkeepsie New York?"}'
 ```
 
 See `docs/portfolio-demo-proof.md` for screenshot guidance and Upwork-ready
@@ -121,10 +142,12 @@ caption ideas.
 ## Notes
 
 - The agent prompt tells the model to prefer `ask_grounded` first for direct
-  question answering.
+  question answering, then use retrieval-only recovery when first-pass
+  synthesis is weak, not found, uncited, or affected by chunk boundaries.
 - `search_documents` and `get_document_excerpt` are also exposed for follow-up
   exploration and narrow excerpt lookup.
-- Tool outputs are returned in the API and CLI response envelope for debugging.
+- Demo proof output shows a safe execution timeline instead of raw MCP
+  tracebacks by default.
 - The MCP tool layer normalizes weak-model tool arguments before dispatch, for
   example changing `search_documents.k=0` to the default `8` and filling a
   missing `question` from the original user prompt.
@@ -136,9 +159,12 @@ caption ideas.
 - Test proof: `.venv312/bin/pytest` showing all tests passed.
 - MCP discovery proof: CLI output showing `tools/list` with `ask_grounded`,
   `search_documents`, and `get_document_excerpt`.
-- CLI proof: final answer plus visible `tool_outputs`.
+- CLI proof: final answer plus execution timeline showing
+  `ask_grounded -> search_documents -> get_document_excerpt` when recovery is
+  needed.
 - Backend proof: backend terminal showing `POST /ask HTTP/1.1 200 OK`.
-- API proof: `curl http://127.0.0.1:8080/ask` returning JSON.
+- API proof: `curl http://127.0.0.1:8080/demo-proof` or
+  `/ask-orchestrated` returning strict grounding status.
 - Code proof: `mcp_client.py` showing `MultiServerMCPClient` stdio setup and
   `graph.py` showing the LangGraph agent prompt.
 

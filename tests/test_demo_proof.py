@@ -13,6 +13,7 @@ from rag_enterprise_langgraph.demo_proof import (
     resolve_demo_questions,
     summarize_result,
 )
+from rag_enterprise_langgraph.orchestrator import OrchestratedRunResult, overall_status
 from rag_enterprise_langgraph.server import create_app
 
 
@@ -82,6 +83,53 @@ class _FailingAgent(_FakeAgent):
         )
 
 
+class _FakeOrchestrator:
+    async def check_configuration(self):
+        return await _FakeAgent().check_configuration()
+
+    async def run(self, question: str, *, max_recovery_steps: int = 3):
+        return OrchestratedRunResult(
+            question=question,
+            answer="Recovered answer from excerpt evidence.",
+            grounding_status="recovered",
+            tools_used=["ask_grounded", "search_documents", "get_document_excerpt"],
+            execution_timeline=[
+                {
+                    "step": 1,
+                    "tool_name": "ask_grounded",
+                    "purpose": "initial_grounded_answer",
+                    "result_status": "not_found",
+                },
+                {
+                    "step": 2,
+                    "tool_name": "search_documents",
+                    "purpose": "keyword_evidence_search",
+                    "result_status": "candidate_evidence_found",
+                },
+                {
+                    "step": 3,
+                    "tool_name": "get_document_excerpt",
+                    "purpose": "raw_excerpt_lookup",
+                    "result_status": "evidence_found",
+                },
+            ],
+            evidence=[
+                {
+                    "source_id": 3,
+                    "source_part_id": 654,
+                    "chunk_id": 15316,
+                    "file_name": "walmart.txt",
+                    "snippet": "They grew 77% their first year after IPO.",
+                    "evidence_type": "excerpt",
+                }
+            ],
+            evidence_count=1,
+            recovery_attempted=True,
+            recovery_successful=True,
+            portfolio_safe=True,
+        )
+
+
 def test_default_demo_questions_are_present():
     assert len(DEFAULT_DEMO_QUESTIONS) >= 3
     assert resolve_demo_questions() == list(DEFAULT_DEMO_QUESTIONS)
@@ -127,15 +175,17 @@ def test_tool_outputs_are_summarized_for_portfolio_proof():
 
 
 def test_demo_proof_success_and_markdown_report():
-    proof = asyncio.run(build_demo_proof(agent=_FakeAgent(), questions=["Q"]))
+    proof = asyncio.run(build_demo_proof(orchestrator=_FakeOrchestrator(), questions=["Q"]))
     markdown = render_markdown_report(proof)
 
     assert proof["status"] == "ok"
     assert proof["required_tool_status"]["ask_grounded"] is True
-    assert proof["runs"][0]["citation_count"] == 1
+    assert proof["runs"][0]["grounding_status"] == "recovered"
+    assert proof["runs"][0]["evidence_count"] == 1
     assert "Enterprise LangGraph + MCP RAG Demo Proof" in markdown
     assert "Security / Governance Boundary" in markdown
-    assert "handbook.pdf" in markdown
+    assert "Execution Timeline" in markdown
+    assert "walmart.txt" in markdown
 
 
 def test_demo_proof_handles_backend_or_mcp_errors():
@@ -148,9 +198,10 @@ def test_demo_proof_handles_backend_or_mcp_errors():
 
 
 def test_demo_proof_endpoint_returns_expected_shape(monkeypatch):
-    async def fake_build_demo_proof(*, agent, questions):  # noqa: ANN001
+    async def fake_build_demo_proof(*, orchestrator, questions, include_debug=False, max_recovery_steps=3):  # noqa: ANN001
         return {
             "status": "ok",
+            "overall_status": "ok",
             "diagnostics": {},
             "mcp_tools": ["ask_grounded"],
             "required_tool_status": {"ask_grounded": True},
@@ -169,3 +220,9 @@ def test_demo_proof_endpoint_returns_expected_shape(monkeypatch):
     payload = response.json()
     assert payload["status"] == "ok"
     assert payload["questions"] == ["Custom question?"]
+
+
+def test_overall_status_marks_mixed_runs_partial():
+    assert overall_status([{"grounding_status": "grounded"}, {"grounding_status": "backend_timeout"}]) == "partial"
+    assert overall_status([{"grounding_status": "backend_auth_failed"}]) == "error"
+    assert overall_status([{"grounding_status": "recovered"}]) == "ok"

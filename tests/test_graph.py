@@ -34,6 +34,9 @@ def test_system_prompt_mentions_tooling_rules():
     assert "search_documents" in SYSTEM_PROMPT
     assert "get_document_excerpt" in SYSTEM_PROMPT
     assert "untrusted evidence" in SYSTEM_PROMPT
+    assert "expand_neighbors=true" in SYSTEM_PROMPT
+    assert "no usable evidence" in SYSTEM_PROMPT
+    assert "Do not answer enterprise factual questions from your own memory" in SYSTEM_PROMPT
 
 
 class _FailingGraph:
