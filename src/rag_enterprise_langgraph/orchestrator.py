@@ -127,6 +127,13 @@ class OrchestratedRunResult:
         }
 
 
+@dataclass(frozen=True)
+class AnswerQuality:
+    status: str
+    needs_recovery: bool
+    reason: str | None = None
+
+
 def _safe_json_parse(value: Any) -> Any:
     if not isinstance(value, str):
         return value
@@ -176,17 +183,43 @@ def _short_error_text(value: Any) -> str | None:
     return cleaned[:360]
 
 
-def classify_failure(value: Any) -> str | None:
-    text = json.dumps(value, sort_keys=True).lower() if isinstance(value, (dict, list)) else str(value or "").lower()
+def _classify_error_text(value: Any) -> str:
+    text = str(value or "").lower()
     if not text:
-        return None
+        return "tool_error"
     if "timed out" in text or "timeout" in text:
         return "backend_timeout"
     if "401" in text or "403" in text or "unauthorized" in text or "authentication" in text:
         return "backend_auth_failed"
-    if "is_error" in text or '"error"' in text or "traceback" in text or "jsonrpc" in text:
+    return "tool_error"
+
+
+def classify_transport_failure(value: Any) -> str | None:
+    """Classify top-level transport/tool failures without inspecting debug_info."""
+    parsed = _content_dict(value)
+    if not parsed:
+        return None
+
+    nested_error = _safe_json_parse(parsed.get("error"))
+    status_code = parsed.get("status_code")
+    message = parsed.get("message") or parsed.get("detail")
+
+    if status_code in (401, 403):
+        return "backend_auth_failed"
+    if isinstance(status_code, int) and status_code >= 400 and status_code != 404:
         return "tool_error"
+    if parsed.get("is_error") is True or parsed.get("exception_type") or "jsonrpc" in parsed:
+        return _classify_error_text(nested_error if nested_error is not None else parsed.get("error") or message)
+    if "error" in parsed and not any(key in parsed for key in ("answer", "citations", "results", "matched")):
+        return _classify_error_text(nested_error if nested_error is not None else parsed.get("error"))
+    if message and not any(key in parsed for key in ("answer", "citations", "results", "matched")):
+        return _classify_error_text(message)
     return None
+
+
+def classify_failure(value: Any) -> str | None:
+    """Backward-compatible alias for callers/tests that expect failure status."""
+    return classify_transport_failure(value)
 
 
 def _is_not_found(answer: Any) -> bool:
@@ -201,6 +234,122 @@ def _citations(content: dict[str, Any]) -> list[dict[str, Any]]:
 def _results(content: dict[str, Any]) -> list[dict[str, Any]]:
     results = content.get("results")
     return [item for item in results if isinstance(item, dict)] if isinstance(results, list) else []
+
+
+def _debug_info(content: dict[str, Any]) -> dict[str, Any]:
+    debug = content.get("debug_info")
+    return debug if isinstance(debug, dict) else {}
+
+
+def _retrieval_trace(content: dict[str, Any]) -> dict[str, Any]:
+    debug = _debug_info(content)
+    trace = debug.get("retrieval_trace")
+    return trace if isinstance(trace, dict) else debug
+
+
+def _score_diagnostics(content: dict[str, Any]) -> list[dict[str, Any]]:
+    trace = _retrieval_trace(content)
+    diagnostics = trace.get("score_diagnostics")
+    return [item for item in diagnostics if isinstance(item, dict)] if isinstance(diagnostics, list) else []
+
+
+def _has_candidate_evidence(content: dict[str, Any]) -> bool:
+    if _citations(content) or _results(content):
+        return True
+    if int(content.get("used_chunks_count") or 0) > 0:
+        return True
+    trace = _retrieval_trace(content)
+    candidate_counts = trace.get("candidate_counts")
+    if isinstance(candidate_counts, dict) and any(int(value or 0) > 0 for value in candidate_counts.values()):
+        return True
+    for key in ("vector_candidates", "keyword_candidates", "supplemental_keyword_candidates"):
+        if int(trace.get(key) or 0) > 0:
+            return True
+    return bool(_score_diagnostics(content))
+
+
+def _answer_generation_path(content: dict[str, Any]) -> str:
+    debug = _debug_info(content)
+    trace = _retrieval_trace(content)
+    return str(debug.get("answer_generation_path") or trace.get("answer_generation_path") or "").strip()
+
+
+def _fallback_reason(content: dict[str, Any]) -> str:
+    debug = _debug_info(content)
+    trace = _retrieval_trace(content)
+    return str(debug.get("fallback_reason") or trace.get("fallback_reason") or "").strip()
+
+
+def _answer_is_generic_or_weak(answer: str) -> bool:
+    normalized = " ".join(answer.lower().split())
+    if len(normalized) < 24:
+        return True
+    weak_phrases = (
+        "not mentioned",
+        "not specified",
+        "not enough information",
+        "provided sources do not",
+        "sources do not say",
+        "cannot determine",
+        "i don't know",
+    )
+    return any(phrase in normalized for phrase in weak_phrases)
+
+
+def _question_requires_exact_value(question: str) -> bool:
+    lowered = question.lower()
+    markers = ("when", "who", "percentage", "percent", "how much", "how many", "which", "what seminar", "where")
+    return any(marker in lowered for marker in markers)
+
+
+def _answer_misses_requested_field(question: str, answer: str) -> bool:
+    lowered_question = question.lower()
+    lowered_answer = answer.lower()
+    if "percentage" in lowered_question or "percent" in lowered_question:
+        return "%" not in answer and "percent" not in lowered_answer
+    if "when" in lowered_question and not re.search(r"\b(?:\d{4}|\d{1,2}[/-]\d{1,2}|january|february|march|april|may|june|july|august|september|october|november|december)\b", lowered_answer):
+        return True
+    if "what seminar" in lowered_question and "seminar" not in lowered_answer and "training" not in lowered_answer and "conference" not in lowered_answer:
+        return True
+    return False
+
+
+def _citation_snippets_have_anchor(citations: Sequence[dict[str, Any]], anchors: Sequence[str]) -> bool:
+    meaningful = [anchor.lower() for anchor in anchors if len(anchor) >= 4]
+    if not meaningful:
+        return True
+    snippet_text = " ".join(str(citation.get("snippet") or "") for citation in citations).lower()
+    return any(anchor in snippet_text for anchor in meaningful)
+
+
+def classify_answer_quality(content: dict[str, Any], *, question: str = "", anchors: Sequence[str] = ()) -> AnswerQuality:
+    transport_failure = classify_transport_failure(content)
+    if transport_failure:
+        return AnswerQuality(transport_failure, needs_recovery=False, reason=transport_failure)
+
+    answer = str(content.get("answer") or "").strip()
+    citations = _citations(content)
+    generation_path = _answer_generation_path(content)
+    fallback = _fallback_reason(content)
+    candidate_evidence = _has_candidate_evidence(content)
+
+    if _is_not_found(answer):
+        reason = "not_found_with_candidate_evidence" if candidate_evidence else "not_found"
+        return AnswerQuality("candidate_evidence_present" if candidate_evidence else "not_found", True, reason)
+    if not answer:
+        return AnswerQuality("weak_answer", True, "missing_answer")
+    if not citations:
+        reason = "candidate_evidence_without_citations" if candidate_evidence else "answer_without_citations"
+        return AnswerQuality("candidate_evidence_present" if candidate_evidence else "not_grounded", True, reason)
+    if _answer_is_generic_or_weak(answer):
+        return AnswerQuality("weak_answer", True, "generic_or_weak_answer")
+    if _question_requires_exact_value(question) and _answer_misses_requested_field(question, answer):
+        return AnswerQuality("weak_answer", True, "missing_requested_exact_field")
+    if not _citation_snippets_have_anchor(citations, anchors):
+        return AnswerQuality("weak_answer", True, "citations_do_not_show_anchor_terms")
+    if generation_path in {"repair", "evidence_repair"} or fallback:
+        return AnswerQuality("weak_answer", True, f"backend_generation_path:{generation_path or 'fallback'}")
+    return AnswerQuality("grounded", False, "citations_present")
 
 
 def _evidence_from_citations(citations: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -335,22 +484,31 @@ class EnterpriseRagOrchestrator:
         output = {"tool_name": name, "tool_call_id": None, "content": content}
         return content, output
 
-    def _step_from_content(self, *, index: int, tool_name: str, purpose: str, content: dict[str, Any]) -> OrchestrationStep:
-        failure = classify_failure(content)
+    def _step_from_content(
+        self,
+        *,
+        index: int,
+        tool_name: str,
+        purpose: str,
+        content: dict[str, Any],
+        question: str = "",
+        anchors: Sequence[str] = (),
+    ) -> OrchestrationStep:
+        failure = classify_transport_failure(content)
         citations = _citations(content)
         results = _results(content)
         status = failure or "completed"
+        recovery_reason = None
         if tool_name == "ask_grounded":
-            if citations and not _is_not_found(content.get("answer")):
-                status = "grounded"
-            elif _is_not_found(content.get("answer")):
-                status = "not_found"
-            elif not citations and content.get("answer"):
-                status = "not_grounded"
+            quality = classify_answer_quality(content, question=question, anchors=anchors)
+            status = failure or quality.status
+            recovery_reason = quality.reason if quality.needs_recovery else None
         elif tool_name == "search_documents":
             status = "candidate_evidence_found" if results else "not_found"
+            recovery_reason = "retrieval_only_recovery"
         elif tool_name == "get_document_excerpt":
             status = "evidence_found" if content.get("matched") else "not_found"
+            recovery_reason = "raw_excerpt_lookup"
 
         top_result = results[0] if results else content.get("result") if isinstance(content.get("result"), dict) else {}
         return OrchestrationStep(
@@ -363,6 +521,7 @@ class EnterpriseRagOrchestrator:
             used_chunks_count=content.get("used_chunks_count"),
             mode=content.get("mode") or top_result.get("mode"),
             latency_ms=content.get("latency_ms"),
+            recovery_reason=recovery_reason,
             failure_reason=_short_error_text(content) if failure else None,
             source_id=top_result.get("source_id"),
             source_part_id=top_result.get("source_part_id"),
@@ -395,6 +554,8 @@ class EnterpriseRagOrchestrator:
                     tool_name=name,
                     purpose=purpose,
                     content=content,
+                    question=question,
+                    anchors=anchors,
                 )
             )
             return content
@@ -405,12 +566,13 @@ class EnterpriseRagOrchestrator:
                 "initial_grounded_answer",
                 {"question": question, "k_chunks": 6, "mode": "hybrid"},
             )
-            initial_failure = classify_failure(initial)
+            initial_failure = classify_transport_failure(initial)
             if initial_failure:
                 return self._failure_result(question, initial_failure, timeline, tools_used, tool_outputs, initial)
 
-            initial_citations = _citations(initial)
-            if initial_citations and not _is_not_found(initial.get("answer")):
+            initial_quality = classify_answer_quality(initial, question=question, anchors=anchors)
+            if initial_quality.status == "grounded":
+                initial_citations = _citations(initial)
                 evidence = _evidence_from_citations(initial_citations)
                 return self._success_result(
                     question=question,
@@ -424,7 +586,7 @@ class EnterpriseRagOrchestrator:
                     content=initial,
                 )
 
-            recovery_attempted = False
+            recovery_attempted = initial_quality.needs_recovery
             if max_recovery_steps >= 1:
                 recovery_attempted = True
                 keyword_args: dict[str, Any] = {
@@ -433,15 +595,17 @@ class EnterpriseRagOrchestrator:
                     "mode": "keyword",
                     "anchor_terms": anchors,
                     "expand_neighbors": True,
+                    "force_rare_keyword_scan": True,
                 }
                 if phrase_bias:
                     keyword_args["exact_phrase_bias"] = phrase_bias
                 keyword_ask = await call("ask_grounded", "keyword_grounded_recovery", keyword_args)
-                keyword_failure = classify_failure(keyword_ask)
+                keyword_failure = classify_transport_failure(keyword_ask)
                 if keyword_failure:
                     return self._failure_result(question, keyword_failure, timeline, tools_used, tool_outputs, keyword_ask)
-                keyword_citations = _citations(keyword_ask)
-                if keyword_citations and not _is_not_found(keyword_ask.get("answer")):
+                keyword_quality = classify_answer_quality(keyword_ask, question=question, anchors=anchors)
+                if keyword_quality.status == "grounded":
+                    keyword_citations = _citations(keyword_ask)
                     evidence = _evidence_from_citations(keyword_citations)
                     return self._success_result(
                         question=question,
@@ -467,12 +631,13 @@ class EnterpriseRagOrchestrator:
                     "mode": "keyword",
                     "anchor_terms": anchors,
                     "expand_neighbors": True,
+                    "force_rare_keyword_scan": True,
                     "debug": False,
                 }
                 if phrase_bias:
                     search_args["exact_phrase_bias"] = phrase_bias
                 search_content = await call("search_documents", "keyword_evidence_search", search_args)
-                search_failure = classify_failure(search_content)
+                search_failure = classify_transport_failure(search_content)
                 if search_failure:
                     return self._failure_result(question, search_failure, timeline, tools_used, tool_outputs, search_content)
                 search_results = _results(search_content)
@@ -491,7 +656,7 @@ class EnterpriseRagOrchestrator:
                 if top.get("source_part_id") is not None:
                     excerpt_args["source_part_id"] = top.get("source_part_id")
                 excerpt_content = await call("get_document_excerpt", "raw_excerpt_lookup", excerpt_args)
-                excerpt_failure = classify_failure(excerpt_content)
+                excerpt_failure = classify_transport_failure(excerpt_content)
                 if excerpt_failure:
                     return self._failure_result(question, excerpt_failure, timeline, tools_used, tool_outputs, excerpt_content)
                 excerpt_evidence = _evidence_from_excerpt(excerpt_content)
@@ -512,7 +677,12 @@ class EnterpriseRagOrchestrator:
                     recovery_successful=True,
                 )
 
-            final_status = "not_found" if _is_not_found(initial.get("answer")) else "not_grounded"
+            final_status = (
+                "not_found"
+                if initial_quality.status in {"not_found", "candidate_evidence_present"}
+                and _is_not_found(initial.get("answer"))
+                else "not_grounded"
+            )
             return OrchestratedRunResult(
                 question=question,
                 answer="No grounded answer could be produced from the available MCP evidence.",

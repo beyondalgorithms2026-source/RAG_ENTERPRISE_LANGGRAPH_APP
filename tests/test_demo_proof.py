@@ -99,6 +99,7 @@ class _FakeOrchestrator:
                     "tool_name": "ask_grounded",
                     "purpose": "initial_grounded_answer",
                     "result_status": "not_found",
+                    "recovery_reason": "not_found_with_candidate_evidence",
                 },
                 {
                     "step": 2,
@@ -162,6 +163,29 @@ def test_redaction_removes_secret_values_but_keeps_presence_flags():
     assert redacted["nested"]["api_key"] == "[redacted]"
 
 
+def test_redaction_removes_raw_prompts_and_tracebacks_even_with_debug_enabled():
+    redacted = redact_for_sharing(
+        {
+            "debug_info": {
+                "answer_generation_path": "not_found",
+                "system_prompt": "secret prompt",
+                "user_prompt": "raw source prompt",
+                "traceback": "Traceback File \"/Users/Work/private.py\"",
+                "retrieval_trace": {"score_diagnostics": [{"chunk_id": 1}]},
+            },
+            "raw": "raw backend payload",
+        },
+        include_debug=True,
+    )
+
+    assert redacted["debug_info"]["answer_generation_path"] == "not_found"
+    assert redacted["debug_info"]["retrieval_trace"]["score_diagnostics"] == [{"chunk_id": 1}]
+    assert "system_prompt" not in redacted["debug_info"]
+    assert "user_prompt" not in redacted["debug_info"]
+    assert "traceback" not in redacted["debug_info"]
+    assert "raw" not in redacted
+
+
 def test_tool_outputs_are_summarized_for_portfolio_proof():
     result = asyncio.run(_FakeAgent().run("Q"))
     summary = summarize_result(result)
@@ -185,6 +209,7 @@ def test_demo_proof_success_and_markdown_report():
     assert "Enterprise LangGraph + MCP RAG Demo Proof" in markdown
     assert "Security / Governance Boundary" in markdown
     assert "Execution Timeline" in markdown
+    assert "not_found_with_candidate_evidence" in markdown
     assert "walmart.txt" in markdown
 
 

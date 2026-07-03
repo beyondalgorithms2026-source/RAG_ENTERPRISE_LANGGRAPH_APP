@@ -69,7 +69,9 @@ def redact_for_sharing(value: Any, *, include_debug: bool = False) -> Any:
         redacted: dict[str, Any] = {}
         for key, item in value.items():
             key_text = str(key)
-            if not include_debug and key_text in {"debug_info", "traceback", "raw"}:
+            if key_text in {"traceback", "raw", "system_prompt", "user_prompt", "prompt", "raw_prompt", "messages"}:
+                continue
+            if not include_debug and key_text in {"debug_info"}:
                 continue
             redacted[key_text] = (
                 "[redacted]"
@@ -291,9 +293,10 @@ def render_text_report(proof: dict[str, Any]) -> str:
         if timeline:
             lines.append("   Execution Timeline:")
             for step in timeline:
+                reason = f" ({step.get('recovery_reason')})" if step.get("recovery_reason") else ""
                 lines.append(
                     f"   - {step.get('step')}. {step.get('tool_name')} -> "
-                    f"{step.get('purpose')} -> {step.get('result_status')}"
+                    f"{step.get('purpose')} -> {step.get('result_status')}{reason}"
                 )
         if run.get("latency_ms") is not None:
             lines.append(f"   Latency: {run.get('latency_ms')} ms")
@@ -374,9 +377,10 @@ def render_markdown_report(proof: dict[str, Any]) -> str:
         timeline = run.get("execution_timeline") or []
         if timeline:
             for step in timeline:
+                reason = f" ({step.get('recovery_reason')})" if step.get("recovery_reason") else ""
                 lines.append(
                     f"- {step.get('step')}. `{step.get('tool_name')}` -> "
-                    f"{step.get('purpose')} -> `{step.get('result_status')}`"
+                    f"{step.get('purpose')} -> `{step.get('result_status')}`{reason}"
                 )
         else:
             lines.append("- No tool timeline captured.")

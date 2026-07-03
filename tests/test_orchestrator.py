@@ -6,7 +6,9 @@ from rag_enterprise_langgraph.orchestrator import (
     EnterpriseRagOrchestrator,
     OrchestrationStep,
     _content_dict,
+    classify_answer_quality,
     classify_failure,
+    classify_transport_failure,
     exact_phrase_bias,
     extract_anchor_terms,
 )
@@ -17,6 +19,24 @@ def test_classify_failure_detects_backend_auth_and_timeout():
     assert classify_failure({"message": "timed out"}) == "backend_timeout"
     assert classify_failure({"message": "timed out", "traceback": "HTTP/1.1 401 Unauthorized"}) == "backend_timeout"
     assert classify_failure({"is_error": True, "error": "tool failed"}) == "tool_error"
+
+
+def test_normal_not_found_debug_timeout_is_not_transport_failure():
+    payload = {
+        "answer": "Not found in provided sources.",
+        "citations": [],
+        "debug_info": {
+            "answer_generation_path": "not_found",
+            "fallback_reason": "no timeout happened; text appears only in diagnostics",
+            "retrieval_trace": {"score_diagnostics": [{"chunk_id": 15317, "keyword_score": 1.0}]},
+        },
+    }
+
+    quality = classify_answer_quality(payload, question="What seminar did Sam Walton attend?", anchors=["Walton", "seminar"])
+
+    assert classify_transport_failure(payload) is None
+    assert quality.status == "candidate_evidence_present"
+    assert quality.needs_recovery is True
 
 
 def test_anchor_terms_and_phrase_bias_extract_distinctive_query_terms():
@@ -76,7 +96,7 @@ def test_orchestrator_unwraps_mcp_text_blocks_before_classification():
             raw = [
                 {
                     "type": "text",
-                    "text": '{"answer": "Not found in provided sources.", "citations": [], "debug_info": {"request_access": "not applicable"}}',
+                    "text": '{"answer": "Not found in provided sources.", "citations": [], "debug_info": {"answer_generation_path": "not_found", "fallback_reason": "not a transport timeout", "retrieval_trace": {"score_diagnostics": [{"chunk_id": 15317, "keyword_score": 1.0}]}}}',
                 }
             ]
             return _content_dict(raw), {"tool_name": name, "tool_call_id": None, "content": raw}
@@ -99,3 +119,25 @@ def test_orchestrator_unwraps_mcp_text_blocks_before_classification():
     assert result.recovery_attempted is True
     assert result.evidence_count == 1
     assert calls == ["ask_grounded", "ask_grounded", "search_documents", "get_document_excerpt"]
+
+
+def test_orchestrator_returns_not_grounded_for_answer_without_evidence():
+    orchestrator = EnterpriseRagOrchestrator(quiet_mcp=False)
+
+    async def fake_tool_call(name, arguments):  # noqa: ANN001, ARG001
+        if name == "ask_grounded":
+            return {"answer": "This appears to be true.", "citations": []}, {
+                "tool_name": name,
+                "tool_call_id": None,
+                "content": {},
+            }
+        if name == "search_documents":
+            return {"results": []}, {"tool_name": name, "tool_call_id": None, "content": {}}
+        return {"matched": False, "excerpt": None, "result": None}, {"tool_name": name, "tool_call_id": None, "content": {}}
+
+    orchestrator._call_tool = fake_tool_call  # type: ignore[method-assign]
+
+    result = asyncio.run(orchestrator.run("Who first headed AWS technically?"))
+
+    assert result.grounding_status == "not_grounded"
+    assert result.error == "answer_without_citations_or_evidence"
