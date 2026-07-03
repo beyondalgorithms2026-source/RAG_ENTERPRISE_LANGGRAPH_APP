@@ -22,9 +22,14 @@ Minimal LangGraph application that uses the existing
 - `src/rag_enterprise_langgraph/mcp_client.py` MCP stdio connection setup
 - `src/rag_enterprise_langgraph/graph.py` LangGraph wiring
 - `src/rag_enterprise_langgraph/agent.py` thin orchestration layer
+- `src/rag_enterprise_langgraph/orchestrator.py` strict MCP recovery engine
+- `src/rag_enterprise_langgraph/evidence.py` evidence validation and editable rules
+- `src/rag_enterprise_langgraph/eval_runner.py` Excel QA eval harness
+- `src/rag_enterprise_langgraph/journal.py` safe JSONL decision journal
 - `src/rag_enterprise_langgraph/cli.py` local smoke-test entrypoint
 - `src/rag_enterprise_langgraph/server.py` tiny FastAPI wrapper
-- `tests/` config and graph wiring tests
+- `config/orchestration-rules.json` user-editable rule extensions
+- `tests/` config, graph, orchestration, proof, eval, and journal tests
 
 ## Python version
 
@@ -119,8 +124,34 @@ PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.cli --demo-proof 
   --max-recovery-steps 3
 ```
 
+Use editable evidence rules and a safe run journal:
+
+```bash
+PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.cli --demo-proof \
+  --question "What seminar did Sam Walton enroll himself in in Poughkeepsie New York?" \
+  --rules config/orchestration-rules.json \
+  --journal runs/orchestration-journal.jsonl
+```
+
 Use `--include-debug` only for internal troubleshooting. Normal proof output
 hides raw debug payloads, tracebacks, local paths, and secrets.
+
+## Evaluation harness
+
+Run the Acquired QA workbook against the same orchestrator:
+
+```bash
+PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.cli \
+  --eval-xlsx /Users/Work/Desktop/acquired-qa-evaluation.xlsx \
+  --eval-output acquired-eval-report.md \
+  --eval-json acquired-eval-results.json \
+  --journal runs/orchestration-journal.jsonl \
+  --rules config/orchestration-rules.json
+```
+
+The eval runner treats the workbook `human_answer` column as ground truth,
+compares generated answers and validated evidence against expected terms, and
+marks each row as `pass`, `fail`, or `manual_review`.
 
 The API also exposes the same orchestrated proof shape:
 
@@ -144,10 +175,15 @@ caption ideas.
 - The agent prompt tells the model to prefer `ask_grounded` first for direct
   question answering, then use retrieval-only recovery when first-pass
   synthesis is weak, not found, uncited, or affected by chunk boundaries.
+- The orchestrator validates recovered evidence before marking a run
+  `recovered`; source-level matches or irrelevant snippets are returned as
+  `not_grounded` rather than a misleading success.
 - `search_documents` and `get_document_excerpt` are also exposed for follow-up
   exploration and narrow excerpt lookup.
 - Demo proof output shows a safe execution timeline instead of raw MCP
   tracebacks by default.
+- `config/orchestration-rules.json` can be edited to add aliases, expected
+  terms, and rule groups without changing Python code.
 - The MCP tool layer normalizes weak-model tool arguments before dispatch, for
   example changing `search_documents.k=0` to the default `8` and filling a
   missing `question` from the original user prompt.

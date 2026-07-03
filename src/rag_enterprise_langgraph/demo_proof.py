@@ -199,8 +199,17 @@ async def build_demo_proof(
     questions: Sequence[str] | None = None,
     include_debug: bool = False,
     max_recovery_steps: int = 3,
+    rules_path: str | Path | None = None,
+    journal_path: str | Path | None = None,
 ) -> dict[str, Any]:
-    runtime_orchestrator = orchestrator or (None if agent else EnterpriseRagOrchestrator())
+    runtime_orchestrator = orchestrator or (
+        None
+        if agent
+        else EnterpriseRagOrchestrator(
+            rules_path=str(rules_path) if rules_path else None,
+            journal_path=str(journal_path) if journal_path else None,
+        )
+    )
     runtime_agent = agent or RagEnterpriseAgent()
     resolved_questions = list(questions or DEFAULT_DEMO_QUESTIONS)
     diagnostics: dict[str, Any]
@@ -219,7 +228,13 @@ async def build_demo_proof(
     runs: list[dict[str, Any]] = []
     for question in resolved_questions:
         if runtime_orchestrator:
-            run = (await runtime_orchestrator.run(question, max_recovery_steps=max_recovery_steps)).to_dict()
+            run = (
+                await runtime_orchestrator.run(
+                    question,
+                    max_recovery_steps=max_recovery_steps,
+                    journal_path=str(journal_path) if journal_path else None,
+                )
+            ).to_dict()
         else:
             result = await runtime_agent.run(question)
             run = summarize_result(result)
@@ -300,6 +315,12 @@ def render_text_report(proof: dict[str, Any]) -> str:
                 )
         if run.get("latency_ms") is not None:
             lines.append(f"   Latency: {run.get('latency_ms')} ms")
+        verdict = run.get("evidence_verdict") or {}
+        if verdict:
+            lines.append(
+                f"   Evidence verdict: {verdict.get('status')} | "
+                f"{verdict.get('reason')} | score={verdict.get('score')}"
+            )
         if run.get("error"):
             lines.append(f"   Error: {run.get('error')}")
         lines.append(f"   Answer: {_truncate(run.get('answer'), 420) or '[no answer]'}")
@@ -384,6 +405,15 @@ def render_markdown_report(proof: dict[str, Any]) -> str:
                 )
         else:
             lines.append("- No tool timeline captured.")
+        verdict = run.get("evidence_verdict") or {}
+        if verdict:
+            lines.extend(
+                [
+                    "",
+                    f"**Evidence verdict:** `{_table_value(verdict.get('status'))}` - "
+                    f"{_table_value(verdict.get('reason'))} (score={_table_value(verdict.get('score'))})",
+                ]
+            )
         lines.extend(
             [
                 "",

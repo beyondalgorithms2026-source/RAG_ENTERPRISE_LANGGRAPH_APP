@@ -5,13 +5,16 @@ import asyncio
 from rag_enterprise_langgraph.orchestrator import (
     EnterpriseRagOrchestrator,
     OrchestrationStep,
+    _answer_from_evidence,
     _content_dict,
+    _select_evidence_candidate,
     classify_answer_quality,
     classify_failure,
     classify_transport_failure,
     exact_phrase_bias,
     extract_anchor_terms,
 )
+from rag_enterprise_langgraph.evidence import evaluate_expected_answer, validate_evidence
 
 
 def test_classify_failure_detects_backend_auth_and_timeout():
@@ -103,13 +106,13 @@ def test_orchestrator_unwraps_mcp_text_blocks_before_classification():
         return {
             "results": [
                 {
-                    "source_id": 3,
-                    "source_part_id": 655,
-                    "file_name": "walmart.txt",
-                    "snippet": "He goes up to Poughkeepsie, New York for an IBM seminar.",
-                }
-            ]
-        }, {"tool_name": name, "tool_call_id": None, "content": {}}
+                        "source_id": 3,
+                        "source_part_id": 655,
+                        "file_name": "walmart.txt",
+                        "snippet": "He goes up to Poughkeepsie, New York for an IBM seminar on computing technology.",
+                    }
+                ]
+            }, {"tool_name": name, "tool_call_id": None, "content": {}}
 
     orchestrator._call_tool = fake_tool_call  # type: ignore[method-assign]
 
@@ -141,3 +144,146 @@ def test_orchestrator_returns_not_grounded_for_answer_without_evidence():
 
     assert result.grounding_status == "not_grounded"
     assert result.error == "answer_without_citations_or_evidence"
+
+
+def test_evidence_gate_rejects_irrelevant_walmart_revenue_snippet():
+    evidence, verdict, rejected = _select_evidence_candidate(
+        question="What seminar did Sam Walton enroll himself in in Poughkeepsie New York?",
+        anchors=["Sam", "Walton", "seminar", "Poughkeepsie"],
+        rules=EnterpriseRagOrchestrator(quiet_mcp=False).rules,
+        expected_answer=None,
+        results=[
+            {
+                "source_id": 3,
+                "source_part_id": 655,
+                "file_name": "walmart.txt",
+                "snippet": "from a $25 million revenue base. Ben: Those two decades propelled them and somehow still hold the crown for the highest revenue company in the world.",
+            }
+        ],
+    )
+
+    assert evidence is None
+    assert verdict is None
+    assert rejected[0]["verdict"]["reason"] == "missing_required_terms"
+
+
+def test_evidence_gate_accepts_ibm_poughkeepsie_seminar_snippet():
+    evidence, verdict, rejected = _select_evidence_candidate(
+        question="What seminar did Sam Walton enroll himself in in Poughkeepsie New York?",
+        anchors=["Sam", "Walton", "seminar", "Poughkeepsie"],
+        rules=EnterpriseRagOrchestrator(quiet_mcp=False).rules,
+        expected_answer=None,
+        results=[
+            {
+                "source_id": 3,
+                "source_part_id": 655,
+                "file_name": "walmart.txt",
+                "snippet": "Sam Walton went up to Poughkeepsie, New York for an IBM seminar on how to use computing technology in business.",
+            }
+        ],
+    )
+
+    assert evidence is not None
+    assert verdict is not None
+    assert verdict.status == "supports"
+    assert rejected == []
+
+
+def test_orchestrator_does_not_recover_from_irrelevant_excerpt():
+    orchestrator = EnterpriseRagOrchestrator(quiet_mcp=False)
+    calls: list[str] = []
+
+    async def fake_tool_call(name, arguments):  # noqa: ANN001, ARG001
+        calls.append(name)
+        if name == "ask_grounded":
+            return {
+                "answer": "Not found in provided sources.",
+                "citations": [],
+                "debug_info": {"retrieval_trace": {"score_diagnostics": [{"chunk_id": 15317, "keyword_score": 1.0}]}},
+            }, {"tool_name": name, "tool_call_id": None, "content": {}}
+        if name == "search_documents":
+            return {
+                "results": [
+                    {
+                        "source_id": 3,
+                        "source_part_id": 655,
+                        "file_name": "walmart.txt",
+                        "snippet": "from a $25 million revenue base. Ben: Those two decades propelled them and somehow still hold the crown.",
+                    }
+                ]
+            }, {"tool_name": name, "tool_call_id": None, "content": {}}
+        return {
+            "matched": True,
+            "excerpt": "from a $25 million revenue base. Ben: Those two decades propelled them and somehow still hold the crown.",
+            "result": {"source_id": 3, "source_part_id": 655, "file_name": "walmart.txt"},
+        }, {"tool_name": name, "tool_call_id": None, "content": {}}
+
+    orchestrator._call_tool = fake_tool_call  # type: ignore[method-assign]
+
+    result = asyncio.run(orchestrator.run("What seminar did Sam Walton enroll himself in in Poughkeepsie New York?"))
+
+    assert result.grounding_status == "not_grounded"
+    assert result.error == "evidence_found_but_irrelevant"
+    assert result.rejected_evidence
+    assert "get_document_excerpt" not in calls
+
+
+def test_numeric_expected_answer_equivalence_for_eval_terms():
+    rules = EnterpriseRagOrchestrator(quiet_mcp=False).rules
+
+    rent_eval = evaluate_expected_answer(
+        question="What Percentage of Rent to Sales did Sam Waltons first Ben Franklin cost",
+        expected_answer="0.05",
+        answer="The rent cost 5% of sales.",
+        evidence=[],
+        rules=rules,
+    )
+    revenue_eval = evaluate_expected_answer(
+        question="How much top line revenue % did walmart see a year after their IPO 1972",
+        expected_answer="0.77",
+        answer="Walmart grew top-line revenue 77%.",
+        evidence=[],
+        rules=rules,
+    )
+
+    assert rent_eval["status"] == "pass"
+    assert revenue_eval["status"] == "pass"
+
+
+def test_cutoff_relevant_snippet_requests_neighbor_expansion():
+    verdict = validate_evidence(
+        question="What seminar did Sam Walton enroll himself in in Poughkeepsie New York?",
+        anchors=["Walton", "seminar", "Poughkeepsie"],
+        rules=EnterpriseRagOrchestrator(quiet_mcp=False).rules,
+        evidence=[
+            {
+                "snippet": "Sam Walton went to Poughkeepsie for an IBM seminar on computing technolo",
+            }
+        ],
+    )
+
+    assert verdict.status in {"supports", "partial"}
+    assert verdict.needs_neighbor_expansion is True
+
+
+def test_recovered_answer_focuses_relevant_span_in_long_transcript_excerpt():
+    rules = EnterpriseRagOrchestrator(quiet_mcp=False).rules
+    answer = _answer_from_evidence(
+        "What seminar did Sam Walton enroll himself in in Poughkeepsie New York?",
+        [
+            {
+                "file_name": "walmart.txt",
+                "snippet": (
+                    "from a $25 million revenue base. Ben: Those two decades propelled them. "
+                    "David: He goes up to Poughkeepsie, New York and enrolls himself as "
+                    "Chairman/CEO of Walmart in a seminar at IBM on how to use computing "
+                    "technology in business. There's a great quote from Abe Marks."
+                ),
+            }
+        ],
+        anchors=["seminar", "Walton", "enroll", "himself", "Poughkeepsie", "York"],
+        rules=rules,
+    )
+
+    assert "seminar at IBM on how to use computing technology in business" in answer
+    assert not answer.startswith("Recovered answer from walmart.txt: from a $25 million")

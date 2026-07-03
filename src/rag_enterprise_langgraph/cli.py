@@ -11,6 +11,8 @@ from rag_enterprise_langgraph.demo_proof import (
     resolve_demo_questions,
     write_markdown_report,
 )
+from rag_enterprise_langgraph.eval_runner import render_eval_markdown, run_eval, write_eval_outputs
+from rag_enterprise_langgraph.orchestrator import EnterpriseRagOrchestrator
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -20,6 +22,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--check-config", action="store_true", help="Print redacted runtime diagnostics and loaded MCP tool names.")
     parser.add_argument("--demo-proof", action="store_true", help="Run the editable portfolio demo proof flow.")
     parser.add_argument("--output", help="Write demo proof Markdown to this path, for example demo-proof.md.")
+    parser.add_argument("--eval-xlsx", help="Run the Acquired-style eval questions from an .xlsx workbook.")
+    parser.add_argument("--eval-output", help="Write eval Markdown report to this path.")
+    parser.add_argument("--eval-json", help="Write eval JSON report to this path.")
+    parser.add_argument("--journal", help="Append safe orchestration decisions to a JSONL journal.")
+    parser.add_argument("--rules", help="Path to editable orchestration rules JSON.")
     parser.add_argument("--include-debug", action="store_true", help="Include sanitized debug payloads in demo-proof JSON/Markdown.")
     parser.add_argument("--max-recovery-steps", type=int, default=3, help="Maximum demo-proof recovery steps after the first grounded call.")
     parser.add_argument(
@@ -43,18 +50,43 @@ async def _run(
     questions_file: str | None,
     include_debug: bool,
     max_recovery_steps: int,
+    eval_xlsx: str | None,
+    eval_output: str | None,
+    eval_json: str | None,
+    journal: str | None,
+    rules: str | None,
 ) -> int:
     agent = RagEnterpriseAgent()
+    if eval_xlsx:
+        report = await run_eval(
+            xlsx_path=eval_xlsx,
+            rules_path=rules,
+            journal_path=journal,
+            max_recovery_steps=max_recovery_steps,
+        )
+        written = write_eval_outputs(report, markdown_path=eval_output, json_path=eval_json)
+        if as_json:
+            print(json.dumps(report, indent=2, sort_keys=True))
+        else:
+            print(render_eval_markdown(report))
+            for kind, path in written.items():
+                print(f"Wrote eval {kind}: {path}")
+        return 0 if report["status"] == "pass" else 1
+
     if demo_proof:
         questions = resolve_demo_questions(
             positional_question=question,
             questions=demo_questions,
             questions_file=questions_file,
         )
+        orchestrator = EnterpriseRagOrchestrator(rules_path=rules, journal_path=journal)
         proof = await build_demo_proof(
+            orchestrator=orchestrator,
             questions=questions,
             include_debug=include_debug,
             max_recovery_steps=max_recovery_steps,
+            rules_path=rules,
+            journal_path=journal,
         )
         if output:
             output_path = write_markdown_report(proof, output)
@@ -98,6 +130,11 @@ def main() -> int:
             args.questions_file,
             args.include_debug,
             args.max_recovery_steps,
+            args.eval_xlsx,
+            args.eval_output,
+            args.eval_json,
+            args.journal,
+            args.rules,
         )
     )
 

@@ -19,6 +19,9 @@ class AskRequest(BaseModel):
 class AskOrchestratedRequest(BaseModel):
     question: str
     max_recovery_steps: int = 3
+    expected_answer: str | None = None
+    rules_path: str | None = None
+    journal_path: str | None = None
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -41,18 +44,37 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         question: list[str] | None = Query(default=None),
         include_debug: bool = False,
         max_recovery_steps: int = 3,
+        rules_path: str | None = None,
+        journal_path: str | None = None,
     ):
         questions = resolve_demo_questions(questions=question)
+        runtime_orchestrator = (
+            EnterpriseRagOrchestrator(runtime_settings, rules_path=rules_path, journal_path=journal_path)
+            if rules_path or journal_path
+            else orchestrator
+        )
         return await build_demo_proof(
-            orchestrator=orchestrator,
+            orchestrator=runtime_orchestrator,
             questions=questions,
             include_debug=include_debug,
             max_recovery_steps=max_recovery_steps,
+            rules_path=rules_path,
+            journal_path=journal_path,
         )
 
     @app.post("/ask-orchestrated")
     async def ask_orchestrated(request: AskOrchestratedRequest):
-        result = await orchestrator.run(request.question, max_recovery_steps=request.max_recovery_steps)
+        runtime_orchestrator = (
+            EnterpriseRagOrchestrator(runtime_settings, rules_path=request.rules_path, journal_path=request.journal_path)
+            if request.rules_path or request.journal_path
+            else orchestrator
+        )
+        result = await runtime_orchestrator.run(
+            request.question,
+            max_recovery_steps=request.max_recovery_steps,
+            expected_answer=request.expected_answer,
+            journal_path=request.journal_path,
+        )
         return result.to_dict()
 
     return app

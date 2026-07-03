@@ -87,7 +87,7 @@ class _FakeOrchestrator:
     async def check_configuration(self):
         return await _FakeAgent().check_configuration()
 
-    async def run(self, question: str, *, max_recovery_steps: int = 3):
+    async def run(self, question: str, *, max_recovery_steps: int = 3, journal_path: str | None = None):  # noqa: ARG002
         return OrchestratedRunResult(
             question=question,
             answer="Recovered answer from excerpt evidence.",
@@ -223,7 +223,7 @@ def test_demo_proof_handles_backend_or_mcp_errors():
 
 
 def test_demo_proof_endpoint_returns_expected_shape(monkeypatch):
-    async def fake_build_demo_proof(*, orchestrator, questions, include_debug=False, max_recovery_steps=3):  # noqa: ANN001
+    async def fake_build_demo_proof(*, orchestrator, questions, include_debug=False, max_recovery_steps=3, rules_path=None, journal_path=None):  # noqa: ANN001, ARG001
         return {
             "status": "ok",
             "overall_status": "ok",

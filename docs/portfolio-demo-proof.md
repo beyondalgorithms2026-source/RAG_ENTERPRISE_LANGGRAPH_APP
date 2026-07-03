@@ -15,6 +15,10 @@ cache, and governance.
 - Tool arguments and diagnostics are normalized and redacted for safe proof sharing.
 - The proof runner refuses unsupported answers and marks auth, timeout, tool, and uncited-answer failures explicitly.
 - The execution timeline shows multi-step recovery when first-pass synthesis misses evidence.
+- Evidence-gated recovery prevents false-positive demos where an irrelevant
+  snippet is found in the right document but does not answer the question.
+- The eval harness reruns the Acquired QA workbook and compares answers against
+  the human-answer column for repeatable manual tuning.
 
 ## Methodology
 
@@ -31,11 +35,17 @@ Desktop:
    phrases, identifiers, and transcript wording.
 5. `exact_phrase_bias` and `anchor_terms` pin distinctive terms from the user
    question.
-6. `expand_neighbors=true` helps when useful text is split across chunk
-   boundaries.
-7. `get_document_excerpt` fetches raw evidence from a concrete source/result
+6. Precision recovery starts with low-k keyword search and only broadens when
+   no validated candidate is found.
+7. Evidence candidates are scored for anchor coverage, expected answer type,
+   editable rule matches, snippet completeness, and backend scores.
+8. `expand_neighbors=true` helps when useful text is split across chunk
+   boundaries, but it is not the first recovery move.
+9. `get_document_excerpt` fetches raw evidence from a concrete source/result
    and bypasses weak local answer synthesis.
-8. If the system still cannot find evidence, it returns a clear no-grounded-
+10. If retrieved text is present but does not answer the question, the run is
+   marked `not_grounded`, not `recovered`.
+11. If the system still cannot find evidence, it returns a clear no-grounded-
    answer result instead of a confident unsupported answer.
 
 ## Commands
@@ -84,6 +94,26 @@ rag-enterprise-agent --demo-proof \
   --max-recovery-steps 3
 ```
 
+Use editable evidence rules and a safe decision journal:
+
+```bash
+rag-enterprise-agent --demo-proof \
+  --question "What seminar did Sam Walton enroll himself in in Poughkeepsie New York?" \
+  --rules config/orchestration-rules.json \
+  --journal runs/orchestration-journal.jsonl
+```
+
+Run the Acquired workbook eval:
+
+```bash
+rag-enterprise-agent \
+  --eval-xlsx /Users/Work/Desktop/acquired-qa-evaluation.xlsx \
+  --eval-output acquired-eval-report.md \
+  --eval-json acquired-eval-results.json \
+  --journal runs/orchestration-journal.jsonl \
+  --rules config/orchestration-rules.json
+```
+
 Include sanitized internals only while debugging:
 
 ```bash
@@ -124,15 +154,63 @@ Find the most relevant source excerpt for VPN access.
 Blank lines and lines starting with `#` are ignored. Update the questions after
 you know which documents are indexed in the backend.
 
+## Editable Evidence Rules
+
+The orchestrator ships with default rules for the current Acquired evaluation
+questions. Add project-specific aliases or required terms in
+`config/orchestration-rules.json` when manual review shows a repeated pattern.
+
+Example use cases:
+
+- Treat `5%`, `0.05`, and `five percent` as equivalent.
+- Require `IBM` plus `seminar` for the Sam Walton Poughkeepsie question.
+- Add accepted aliases for company names, people, products, places, and
+  transcript-specific phrasing.
+
+Rules are never self-promoted from a run journal. The journal can suggest what
+went wrong, but the user must intentionally edit the rules file.
+
+## Evaluation Report
+
+The eval command reads the workbook `question` and `human_answer` columns,
+runs each row through the same orchestrator used by the CLI/API demo proof, and
+writes Markdown/JSON outputs.
+
+Each row reports:
+
+- expected human answer;
+- generated answer;
+- grounding status;
+- evidence verdict;
+- tools used;
+- pass/fail/manual-review;
+- failure or rejection reason.
+
+This makes the demo repeatable: after tuning rules or indexed sources, rerun
+the workbook and compare the pass/fail count without guessing from one-off
+terminal output.
+
+## Safe Journal
+
+`--journal runs/orchestration-journal.jsonl` appends one sanitized JSON row per
+question. It records the question, anchors, tools, timeline, evidence verdict,
+selected/rejected candidates, and final status.
+
+The journal intentionally omits raw prompts, secrets, tokens, tracebacks, local
+paths, raw `debug_info`, and backend internals. It is review memory for manual
+tuning, not an automatic self-modifying system.
+
 ## Screenshot Checklist
 
 1. Terminal showing `rag-enterprise-agent --check-config` with MCP tool names.
 2. Terminal showing `rag-enterprise-agent --demo-proof` with grounding status, tools, evidence count, and execution timeline.
-3. `demo-proof.md` showing runtime summary, MCP inventory, execution timeline, and a recovered answer.
-4. Code screenshot of `src/rag_enterprise_langgraph/mcp_client.py` showing stdio MCP setup.
-5. Code screenshot of `src/rag_enterprise_langgraph/graph.py` showing the LangGraph prompt rules.
-6. API proof screenshot of `curl http://127.0.0.1:8080/demo-proof`.
-7. Optional proof of strict refusal: a run marked `backend_auth_failed`, `backend_timeout`, or `not_grounded` instead of a misleading success.
+3. Terminal showing an irrelevant snippet rejected as `not_grounded`, with a safe evidence verdict.
+4. `acquired-eval-report.md` showing all eight eval questions, expected answers, generated answers, statuses, and tools.
+5. `demo-proof.md` showing runtime summary, MCP inventory, execution timeline, and a recovered answer.
+6. Code screenshot of `src/rag_enterprise_langgraph/orchestrator.py` around evidence-gated recovery.
+7. Code screenshot of `src/rag_enterprise_langgraph/evidence.py` showing editable-rule validation.
+8. API proof screenshot of `curl http://127.0.0.1:8080/demo-proof`.
+9. Optional proof of strict refusal: a run marked `backend_auth_failed`, `backend_timeout`, or `not_grounded` instead of a misleading success.
 
 ## Upwork Caption Ideas
 
@@ -140,6 +218,7 @@ you know which documents are indexed in the backend.
 - "Implemented a screenshot-ready proof pack showing MCP discovery, multi-step tool recovery, grounded answers, citations/evidence, and backend-governance boundaries."
 - "Designed the integration so the agent has no direct database access; MCP exposes only read-only RAG tools."
 - "Built a LangGraph enterprise RAG orchestrator that validates grounding, refuses unsupported answers, and recovers through keyword search and raw excerpt lookup when first-pass generation fails."
+- "Added an evaluation harness that reruns an Excel QA set against the same MCP tool path and writes safe decision journals for manual governance review."
 
 ## Architecture
 
