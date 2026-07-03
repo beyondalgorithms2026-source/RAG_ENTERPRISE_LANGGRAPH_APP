@@ -136,8 +136,18 @@ def _safe_json_parse(value: Any) -> Any:
         return value
 
 
+def _unwrap_mcp_text_blocks(value: Any) -> Any:
+    if isinstance(value, list) and len(value) == 1 and isinstance(value[0], dict):
+        block = value[0]
+        if block.get("type") == "text" and isinstance(block.get("text"), str):
+            return _safe_json_parse(block["text"])
+    if isinstance(value, dict) and value.get("type") == "text" and isinstance(value.get("text"), str):
+        return _safe_json_parse(value["text"])
+    return value
+
+
 def _content_dict(value: Any) -> dict[str, Any]:
-    parsed = _safe_json_parse(value)
+    parsed = _unwrap_mcp_text_blocks(_safe_json_parse(value))
     if isinstance(parsed, dict):
         return parsed
     return {"raw": str(value)}

@@ -5,6 +5,7 @@ import asyncio
 from rag_enterprise_langgraph.orchestrator import (
     EnterpriseRagOrchestrator,
     OrchestrationStep,
+    _content_dict,
     classify_failure,
     exact_phrase_bias,
     extract_anchor_terms,
@@ -63,3 +64,38 @@ def test_orchestration_step_summarizes_nested_backend_errors_without_traceback()
     assert isinstance(step, OrchestrationStep)
     assert step.result_status == "backend_timeout"
     assert step.failure_reason == "timed out"
+
+
+def test_orchestrator_unwraps_mcp_text_blocks_before_classification():
+    orchestrator = EnterpriseRagOrchestrator(quiet_mcp=False)
+    calls: list[str] = []
+
+    async def fake_tool_call(name, arguments):  # noqa: ANN001, ARG001
+        calls.append(name)
+        if name == "ask_grounded":
+            raw = [
+                {
+                    "type": "text",
+                    "text": '{"answer": "Not found in provided sources.", "citations": [], "debug_info": {"request_access": "not applicable"}}',
+                }
+            ]
+            return _content_dict(raw), {"tool_name": name, "tool_call_id": None, "content": raw}
+        return {
+            "results": [
+                {
+                    "source_id": 3,
+                    "source_part_id": 655,
+                    "file_name": "walmart.txt",
+                    "snippet": "He goes up to Poughkeepsie, New York for an IBM seminar.",
+                }
+            ]
+        }, {"tool_name": name, "tool_call_id": None, "content": {}}
+
+    orchestrator._call_tool = fake_tool_call  # type: ignore[method-assign]
+
+    result = asyncio.run(orchestrator.run("What seminar did Sam Walton enroll himself in in Poughkeepsie New York?"))
+
+    assert result.grounding_status == "recovered"
+    assert result.recovery_attempted is True
+    assert result.evidence_count == 1
+    assert calls == ["ask_grounded", "ask_grounded", "search_documents", "get_document_excerpt"]
