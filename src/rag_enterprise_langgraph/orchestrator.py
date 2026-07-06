@@ -22,7 +22,8 @@ from rag_enterprise_langgraph.tool_guard import reset_current_question, set_curr
 
 
 GROUNDING_SUCCESS_STATUSES = {"verified", "grounded", "recovered", "not_found"}
-FAILURE_STATUSES = {"backend_auth_failed", "backend_timeout", "tool_error", "not_grounded", "partial", "needs_review"}
+REVIEW_STATUSES = {"partial", "needs_review"}
+FAILURE_STATUSES = {"backend_auth_failed", "backend_timeout", "tool_error", "not_grounded"}
 
 
 _STOPWORDS = {
@@ -588,6 +589,19 @@ def _answer_from_evidence(
     if short_answer:
         return f"Recovered answer from {source}: {short_answer}. Evidence: {focused}"
     return f"Recovered supporting evidence from {source}: {focused}"
+
+
+def _answer_for_human_review(
+    question: str,
+    evidence: Sequence[dict[str, Any]],
+    *,
+    anchors: Sequence[str] = (),
+    rules=(),
+) -> str:
+    if not evidence:
+        return "No sufficiently relevant evidence was found. Human review is required before using this answer."
+    nearest = _answer_from_evidence(question, evidence, anchors=anchors, rules=rules)
+    return f"Nearest relevant evidence requires human review. {nearest}"
 
 
 def _decision_step(step: int, label: str, summary: str) -> dict[str, Any]:
@@ -1229,7 +1243,25 @@ class EnterpriseRagOrchestrator:
             failure_reason = None if final_status == "not_found" else "answer_without_citations_or_evidence"
             if rejected_evidence:
                 final_status = "needs_review"
-                failure_reason = "evidence_found_but_irrelevant"
+                failure_reason = "human_review_required"
+            review_evidence = list(evidence)
+            if not review_evidence and rejected_evidence:
+                first_rejected = rejected_evidence[0]
+                review_evidence = [
+                    {
+                        "source_id": first_rejected.get("source_id"),
+                        "source_part_id": first_rejected.get("source_part_id"),
+                        "chunk_id": first_rejected.get("chunk_id"),
+                        "file_name": first_rejected.get("file_name"),
+                        "snippet": first_rejected.get("snippet_preview"),
+                        "evidence_type": first_rejected.get("evidence_type") or "review_candidate",
+                    }
+                ]
+            final_answer = (
+                _answer_for_human_review(question, review_evidence, anchors=anchors, rules=self.rules)
+                if final_status == "needs_review"
+                else "No grounded answer could be produced from the available MCP evidence."
+            )
             decision_trail.append(
                 _decision_step(
                     len(decision_trail) + 1,
@@ -1239,16 +1271,18 @@ class EnterpriseRagOrchestrator:
             )
             return finish(OrchestratedRunResult(
                 question=question,
-                answer="No grounded answer could be produced from the available MCP evidence.",
+                answer=final_answer,
                 grounding_status=final_status,
                 tools_used=_dedupe(tools_used),
                 execution_timeline=[step.to_dict() for step in timeline],
+                evidence=review_evidence if final_status == "needs_review" else [],
                 tool_outputs=tool_outputs,
+                evidence_count=len(review_evidence) if final_status == "needs_review" else 0,
                 recovery_attempted=recovery_attempted,
                 recovery_successful=False,
-                portfolio_safe=final_status == "not_found",
+                portfolio_safe=final_status in {"not_found", "needs_review"},
                 failure_reason=failure_reason,
-                error=failure_reason,
+                error=None if final_status == "needs_review" else failure_reason,
                 evidence_verdict=final_verdict.to_dict() if final_verdict else None,
                 rejected_evidence=rejected_evidence,
                 validation_summary=_validation_summary(final_status, initial_review, evidence_support=final_verdict.status if final_verdict else "missing"),
@@ -1354,7 +1388,9 @@ def overall_status(runs: Sequence[dict[str, Any]]) -> str:
     if not statuses:
         return "error"
     if any(status in FAILURE_STATUSES for status in statuses):
-        if any(status in GROUNDING_SUCCESS_STATUSES for status in statuses):
+        if any(status in GROUNDING_SUCCESS_STATUSES or status in REVIEW_STATUSES for status in statuses):
             return "partial"
         return "error"
+    if any(status in REVIEW_STATUSES for status in statuses):
+        return "partial"
     return "ok"

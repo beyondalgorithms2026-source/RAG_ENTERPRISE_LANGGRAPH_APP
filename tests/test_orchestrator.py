@@ -223,7 +223,10 @@ def test_orchestrator_does_not_recover_from_irrelevant_excerpt():
     result = asyncio.run(orchestrator.run("What seminar did Sam Walton enroll himself in in Poughkeepsie New York?"))
 
     assert result.grounding_status == "needs_review"
-    assert result.error == "evidence_found_but_irrelevant"
+    assert result.error is None
+    assert result.failure_reason == "human_review_required"
+    assert "Nearest relevant evidence requires human review" in result.answer
+    assert result.evidence_count == 1
     assert result.rejected_evidence
     assert "get_document_excerpt" not in calls
 

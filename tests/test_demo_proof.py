@@ -294,4 +294,5 @@ def test_demo_proof_endpoint_returns_expected_shape(monkeypatch):
 def test_overall_status_marks_mixed_runs_partial():
     assert overall_status([{"grounding_status": "grounded"}, {"grounding_status": "backend_timeout"}]) == "partial"
     assert overall_status([{"grounding_status": "backend_auth_failed"}]) == "error"
+    assert overall_status([{"grounding_status": "needs_review"}]) == "partial"
     assert overall_status([{"grounding_status": "recovered"}]) == "ok"

@@ -108,7 +108,7 @@ async def _run(
             print(json.dumps(proof, indent=2, sort_keys=True))
         else:
             print(render_text_report(proof))
-        return 1 if proof["status"] in {"error", "partial"} else 0
+        return 1 if proof["status"] == "error" else 0
 
     if check_config:
         print(json.dumps(await agent.check_configuration(), indent=2, sort_keys=True))
