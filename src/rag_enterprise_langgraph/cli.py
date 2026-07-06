@@ -29,6 +29,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--rules", help="Path to editable orchestration rules JSON.")
     parser.add_argument("--include-debug", action="store_true", help="Include sanitized debug payloads in demo-proof JSON/Markdown.")
     parser.add_argument("--max-recovery-steps", type=int, default=3, help="Maximum demo-proof recovery steps after the first grounded call.")
+    parser.add_argument("--max-attempts", type=int, default=None, help="Maximum answer/recovery attempts for orchestrated validation.")
+    parser.add_argument("--validation-mode", choices=["strict", "balanced", "fast"], default="balanced", help="Answer validation depth for orchestrated proof runs.")
+    parser.add_argument("--show-decision-trail", action="store_true", help="Show the safe decision trail in demo proof output.")
+    parser.add_argument("--hide-review-note", action="store_true", help="Hide enterprise review guidance in demo proof output.")
     parser.add_argument(
         "--question",
         dest="demo_questions",
@@ -50,6 +54,10 @@ async def _run(
     questions_file: str | None,
     include_debug: bool,
     max_recovery_steps: int,
+    max_attempts: int | None,
+    validation_mode: str,
+    show_decision_trail: bool,
+    hide_review_note: bool,
     eval_xlsx: str | None,
     eval_output: str | None,
     eval_json: str | None,
@@ -85,6 +93,10 @@ async def _run(
             questions=questions,
             include_debug=include_debug,
             max_recovery_steps=max_recovery_steps,
+            max_attempts=max_attempts,
+            validation_mode=validation_mode,
+            show_decision_trail=True if show_decision_trail else True,
+            show_review_note=not hide_review_note,
             rules_path=rules,
             journal_path=journal,
         )
@@ -130,6 +142,10 @@ def main() -> int:
             args.questions_file,
             args.include_debug,
             args.max_recovery_steps,
+            args.max_attempts,
+            args.validation_mode,
+            args.show_decision_trail,
+            args.hide_review_note,
             args.eval_xlsx,
             args.eval_output,
             args.eval_json,

@@ -14,6 +14,11 @@ cache, and governance.
 - Backend responses return grounded answers, citations, mode, latency, and chunk counts when available.
 - Tool arguments and diagnostics are normalized and redacted for safe proof sharing.
 - The proof runner refuses unsupported answers and marks auth, timeout, tool, and uncited-answer failures explicitly.
+- First-pass cited answers are validated before acceptance. Citations are treated
+  as evidence to inspect, not automatic proof.
+- The answer-quality loop classifies question type, checks expected answer
+  shape, validates support per value/list item, compares attempts, and exposes
+  a safe decision trail.
 - The execution timeline shows multi-step recovery when first-pass synthesis misses evidence.
 - Evidence-gated recovery prevents false-positive demos where an irrelevant
   snippet is found in the right document but does not answer the question.
@@ -27,25 +32,35 @@ Desktop:
 
 1. `ask_grounded` is the first pass. It asks the backend to retrieve, rerank,
    synthesize, and cite.
-2. If first-pass synthesis returns no citations, says "not found", or fails,
-   the proof runner does not call that a success.
-3. `search_documents` is used for retrieval-only recovery when evidence may
+2. The answer-quality layer classifies the question, for example exact
+   numeric, percentage/ratio, date, person/org, location, list-with-count,
+   comparison, quote/exact wording, policy/compliance, or open-ended analysis.
+3. If first-pass synthesis returns citations, the cited snippets are still
+   checked against the expected answer shape. A three-item question needs three
+   supported items. A percentage question needs the percentage supported by
+   evidence.
+4. If first-pass synthesis returns no citations, says "not found", is generic,
+   misses a requested field, or cites unrelated text, the proof runner does
+   not call that a success.
+5. `search_documents` is used for retrieval-only recovery when evidence may
    exist but the backend generation step missed it.
-4. `mode="keyword"` is preferred for exact names, dates, percentages, quoted
+6. `mode="keyword"` is preferred for exact names, dates, percentages, quoted
    phrases, identifiers, and transcript wording.
-5. `exact_phrase_bias` and `anchor_terms` pin distinctive terms from the user
+7. `exact_phrase_bias` and `anchor_terms` pin distinctive terms from the user
    question.
-6. Precision recovery starts with low-k keyword search and only broadens when
+8. Precision recovery starts with low-k keyword search and only broadens when
    no validated candidate is found.
-7. Evidence candidates are scored for anchor coverage, expected answer type,
+9. Evidence candidates are scored for anchor coverage, expected answer type,
    editable rule matches, snippet completeness, and backend scores.
-8. `expand_neighbors=true` helps when useful text is split across chunk
+10. `expand_neighbors=true` helps when useful text is split across chunk
    boundaries, but it is not the first recovery move.
-9. `get_document_excerpt` fetches raw evidence from a concrete source/result
+11. `get_document_excerpt` fetches raw evidence from a concrete source/result
    and bypasses weak local answer synthesis.
-10. If retrieved text is present but does not answer the question, the run is
-   marked `not_grounded`, not `recovered`.
-11. If the system still cannot find evidence, it returns a clear no-grounded-
+12. Attempts are compared before finalizing. A verified first attempt is kept;
+   a weaker later attempt does not replace it.
+13. If retrieved text is present but does not answer the question, the run is
+   marked `needs_review` or `not_grounded`, not `recovered`.
+14. If the system still cannot find evidence, it returns a clear no-grounded-
    answer result instead of a confident unsupported answer.
 
 ## Commands
@@ -91,7 +106,26 @@ Run a recovery-oriented proof question:
 ```bash
 rag-enterprise-agent --demo-proof \
   --question "What Percentage of Rent to Sales did Sam Walton's first Ben Franklin cost?" \
-  --max-recovery-steps 3
+  --max-recovery-steps 3 \
+  --max-attempts 3 \
+  --validation-mode balanced \
+  --show-decision-trail
+```
+
+Run a first-pass validation proof:
+
+```bash
+rag-enterprise-agent --demo-proof \
+  --question "When did AWS formed and who first head of AWS techincally?" \
+  --show-decision-trail
+```
+
+Run a high-value recovery proof:
+
+```bash
+rag-enterprise-agent --demo-proof \
+  --question "What is the cost of rocket travel based on the materials?" \
+  --show-decision-trail
 ```
 
 Use editable evidence rules and a safe decision journal:
@@ -181,6 +215,8 @@ Each row reports:
 - expected human answer;
 - generated answer;
 - grounding status;
+- validation summary;
+- decision trail;
 - evidence verdict;
 - tools used;
 - pass/fail/manual-review;
@@ -200,17 +236,35 @@ The journal intentionally omits raw prompts, secrets, tokens, tracebacks, local
 paths, raw `debug_info`, and backend internals. It is review memory for manual
 tuning, not an automatic self-modifying system.
 
+## Status Meanings
+
+- `verified`: first-pass cited answer passed answer-shape and citation-support checks.
+- `recovered`: follow-up MCP tool calls produced validated evidence.
+- `partial`: evidence supports only part of the requested answer.
+- `needs_review`: plausible or relevant material exists, but support is incomplete.
+- `not_grounded`: retrieved/cited text does not support the answer.
+- `not_found`: no adequate evidence after recovery.
+- `backend_auth_failed`, `backend_timeout`, `tool_error`: infrastructure/tool-path failure.
+
+For `verified` and `recovered`, the output says evidence appears sufficient
+for informational use, with human review still recommended for high-impact
+decisions. For `partial`, `needs_review`, `not_grounded`, and `not_found`, the
+output says not to use the answer for decision-making without human review.
+
 ## Screenshot Checklist
 
 1. Terminal showing `rag-enterprise-agent --check-config` with MCP tool names.
-2. Terminal showing `rag-enterprise-agent --demo-proof` with grounding status, tools, evidence count, and execution timeline.
-3. Terminal showing an irrelevant snippet rejected as `not_grounded`, with a safe evidence verdict.
-4. `acquired-eval-report.md` showing all eight eval questions, expected answers, generated answers, statuses, and tools.
-5. `demo-proof.md` showing runtime summary, MCP inventory, execution timeline, and a recovered answer.
-6. Code screenshot of `src/rag_enterprise_langgraph/orchestrator.py` around evidence-gated recovery.
-7. Code screenshot of `src/rag_enterprise_langgraph/evidence.py` showing editable-rule validation.
-8. API proof screenshot of `curl http://127.0.0.1:8080/demo-proof`.
-9. Optional proof of strict refusal: a run marked `backend_auth_failed`, `backend_timeout`, or `not_grounded` instead of a misleading success.
+2. Verified first-pass answer: `Status: verified`, validation summary, decision trail, and review note.
+3. Recovered answer: execution timeline showing `ask_grounded -> search_documents -> get_document_excerpt`.
+4. Recovered SpaceX material-cost answer: initial answer misses the percentage; recovery finds `2%`.
+5. Recovered or needs-review Renaissance list answer: validation detects missing list items instead of trusting citations blindly.
+6. Needs-review/refusal example: irrelevant evidence rejected with safe guidance.
+7. `acquired-eval-report.md` showing eval questions, expected answers, generated answers, statuses, decision trails, and tools.
+8. `demo-proof.md` showing runtime summary, MCP inventory, execution timeline, validation summary, decision trail, and review note.
+9. Code screenshot of `src/rag_enterprise_langgraph/orchestrator.py` around conditional routing and attempt comparison.
+10. Code screenshot of `src/rag_enterprise_langgraph/answer_quality.py` showing question classification and citation-support review.
+11. API proof screenshot of `curl http://127.0.0.1:8080/demo-proof`.
+12. Optional proof of strict refusal: a run marked `backend_auth_failed`, `backend_timeout`, `needs_review`, or `not_grounded` instead of a misleading success.
 
 ## Upwork Caption Ideas
 
@@ -219,13 +273,18 @@ tuning, not an automatic self-modifying system.
 - "Designed the integration so the agent has no direct database access; MCP exposes only read-only RAG tools."
 - "Built a LangGraph enterprise RAG orchestrator that validates grounding, refuses unsupported answers, and recovers through keyword search and raw excerpt lookup when first-pass generation fails."
 - "Added an evaluation harness that reruns an Excel QA set against the same MCP tool path and writes safe decision journals for manual governance review."
+- "Built a LangGraph-based answer validation control plane for enterprise RAG/MCP tools. The system classifies question intent, validates cited answers, performs targeted follow-up retrieval, compares attempts, exposes a decision trail, and routes weak answers to human review instead of presenting unsupported claims as fact."
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    U["User / API Client"] --> LG["LangGraph Agent<br/>Tool orchestration only"]
-    LG -->|stdio MCP| MCP["RAG Enterprise MCP Server<br/>ask_grounded<br/>search_documents<br/>get_document_excerpt"]
+    U["User / API Client"] --> C["Classify Question Type<br/>custom code"]
+    C --> A["ask_grounded<br/>backend answer tool"]
+    A --> V["Validate Answer Shape<br/>+ Citation Support"]
+    V -->|valid| F["Verified Answer<br/>decision trail + review note"]
+    V -->|weak| P["Recovery Planner<br/>LangGraph conditional routing"]
+    P -->|stdio MCP| MCP["RAG Enterprise MCP Server<br/>search_documents<br/>get_document_excerpt"]
     MCP -->|HTTP + auth cookie/token| BE["Enterprise RAG Backend<br/>FastAPI"]
     BE --> AUTH["Auth + ACL Layer<br/>dev/OIDC auth<br/>SQL-level access trimming"]
     BE --> RET["Retrieval Layer<br/>hybrid/vector/keyword/graph modes"]
@@ -233,9 +292,12 @@ flowchart LR
     RET --> DB["Postgres + pgvector<br/>documents, chunks, ACLs"]
     LLM --> BE
     AUTH --> RET
-    BE -->|grounded answer + citations| MCP
-    MCP -->|structured tool output| LG
-    LG -->|final answer + visible proof| U
+    BE -->|evidence + citations| MCP
+    MCP --> P
+    P --> V
+    V -->|insufficient after budget| H["Needs Review / Refusal"]
+    F --> U
+    H --> U
 
     subgraph Security Boundaries
       S1["LangGraph does not access DB"]
@@ -256,3 +318,23 @@ and governance remain implemented in the enterprise RAG backend.
 Clients that call this LangGraph CLI/API get the orchestration and strict proof
 logic. Clients that call `rag-enterprise-mcp` directly still depend on their own
 host model to make recovery decisions.
+
+## LangGraph And Custom Code Contribution
+
+LangGraph contributes the workflow control plane: stateful execution,
+conditional routing, bounded retries, tool sequencing, future checkpointing,
+and human-in-the-loop extension points. This is what makes the same answer
+quality loop reusable across clients.
+
+Custom code contributes the domain policy: deterministic question
+classification, answer-shape validation, citation/evidence support checks,
+attempt comparison, safe decision trails, journals, eval reports, and portfolio
+formatting.
+
+The same architecture can be generalized beyond RAG. Replace MCP RAG tools
+with SQL query tools, Jira lookup, CRM records, policy engines, support ticket
+search, or Confluence/SharePoint search, while keeping the same flow:
+
+```text
+Answer backend tool -> Evidence/result collector -> Answer critic -> Recovery planner -> Final verifier -> Human review/final answer
+```

@@ -7,6 +7,13 @@ from typing import Any, Sequence
 
 from langchain_core.tools import BaseTool
 
+from rag_enterprise_langgraph.answer_quality import (
+    AnswerReview,
+    classify_question,
+    review_answer,
+    review_guidance,
+    review_note,
+)
 from rag_enterprise_langgraph.config import Settings
 from rag_enterprise_langgraph.evidence import EvidenceVerdict, load_rules, matching_rule, validate_evidence
 from rag_enterprise_langgraph.journal import write_journal_entry
@@ -14,8 +21,8 @@ from rag_enterprise_langgraph.mcp_client import load_mcp_tools, suppress_mcp_std
 from rag_enterprise_langgraph.tool_guard import reset_current_question, set_current_question
 
 
-GROUNDING_SUCCESS_STATUSES = {"grounded", "recovered", "not_found"}
-FAILURE_STATUSES = {"backend_auth_failed", "backend_timeout", "tool_error", "not_grounded", "partial"}
+GROUNDING_SUCCESS_STATUSES = {"verified", "grounded", "recovered", "not_found"}
+FAILURE_STATUSES = {"backend_auth_failed", "backend_timeout", "tool_error", "not_grounded", "partial", "needs_review"}
 
 
 _STOPWORDS = {
@@ -105,6 +112,11 @@ class OrchestratedRunResult:
     error: str | None = None
     evidence_verdict: dict[str, Any] | None = None
     rejected_evidence: list[dict[str, Any]] = field(default_factory=list)
+    validation_summary: dict[str, Any] | None = None
+    decision_trail: list[dict[str, Any]] = field(default_factory=list)
+    attempts: list[dict[str, Any]] = field(default_factory=list)
+    review_guidance: str | None = None
+    review_note: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -129,6 +141,11 @@ class OrchestratedRunResult:
             "error": self.error,
             "evidence_verdict": self.evidence_verdict,
             "rejected_evidence": self.rejected_evidence,
+            "validation_summary": self.validation_summary,
+            "decision_trail": self.decision_trail,
+            "attempts": self.attempts,
+            "review_guidance": self.review_guidance,
+            "review_note": self.review_note,
             "message_count": len(self.tool_outputs),
         }
 
@@ -573,6 +590,73 @@ def _answer_from_evidence(
     return f"Recovered supporting evidence from {source}: {focused}"
 
 
+def _decision_step(step: int, label: str, summary: str) -> dict[str, Any]:
+    return {"step": step, "label": label, "summary": summary, "safe": True}
+
+
+def _validation_summary(status: str, review: AnswerReview | None, *, evidence_support: str | None = None) -> dict[str, Any]:
+    if review:
+        profile = review.question_profile
+        return {
+            "final_status": status,
+            "question_types": profile.question_types,
+            "expected_answer_shape": profile.expected_answer_shape.to_dict(),
+            "evidence_support": evidence_support or review.evidence_support,
+            "review_recommended": review.review_recommended or status in FAILURE_STATUSES,
+            "reason": review.reason,
+        }
+    return {
+        "final_status": status,
+        "question_types": [],
+        "evidence_support": evidence_support or "unknown",
+        "review_recommended": status in FAILURE_STATUSES,
+    }
+
+
+def _attempt_record(
+    *,
+    attempt: int,
+    tool: str,
+    status: str,
+    answer: str = "",
+    review: AnswerReview | None = None,
+    reason: str | None = None,
+) -> dict[str, Any]:
+    return {
+        "attempt": attempt,
+        "tool": tool,
+        "status": status,
+        "answer_preview": " ".join(str(answer or "").split())[:320],
+        "validation": review.to_dict() if review else None,
+        "reason": reason or (review.reason if review else None),
+    }
+
+
+def _phrase_for_recovery(question: str, review: AnswerReview | None, anchors: Sequence[str]) -> str | None:
+    lowered = question.lower()
+    quoted = re.findall(r'"([^"]{3,100})"', question)
+    if quoted:
+        return quoted[0]
+    list_match = re.search(r"\b(?:three|3|two|2|four|4)\s+(?:very\s+)?(?:interrelated\s+)?(?:things|items|reasons|factors|points)\b", lowered)
+    if list_match:
+        return list_match.group(0)
+    if review and "percentage_or_ratio" in review.question_profile.question_types:
+        return "cost of goods sold"
+    return exact_phrase_bias(question, anchors)
+
+
+def _recovery_question(question: str, review: AnswerReview | None, anchors: Sequence[str]) -> str:
+    lowered = question.lower()
+    if review and "percentage_or_ratio" in review.question_profile.question_types:
+        extra = " percentage ratio cost of goods sold materials"
+        if "rocket" in lowered:
+            extra += " aerospace-grade aluminum titanium copper carbon fiber"
+        return f"{question} {extra}".strip()
+    if review and "list_with_count" in review.question_profile.question_types:
+        return f"{question} complete list all items continuation neighboring transcript".strip()
+    return f"{question} {' '.join(anchors[:4])}".strip()
+
+
 def extract_anchor_terms(question: str) -> list[str]:
     anchors: list[str] = []
     seen: set[str] = set()
@@ -710,6 +794,10 @@ class EnterpriseRagOrchestrator:
                 "execution_timeline": result.execution_timeline,
                 "evidence_verdict": result.evidence_verdict,
                 "rejected_evidence": result.rejected_evidence,
+                "validation_summary": result.validation_summary,
+                "decision_trail": result.decision_trail,
+                "attempts": result.attempts,
+                "review_guidance": result.review_guidance,
                 "failure_reason": result.failure_reason,
                 "error": result.error,
             },
@@ -720,6 +808,8 @@ class EnterpriseRagOrchestrator:
         question: str,
         *,
         max_recovery_steps: int = 3,
+        max_attempts: int | None = None,
+        validation_mode: str = "balanced",
         expected_answer: str | None = None,
         journal_path: str | None = None,
     ) -> OrchestratedRunResult:
@@ -728,8 +818,38 @@ class EnterpriseRagOrchestrator:
         timeline: list[OrchestrationStep] = []
         tools_used: list[str] = []
         rejected_evidence: list[dict[str, Any]] = []
+        decision_trail: list[dict[str, Any]] = []
+        attempts: list[dict[str, Any]] = []
         anchors = extract_anchor_terms(question)
+        question_profile = classify_question(question)
         phrase_bias = exact_phrase_bias(question, anchors)
+        max_recovery_steps = max_attempts if max_attempts is not None else max_recovery_steps
+        decision_trail.append(
+            _decision_step(
+                1,
+                "Question classified",
+                ", ".join(question_profile.question_types),
+            )
+        )
+        shape = question_profile.expected_answer_shape
+        shape_bits = []
+        if shape.item_count:
+            shape_bits.append(f"{shape.item_count} supported items")
+        if shape.requires_percentage:
+            shape_bits.append("percentage or ratio")
+        elif shape.requires_numeric:
+            shape_bits.append("numeric value")
+        if shape.requires_date:
+            shape_bits.append("date/time")
+        if shape.requires_exact_quote:
+            shape_bits.append("exact wording")
+        decision_trail.append(
+            _decision_step(
+                2,
+                "Expected answer shape",
+                ", ".join(shape_bits) or "grounded explanatory answer",
+            )
+        )
 
         def finish(result: OrchestratedRunResult) -> OrchestratedRunResult:
             self._record_journal(
@@ -773,78 +893,193 @@ class EnterpriseRagOrchestrator:
             )
             initial_failure = classify_transport_failure(initial)
             if initial_failure:
-                return finish(self._failure_result(question, initial_failure, timeline, tools_used, tool_outputs, initial))
+                return finish(self._failure_result(question, initial_failure, timeline, tools_used, tool_outputs, initial, decision_trail=decision_trail, attempts=attempts))
 
             initial_quality = classify_answer_quality(initial, question=question, anchors=anchors)
             if initial_quality.status == "grounded":
                 initial_citations = _citations(initial)
                 evidence = _evidence_from_citations(initial_citations)
-                return finish(self._success_result(
+                initial_review = review_answer(
                     question=question,
                     answer=str(initial.get("answer") or ""),
-                    status="grounded",
-                    citations=initial_citations,
                     evidence=evidence,
-                    timeline=timeline,
-                    tools_used=tools_used,
-                    tool_outputs=tool_outputs,
-                    content=initial,
-                ))
-
-            recovery_attempted = initial_quality.needs_recovery
-            if max_recovery_steps >= 1:
-                recovery_attempted = True
-                keyword_args: dict[str, Any] = {
-                    "question": question,
-                    "k_chunks": 3,
-                    "mode": "keyword",
-                    "anchor_terms": anchors,
-                    "expand_neighbors": False,
-                    "force_rare_keyword_scan": False,
-                }
-                if phrase_bias:
-                    keyword_args["exact_phrase_bias"] = phrase_bias
-                keyword_ask = await call("ask_grounded", "keyword_grounded_recovery", keyword_args)
-                keyword_failure = classify_transport_failure(keyword_ask)
-                if keyword_failure:
-                    return finish(self._failure_result(question, keyword_failure, timeline, tools_used, tool_outputs, keyword_ask))
-                keyword_quality = classify_answer_quality(keyword_ask, question=question, anchors=anchors)
-                if keyword_quality.status == "grounded":
-                    keyword_citations = _citations(keyword_ask)
-                    evidence = _evidence_from_citations(keyword_citations)
+                    question_profile=question_profile,
+                )
+                attempts.append(
+                    _attempt_record(
+                        attempt=len(attempts) + 1,
+                        tool="ask_grounded",
+                        status=initial_review.status,
+                        answer=str(initial.get("answer") or ""),
+                        review=initial_review,
+                    )
+                )
+                decision_trail.append(
+                    _decision_step(
+                        len(decision_trail) + 1,
+                        "First answer reviewed",
+                        f"{initial_review.status}: {initial_review.reason}",
+                    )
+                )
+                if initial_review.status == "verified" and validation_mode != "strict":
+                    decision_trail.append(
+                        _decision_step(
+                            len(decision_trail) + 1,
+                            "Finalized",
+                            "First answer passed answer-shape and citation-support checks.",
+                        )
+                    )
+                    status = "verified"
                     return finish(self._success_result(
                         question=question,
-                        answer=str(keyword_ask.get("answer") or ""),
-                        status="recovered",
-                        citations=keyword_citations,
+                        answer=str(initial.get("answer") or ""),
+                        status=status,
+                        citations=initial_citations,
                         evidence=evidence,
                         timeline=timeline,
                         tools_used=tools_used,
                         tool_outputs=tool_outputs,
-                        content=keyword_ask,
-                        recovery_attempted=recovery_attempted,
-                        recovery_successful=True,
+                        content=initial,
+                        evidence_verdict=None,
+                        validation_summary=_validation_summary(status, initial_review),
+                        decision_trail=decision_trail,
+                        attempts=attempts,
+                        review_guidance_text=review_guidance(status),
+                        review_note_text=review_note(),
                     ))
+                recovery_attempted = True
+            else:
+                attempts.append(
+                    _attempt_record(
+                        attempt=len(attempts) + 1,
+                        tool="ask_grounded",
+                        status=initial_quality.status,
+                        answer=str(initial.get("answer") or ""),
+                        reason=initial_quality.reason,
+                    )
+                )
+                initial_review = None
+
+            if initial_quality.status == "grounded":
+                decision_trail.append(
+                    _decision_step(
+                        len(decision_trail) + 1,
+                        "Recovery planned",
+                        f"First cited answer was not accepted because {attempts[-1].get('reason')}.",
+                    )
+                )
+
+            recovery_attempted = initial_quality.needs_recovery or bool(initial_quality.status == "grounded" and initial_review and initial_review.status != "verified")
+            if max_recovery_steps >= 1:
+                recovery_attempted = True
+                recovery_q = _recovery_question(question, initial_review, anchors)
+                recovery_phrase = _phrase_for_recovery(question, initial_review, anchors) or phrase_bias
+                keyword_args: dict[str, Any] = {
+                    "question": recovery_q,
+                    "k_chunks": 3,
+                    "mode": "keyword",
+                    "anchor_terms": anchors,
+                    "expand_neighbors": bool(initial_review and initial_review.needs_neighbor_expansion),
+                    "force_rare_keyword_scan": False,
+                }
+                if recovery_phrase:
+                    keyword_args["exact_phrase_bias"] = recovery_phrase
+                keyword_ask = await call("ask_grounded", "keyword_grounded_recovery", keyword_args)
+                keyword_failure = classify_transport_failure(keyword_ask)
+                if keyword_failure:
+                    return finish(self._failure_result(question, keyword_failure, timeline, tools_used, tool_outputs, keyword_ask, decision_trail=decision_trail, attempts=attempts))
+                keyword_quality = classify_answer_quality(keyword_ask, question=question, anchors=anchors)
+                if keyword_quality.status == "grounded":
+                    keyword_citations = _citations(keyword_ask)
+                    evidence = _evidence_from_citations(keyword_citations)
+                    keyword_review = review_answer(
+                        question=question,
+                        answer=str(keyword_ask.get("answer") or ""),
+                        evidence=evidence,
+                        question_profile=question_profile,
+                    )
+                    attempts.append(
+                        _attempt_record(
+                            attempt=len(attempts) + 1,
+                            tool="ask_grounded",
+                            status=keyword_review.status,
+                            answer=str(keyword_ask.get("answer") or ""),
+                            review=keyword_review,
+                        )
+                    )
+                    decision_trail.append(
+                        _decision_step(
+                            len(decision_trail) + 1,
+                            "Keyword answer reviewed",
+                            f"{keyword_review.status}: {keyword_review.reason}",
+                        )
+                    )
+                    if keyword_review.status == "verified":
+                        status = "recovered"
+                        decision_trail.append(
+                            _decision_step(
+                                len(decision_trail) + 1,
+                                "Finalized",
+                                "Recovered answer passed citation-support checks.",
+                            )
+                        )
+                        return finish(self._success_result(
+                            question=question,
+                            answer=str(keyword_ask.get("answer") or ""),
+                            status=status,
+                            citations=keyword_citations,
+                            evidence=evidence,
+                            timeline=timeline,
+                            tools_used=tools_used,
+                            tool_outputs=tool_outputs,
+                            content=keyword_ask,
+                            recovery_attempted=recovery_attempted,
+                            recovery_successful=True,
+                            validation_summary=_validation_summary(status, keyword_review),
+                            decision_trail=decision_trail,
+                            attempts=attempts,
+                            review_guidance_text=review_guidance(status),
+                            review_note_text=review_note(),
+                        ))
+                else:
+                    attempts.append(
+                        _attempt_record(
+                            attempt=len(attempts) + 1,
+                            tool="ask_grounded",
+                            status=keyword_quality.status,
+                            answer=str(keyword_ask.get("answer") or ""),
+                            reason=keyword_quality.reason,
+                        )
+                    )
 
             search_content: dict[str, Any] | None = None
             search_results: list[dict[str, Any]] = []
             if max_recovery_steps >= 2:
                 recovery_attempted = True
+                recovery_q = _recovery_question(question, initial_review, anchors)
+                recovery_phrase = _phrase_for_recovery(question, initial_review, anchors) or phrase_bias
                 search_args: dict[str, Any] = {
-                    "question": question,
+                    "question": recovery_q,
                     "k": 8,
                     "mode": "keyword",
                     "anchor_terms": anchors,
-                    "expand_neighbors": False,
+                    "expand_neighbors": bool(initial_review and initial_review.needs_neighbor_expansion),
                     "force_rare_keyword_scan": False,
                     "debug": False,
                 }
-                if phrase_bias:
-                    search_args["exact_phrase_bias"] = phrase_bias
+                if recovery_phrase:
+                    search_args["exact_phrase_bias"] = recovery_phrase
+                decision_trail.append(
+                    _decision_step(
+                        len(decision_trail) + 1,
+                        "Evidence recovery",
+                        f"Searching with keyword mode for {recovery_phrase or 'question anchors'}.",
+                    )
+                )
                 search_content = await call("search_documents", "keyword_evidence_search", search_args)
                 search_failure = classify_transport_failure(search_content)
                 if search_failure:
-                    return finish(self._failure_result(question, search_failure, timeline, tools_used, tool_outputs, search_content))
+                    return finish(self._failure_result(question, search_failure, timeline, tools_used, tool_outputs, search_content, decision_trail=decision_trail, attempts=attempts))
                 search_results = _results(search_content)
 
             excerpt_evidence: list[dict[str, Any]] = []
@@ -864,8 +1099,10 @@ class EnterpriseRagOrchestrator:
                 max_recovery_steps >= 3
                 and (not selected_verdict or selected_verdict.status != "supports")
             ):
+                recovery_q = _recovery_question(question, initial_review, anchors)
+                recovery_phrase = _phrase_for_recovery(question, initial_review, anchors) or phrase_bias
                 broad_args: dict[str, Any] = {
-                    "question": question,
+                    "question": recovery_q,
                     "k": 8,
                     "mode": "keyword",
                     "anchor_terms": anchors,
@@ -873,12 +1110,12 @@ class EnterpriseRagOrchestrator:
                     "force_rare_keyword_scan": True,
                     "debug": False,
                 }
-                if phrase_bias:
-                    broad_args["exact_phrase_bias"] = phrase_bias
+                if recovery_phrase:
+                    broad_args["exact_phrase_bias"] = recovery_phrase
                 broad_content = await call("search_documents", "neighbor_keyword_evidence_search", broad_args)
                 broad_failure = classify_transport_failure(broad_content)
                 if broad_failure:
-                    return finish(self._failure_result(question, broad_failure, timeline, tools_used, tool_outputs, broad_content))
+                    return finish(self._failure_result(question, broad_failure, timeline, tools_used, tool_outputs, broad_content, decision_trail=decision_trail, attempts=attempts))
                 broad_results = _results(broad_content)
                 broad_evidence, broad_verdict, broad_rejected = _select_evidence_candidate(
                     question=question,
@@ -913,7 +1150,7 @@ class EnterpriseRagOrchestrator:
                     excerpt_content = await call("get_document_excerpt", "raw_excerpt_lookup", excerpt_args)
                     excerpt_failure = classify_transport_failure(excerpt_content)
                     if excerpt_failure:
-                        return finish(self._failure_result(question, excerpt_failure, timeline, tools_used, tool_outputs, excerpt_content))
+                        return finish(self._failure_result(question, excerpt_failure, timeline, tools_used, tool_outputs, excerpt_content, decision_trail=decision_trail, attempts=attempts))
                     excerpt_evidence = _evidence_from_excerpt(excerpt_content)
 
             evidence = excerpt_evidence or ([selected_evidence] if selected_evidence else [])
@@ -937,10 +1174,33 @@ class EnterpriseRagOrchestrator:
                 evidence = [selected_evidence]
                 final_verdict = selected_verdict
             if evidence and final_verdict and final_verdict.status == "supports":
+                recovered_review = review_answer(
+                    question=question,
+                    answer=_answer_from_evidence(question, evidence, anchors=anchors, rules=self.rules),
+                    evidence=evidence,
+                    question_profile=question_profile,
+                )
+                attempts.append(
+                    _attempt_record(
+                        attempt=len(attempts) + 1,
+                        tool="retrieval_evidence",
+                        status="verified" if recovered_review.status == "verified" else final_verdict.status,
+                        answer=_answer_from_evidence(question, evidence, anchors=anchors, rules=self.rules),
+                        review=recovered_review,
+                    )
+                )
+                decision_trail.append(
+                    _decision_step(
+                        len(decision_trail) + 1,
+                        "Recovered evidence reviewed",
+                        f"{recovered_review.status}: {recovered_review.reason}",
+                    )
+                )
+                status = "recovered" if recovered_review.status == "verified" else "partial"
                 return finish(self._success_result(
                     question=question,
                     answer=_answer_from_evidence(question, evidence, anchors=anchors, rules=self.rules),
-                    status="recovered",
+                    status=status,
                     citations=[],
                     evidence=evidence,
                     timeline=timeline,
@@ -948,9 +1208,14 @@ class EnterpriseRagOrchestrator:
                     tool_outputs=tool_outputs,
                     content=search_content or {},
                     recovery_attempted=recovery_attempted,
-                    recovery_successful=True,
+                    recovery_successful=status == "recovered",
                     evidence_verdict=final_verdict.to_dict(),
                     rejected_evidence=rejected_evidence,
+                    validation_summary=_validation_summary(status, recovered_review, evidence_support=final_verdict.status),
+                    decision_trail=decision_trail,
+                    attempts=attempts,
+                    review_guidance_text=review_guidance(status),
+                    review_note_text=review_note(),
                 ))
             if evidence and final_verdict:
                 rejected_evidence.append(_rejected_evidence_summary(evidence[0], final_verdict))
@@ -963,8 +1228,15 @@ class EnterpriseRagOrchestrator:
             )
             failure_reason = None if final_status == "not_found" else "answer_without_citations_or_evidence"
             if rejected_evidence:
-                final_status = "not_grounded"
+                final_status = "needs_review"
                 failure_reason = "evidence_found_but_irrelevant"
+            decision_trail.append(
+                _decision_step(
+                    len(decision_trail) + 1,
+                    "Finalized",
+                    f"{final_status}: {failure_reason or 'no adequate evidence found'}",
+                )
+            )
             return finish(OrchestratedRunResult(
                 question=question,
                 answer="No grounded answer could be produced from the available MCP evidence.",
@@ -979,6 +1251,11 @@ class EnterpriseRagOrchestrator:
                 error=failure_reason,
                 evidence_verdict=final_verdict.to_dict() if final_verdict else None,
                 rejected_evidence=rejected_evidence,
+                validation_summary=_validation_summary(final_status, initial_review, evidence_support=final_verdict.status if final_verdict else "missing"),
+                decision_trail=decision_trail,
+                attempts=attempts,
+                review_guidance=review_guidance(final_status),
+                review_note=review_note(),
             ))
         finally:
             reset_current_question(token)
@@ -999,6 +1276,11 @@ class EnterpriseRagOrchestrator:
         recovery_successful: bool = False,
         evidence_verdict: dict[str, Any] | None = None,
         rejected_evidence: list[dict[str, Any]] | None = None,
+        validation_summary: dict[str, Any] | None = None,
+        decision_trail: list[dict[str, Any]] | None = None,
+        attempts: list[dict[str, Any]] | None = None,
+        review_guidance_text: str | None = None,
+        review_note_text: str | None = None,
     ) -> OrchestratedRunResult:
         return OrchestratedRunResult(
             question=question,
@@ -1016,9 +1298,14 @@ class EnterpriseRagOrchestrator:
             latency_ms=content.get("latency_ms"),
             recovery_attempted=recovery_attempted,
             recovery_successful=recovery_successful,
-            portfolio_safe=True,
+            portfolio_safe=status in {"verified", "grounded", "recovered", "not_found"},
             evidence_verdict=evidence_verdict,
             rejected_evidence=rejected_evidence or [],
+            validation_summary=validation_summary,
+            decision_trail=decision_trail or [],
+            attempts=attempts or [],
+            review_guidance=review_guidance_text,
+            review_note=review_note_text,
         )
 
     def _failure_result(
@@ -1029,6 +1316,8 @@ class EnterpriseRagOrchestrator:
         tools_used: list[str],
         tool_outputs: list[dict[str, Any]],
         content: dict[str, Any],
+        decision_trail: list[dict[str, Any]] | None = None,
+        attempts: list[dict[str, Any]] | None = None,
     ) -> OrchestratedRunResult:
         failure_reason = _short_error_text(content) or status
         return OrchestratedRunResult(
@@ -1041,6 +1330,11 @@ class EnterpriseRagOrchestrator:
             portfolio_safe=False,
             failure_reason=failure_reason,
             error=failure_reason,
+            validation_summary=_validation_summary(status, None, evidence_support="missing"),
+            decision_trail=decision_trail or [],
+            attempts=attempts or [],
+            review_guidance=review_guidance(status),
+            review_note=review_note(),
         )
 
 

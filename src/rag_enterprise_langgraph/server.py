@@ -19,6 +19,8 @@ class AskRequest(BaseModel):
 class AskOrchestratedRequest(BaseModel):
     question: str
     max_recovery_steps: int = 3
+    max_attempts: int | None = None
+    validation_mode: str = "balanced"
     expected_answer: str | None = None
     rules_path: str | None = None
     journal_path: str | None = None
@@ -44,6 +46,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         question: list[str] | None = Query(default=None),
         include_debug: bool = False,
         max_recovery_steps: int = 3,
+        max_attempts: int | None = None,
+        validation_mode: str = "balanced",
+        show_decision_trail: bool = True,
+        hide_review_note: bool = False,
         rules_path: str | None = None,
         journal_path: str | None = None,
     ):
@@ -58,6 +64,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             questions=questions,
             include_debug=include_debug,
             max_recovery_steps=max_recovery_steps,
+            max_attempts=max_attempts,
+            validation_mode=validation_mode,
+            show_decision_trail=show_decision_trail,
+            show_review_note=not hide_review_note,
             rules_path=rules_path,
             journal_path=journal_path,
         )
@@ -72,6 +82,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         result = await runtime_orchestrator.run(
             request.question,
             max_recovery_steps=request.max_recovery_steps,
+            max_attempts=request.max_attempts,
+            validation_mode=request.validation_mode,
             expected_answer=request.expected_answer,
             journal_path=request.journal_path,
         )

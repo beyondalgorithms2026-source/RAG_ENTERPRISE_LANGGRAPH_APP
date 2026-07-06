@@ -22,7 +22,8 @@ Minimal LangGraph application that uses the existing
 - `src/rag_enterprise_langgraph/mcp_client.py` MCP stdio connection setup
 - `src/rag_enterprise_langgraph/graph.py` LangGraph wiring
 - `src/rag_enterprise_langgraph/agent.py` thin orchestration layer
-- `src/rag_enterprise_langgraph/orchestrator.py` strict MCP recovery engine
+- `src/rag_enterprise_langgraph/orchestrator.py` strict MCP recovery and answer-quality engine
+- `src/rag_enterprise_langgraph/answer_quality.py` question classification, answer-shape checks, and citation support review
 - `src/rag_enterprise_langgraph/evidence.py` evidence validation and editable rules
 - `src/rag_enterprise_langgraph/eval_runner.py` Excel QA eval harness
 - `src/rag_enterprise_langgraph/journal.py` safe JSONL decision journal
@@ -95,7 +96,9 @@ curl -X POST http://127.0.0.1:8080/ask \
 
 Run a screenshot-friendly proof flow. This path uses the shared orchestrator:
 `ask_grounded` first, then bounded recovery with `search_documents` and
-`get_document_excerpt` when the first pass is weak, not found, or uncited.
+`get_document_excerpt` when the first pass is weak, not found, incomplete,
+uncited, or unsupported by its citations. Citation presence alone is not
+treated as proof.
 
 ```bash
 PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.cli --demo-proof
@@ -121,7 +124,10 @@ Useful proof flags:
 ```bash
 PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.cli --demo-proof \
   --question "What Percentage of Rent to Sales did Sam Walton's first Ben Franklin cost?" \
-  --max-recovery-steps 3
+  --max-recovery-steps 3 \
+  --max-attempts 3 \
+  --validation-mode balanced \
+  --show-decision-trail
 ```
 
 Use editable evidence rules and a safe run journal:
@@ -175,9 +181,18 @@ caption ideas.
 - The agent prompt tells the model to prefer `ask_grounded` first for direct
   question answering, then use retrieval-only recovery when first-pass
   synthesis is weak, not found, uncited, or affected by chunk boundaries.
-- The orchestrator validates recovered evidence before marking a run
-  `recovered`; source-level matches or irrelevant snippets are returned as
-  `not_grounded` rather than a misleading success.
+- The orchestrator validates both first-pass cited answers and recovered
+  evidence. A cited answer becomes `verified` only when its answer shape and
+  cited snippets support the requested fields or list items.
+- Source-level matches or irrelevant snippets are returned as `needs_review`
+  or `not_grounded` rather than a misleading success.
+- Demo/API proof output includes a safe decision trail by default. It shows
+  classification, validation, recovery, and final status without raw
+  `debug_info`, prompts, tracebacks, tokens, local paths, or secrets.
+- Commercial-facing outputs include a review note. `verified` and `recovered`
+  are suitable for informational use, while high-impact business, legal,
+  financial, medical, HR, security, or compliance decisions still require
+  human review.
 - `search_documents` and `get_document_excerpt` are also exposed for follow-up
   exploration and narrow excerpt lookup.
 - Demo proof output shows a safe execution timeline instead of raw MCP
@@ -195,21 +210,46 @@ caption ideas.
 - Test proof: `.venv312/bin/pytest` showing all tests passed.
 - MCP discovery proof: CLI output showing `tools/list` with `ask_grounded`,
   `search_documents`, and `get_document_excerpt`.
-- CLI proof: final answer plus execution timeline showing
+- Verified proof: final answer with `Status: verified`, validation summary,
+  and decision trail showing early stop when first-pass citations are enough.
+- Recovery proof: final answer plus execution timeline showing
   `ask_grounded -> search_documents -> get_document_excerpt` when recovery is
   needed.
+- Needs-review proof: a cited or retrieved result rejected because evidence
+  does not support the requested value/list item.
 - Backend proof: backend terminal showing `POST /ask HTTP/1.1 200 OK`.
 - API proof: `curl http://127.0.0.1:8080/demo-proof` or
   `/ask-orchestrated` returning strict grounding status.
-- Code proof: `mcp_client.py` showing `MultiServerMCPClient` stdio setup and
-  `graph.py` showing the LangGraph agent prompt.
+- Code proof: `graph.py` for LangGraph orchestration prompt,
+  `orchestrator.py` for conditional routing and attempt comparison, and
+  `answer_quality.py` for custom validation logic.
+
+## LangGraph vs Custom Logic
+
+LangGraph provides the reusable orchestration frame: stateful execution,
+conditional routing, bounded recovery loops, tool invocation, future
+checkpointing, and human-in-the-loop extension points. In this app it keeps
+the MCP/RAG backend behind a controlled workflow instead of letting every
+client invent its own retry behavior.
+
+The custom code implements the answer-quality policy: question-type
+classification, expected answer-shape checks, evidence support validation,
+attempt comparison, safe decision trails, Markdown/JSON proof rendering, and
+eval reporting. This split is intentional. The same graph pattern can sit in
+front of SQL, Jira, CRM, ticketing, policy, or document-search tools, while
+the validator can be adapted to each backend's evidence format.
 
 ## Architecture proof diagram
 
 ```mermaid
 flowchart LR
-    U["User / API Client"] --> LG["LangGraph Agent<br/>Tool orchestration only"]
-    LG -->|stdio MCP| MCP["RAG Enterprise MCP Server<br/>ask_grounded<br/>search_documents<br/>get_document_excerpt"]
+    U["User / API Client"] --> Q["Classify Question Type<br/>custom answer-quality code"]
+    Q --> LG["LangGraph Workflow<br/>state, routing, retries"]
+    LG --> A["ask_grounded<br/>first-pass backend answer"]
+    A --> V["Validate Answer Shape<br/>+ Citation Support"]
+    V -->|complete| F["Verified Answer<br/>decision trail + review note"]
+    V -->|weak| P["Recovery Planner<br/>targeted MCP calls"]
+    P -->|stdio MCP| MCP["RAG Enterprise MCP Server<br/>search_documents<br/>get_document_excerpt"]
     MCP -->|HTTP + auth cookie/token| BE["Enterprise RAG Backend<br/>FastAPI"]
     BE --> AUTH["Auth + ACL Layer<br/>dev/OIDC auth<br/>SQL-level access trimming"]
     BE --> RET["Retrieval Layer<br/>hybrid/vector/keyword/graph modes"]
@@ -217,7 +257,10 @@ flowchart LR
     RET --> DB["Postgres + pgvector<br/>documents, chunks, ACLs"]
     LLM --> BE
     AUTH --> RET
-    BE -->|grounded answer + citations| MCP
+    BE -->|evidence + citations| MCP
+    MCP --> P
+    P --> V
+    V -->|insufficient| H["Needs Review / Refusal"]
     MCP -->|structured tool output| LG
     LG -->|final answer + visible tool output| U
 

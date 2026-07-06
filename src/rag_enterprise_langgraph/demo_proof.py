@@ -199,6 +199,10 @@ async def build_demo_proof(
     questions: Sequence[str] | None = None,
     include_debug: bool = False,
     max_recovery_steps: int = 3,
+    max_attempts: int | None = None,
+    validation_mode: str = "balanced",
+    show_decision_trail: bool = True,
+    show_review_note: bool = True,
     rules_path: str | Path | None = None,
     journal_path: str | Path | None = None,
 ) -> dict[str, Any]:
@@ -232,6 +236,8 @@ async def build_demo_proof(
                 await runtime_orchestrator.run(
                     question,
                     max_recovery_steps=max_recovery_steps,
+                    max_attempts=max_attempts,
+                    validation_mode=validation_mode,
                     journal_path=str(journal_path) if journal_path else None,
                 )
             ).to_dict()
@@ -240,6 +246,11 @@ async def build_demo_proof(
             run = summarize_result(result)
         if not include_debug:
             run.pop("tool_outputs", None)
+        if not show_decision_trail:
+            run.pop("decision_trail", None)
+        if not show_review_note:
+            run.pop("review_note", None)
+            run.pop("review_guidance", None)
         runs.append(redact_for_sharing(run, include_debug=include_debug))
 
     errors = [run["error"] for run in runs if run.get("error")]
@@ -261,6 +272,9 @@ async def build_demo_proof(
         "security_boundary_summary": list(SECURITY_BOUNDARY_SUMMARY),
         "errors": errors,
         "include_debug": include_debug,
+        "validation_mode": validation_mode,
+        "show_decision_trail": show_decision_trail,
+        "show_review_note": show_review_note,
     }
 
 
@@ -321,6 +335,19 @@ def render_text_report(proof: dict[str, Any]) -> str:
                 f"   Evidence verdict: {verdict.get('status')} | "
                 f"{verdict.get('reason')} | score={verdict.get('score')}"
             )
+        summary = run.get("validation_summary") or {}
+        if summary:
+            lines.append(
+                f"   Validation: {summary.get('evidence_support', 'unknown')} | "
+                f"{summary.get('reason', '-')}"
+            )
+        decision_trail = run.get("decision_trail") or []
+        if decision_trail:
+            lines.append("   Decision Trail:")
+            for step in decision_trail:
+                lines.append(f"   - {step.get('step')}. {step.get('label')}: {step.get('summary')}")
+        if run.get("review_guidance"):
+            lines.append(f"   Review guidance: {run.get('review_guidance')}")
         if run.get("error"):
             lines.append(f"   Error: {run.get('error')}")
         lines.append(f"   Answer: {_truncate(run.get('answer'), 420) or '[no answer]'}")
@@ -341,6 +368,7 @@ def render_markdown_report(proof: dict[str, Any]) -> str:
     ]
     summary_fields = (
         ("Status", proof.get("status")),
+        ("Validation mode", proof.get("validation_mode")),
         ("App name", diagnostics.get("app_name")),
         ("Model provider", diagnostics.get("model_provider")),
         ("Model name", diagnostics.get("model_name")),
@@ -414,6 +442,24 @@ def render_markdown_report(proof: dict[str, Any]) -> str:
                     f"{_table_value(verdict.get('reason'))} (score={_table_value(verdict.get('score'))})",
                 ]
             )
+        summary = run.get("validation_summary") or {}
+        if summary:
+            lines.extend(
+                [
+                    "",
+                    f"**Validation summary:** `{_table_value(summary.get('evidence_support'))}` - "
+                    f"{_table_value(summary.get('reason'))}",
+                ]
+            )
+        decision_trail = run.get("decision_trail") or []
+        if decision_trail:
+            lines.extend(["", "**Decision Trail**", ""])
+            for step in decision_trail:
+                lines.append(f"- {step.get('step')}. **{_table_value(step.get('label'))}:** {_table_value(step.get('summary'))}")
+        if run.get("review_guidance"):
+            lines.extend(["", f"**Review guidance:** {run.get('review_guidance')}"])
+        if run.get("review_note"):
+            lines.extend(["", f"**Review note:** {run.get('review_note')}"])
         lines.extend(
             [
                 "",

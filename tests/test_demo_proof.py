@@ -87,7 +87,15 @@ class _FakeOrchestrator:
     async def check_configuration(self):
         return await _FakeAgent().check_configuration()
 
-    async def run(self, question: str, *, max_recovery_steps: int = 3, journal_path: str | None = None):  # noqa: ARG002
+    async def run(  # noqa: ARG002
+        self,
+        question: str,
+        *,
+        max_recovery_steps: int = 3,
+        max_attempts: int | None = None,
+        validation_mode: str = "balanced",
+        journal_path: str | None = None,
+    ):
         return OrchestratedRunResult(
             question=question,
             answer="Recovered answer from excerpt evidence.",
@@ -128,6 +136,28 @@ class _FakeOrchestrator:
             recovery_attempted=True,
             recovery_successful=True,
             portfolio_safe=True,
+            validation_summary={
+                "final_status": "recovered",
+                "evidence_support": "complete",
+                "reason": "answer_shape_and_citations_supported",
+                "review_recommended": False,
+            },
+            decision_trail=[
+                {
+                    "step": 1,
+                    "label": "Question classified",
+                    "summary": "open_ended_analysis",
+                    "safe": True,
+                },
+                {
+                    "step": 2,
+                    "label": "Final status",
+                    "summary": "recovered",
+                    "safe": True,
+                },
+            ],
+            review_guidance="Evidence appears sufficient for informational use. Human review is still recommended for high-impact decisions.",
+            review_note="Generated from retrieved enterprise sources. Review cited evidence before making business, legal, financial, medical, HR, security, or compliance decisions.",
         )
 
 
@@ -209,6 +239,8 @@ def test_demo_proof_success_and_markdown_report():
     assert "Enterprise LangGraph + MCP RAG Demo Proof" in markdown
     assert "Security / Governance Boundary" in markdown
     assert "Execution Timeline" in markdown
+    assert "Decision Trail" in markdown
+    assert "Review guidance" in markdown
     assert "not_found_with_candidate_evidence" in markdown
     assert "walmart.txt" in markdown
 
@@ -223,7 +255,19 @@ def test_demo_proof_handles_backend_or_mcp_errors():
 
 
 def test_demo_proof_endpoint_returns_expected_shape(monkeypatch):
-    async def fake_build_demo_proof(*, orchestrator, questions, include_debug=False, max_recovery_steps=3, rules_path=None, journal_path=None):  # noqa: ANN001, ARG001
+    async def fake_build_demo_proof(  # noqa: ANN001, ARG001
+        *,
+        orchestrator,
+        questions,
+        include_debug=False,
+        max_recovery_steps=3,
+        max_attempts=None,
+        validation_mode="balanced",
+        show_decision_trail=True,
+        show_review_note=True,
+        rules_path=None,
+        journal_path=None,
+    ):
         return {
             "status": "ok",
             "overall_status": "ok",

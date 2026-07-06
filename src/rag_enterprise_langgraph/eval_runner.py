@@ -95,9 +95,9 @@ def read_eval_xlsx(path: str | Path) -> list[EvalCase]:
 
 
 def _eval_status(run: dict[str, Any], expected_eval: dict[str, Any]) -> str:
-    if run.get("grounding_status") in {"grounded", "recovered"} and expected_eval.get("status") == "pass":
+    if run.get("grounding_status") in {"verified", "grounded", "recovered"} and expected_eval.get("status") == "pass":
         return "pass"
-    if run.get("grounding_status") in {"partial"}:
+    if run.get("grounding_status") in {"partial", "needs_review"}:
         return "manual_review"
     return "fail"
 
