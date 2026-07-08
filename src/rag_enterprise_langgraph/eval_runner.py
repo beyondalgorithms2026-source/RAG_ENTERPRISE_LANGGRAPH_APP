@@ -143,6 +143,8 @@ async def run_eval(
                 "error": run.get("error"),
                 "file_name": case.file_name,
                 "post_url": case.post_url,
+                "latency_ms": run.get("latency_ms"),
+                "run_id": run.get("run_id"),
             }
         )
     passed = sum(1 for row in rows if row["eval_status"] == "pass")

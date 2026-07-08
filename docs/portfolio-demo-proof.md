@@ -251,6 +251,51 @@ for informational use, with human review still recommended for high-impact
 decisions. For `partial`, `needs_review`, `not_grounded`, and `not_found`, the
 output says not to use the answer for decision-making without human review.
 
+## Governance Layer: Approval Gate, Audit Log, Dashboard
+
+The LangGraph layer now adds its own inspectable governance on top of the
+backend's:
+
+- Human approval gate: high-risk answers (HR, legal, finance, medical,
+  security, compliance/policy, or any `needs_review`/`partial`/
+  `review_recommended` result) stop at `pending_approval`. The answer is
+  withheld until a named reviewer approves or rejects; decisions persist in
+  `runs/approvals.jsonl` and appear in the audit log.
+- Full audit log: every orchestrated run gets a stable `run_id` and sanitized,
+  hash-chained events in `runs/audit-log.jsonl` (tamper-evident, survives
+  restarts).
+- Browser dashboard at `http://127.0.0.1:8080/app` with approval queue, audit
+  timeline, eval dashboard, red-team table, and a before/after demo page.
+
+Commands:
+
+```bash
+# Start API + dashboard
+PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.server
+
+# Gated high-risk run -> pending_approval
+PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.cli \
+  "What is the employee termination policy?" --require-approval
+
+# Review queue, approve, inspect the audit trail
+PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.cli --list-approvals
+PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.cli \
+  --approve APPROVAL_ID --reviewer "Alice" --comment "Verified against source"
+PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.cli --export-audit RUN_ID
+
+# Eval dashboard data and red-team findings
+PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.cli \
+  --eval-xlsx /Users/Work/Desktop/acquired-qa-evaluation.xlsx --save-eval-run
+PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.cli --red-team \
+  --red-team-output red-team-report.md --red-team-json red-team-results.json
+```
+
+The eval dashboard's cost/query is a clearly labeled estimate computed from
+configurable token prices — never presented as exact billing. The red-team
+runner uses deterministic offline checks against the real validation code
+paths and labels backend-dependent scenarios `requires_backend` instead of
+fabricating passes.
+
 ## Screenshot Checklist
 
 1. Terminal showing `rag-enterprise-agent --check-config` with MCP tool names.
@@ -265,6 +310,13 @@ output says not to use the answer for decision-making without human review.
 10. Code screenshot of `src/rag_enterprise_langgraph/answer_quality.py` showing question classification and citation-support review.
 11. API proof screenshot of `curl http://127.0.0.1:8080/demo-proof`.
 12. Optional proof of strict refusal: a run marked `backend_auth_failed`, `backend_timeout`, `needs_review`, or `not_grounded` instead of a misleading success.
+13. `/app/approvals` showing a high-risk run held at `pending_approval` with reviewer/comment controls.
+14. `/app/audit` showing the run list and hash-chained event timeline for one `run_id`.
+15. `/app/evals` showing accuracy, faithfulness/grounding, latency, and estimated cost/query tiles.
+16. `/app/red-team` showing the findings table with honest `requires_backend` labels.
+17. `/app/demo` showing the before/after comparison used for the 90-second screen recording.
+
+See `docs/upwork-proof-artifacts.md` for the exact portfolio screenshot names.
 
 ## Upwork Caption Ideas
 
@@ -312,8 +364,11 @@ flowchart LR
 
 The demo proof feature is not a second RAG implementation. It is a proof layer
 for the existing integration. Document ingestion, retrieval, ACL/security
-trimming, citations, audit trails, semantic cache policy, approval workflows,
-and governance remain implemented in the enterprise RAG backend.
+trimming, citations, and semantic cache policy remain implemented in the
+enterprise RAG backend. The LangGraph layer adds its own orchestration-level
+governance — the human approval gate, the hash-chained audit log, and the
+dashboards — for the workflow it controls; it does not replace or bypass the
+backend's authorization, retrieval governance, or backend-side audit.
 
 Clients that call this LangGraph CLI/API get the orchestration and strict proof
 logic. Clients that call `rag-enterprise-mcp` directly still depend on their own

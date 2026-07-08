@@ -19,7 +19,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=9.0,<10"]
+dev = ["pytest>=9.0,<10", "httpx>=0.28,<1"]
 
 [project.scripts]
 rag-enterprise-agent = "rag_enterprise_langgraph.cli:main"
@@ -33,3 +33,6 @@ package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+rag_enterprise_langgraph = ["static/*"]

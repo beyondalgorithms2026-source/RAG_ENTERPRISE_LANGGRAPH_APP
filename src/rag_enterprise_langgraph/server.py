@@ -7,9 +7,14 @@ from fastapi import FastAPI, Query
 from pydantic import BaseModel
 
 from rag_enterprise_langgraph.agent import RagEnterpriseAgent
+from rag_enterprise_langgraph.approval import ApprovalStore, build_approval_router
+from rag_enterprise_langgraph.audit import AuditLog, build_audit_router
 from rag_enterprise_langgraph.config import Settings
 from rag_enterprise_langgraph.demo_proof import build_demo_proof, resolve_demo_questions
-from rag_enterprise_langgraph.orchestrator import EnterpriseRagOrchestrator
+from rag_enterprise_langgraph.eval_store import EvalStore, build_eval_router
+from rag_enterprise_langgraph.orchestrator import EnterpriseRagOrchestrator, run_before_after
+from rag_enterprise_langgraph.red_team import build_red_team_router
+from rag_enterprise_langgraph.ui import build_ui_router
 
 
 class AskRequest(BaseModel):
@@ -24,12 +29,27 @@ class AskOrchestratedRequest(BaseModel):
     expected_answer: str | None = None
     rules_path: str | None = None
     journal_path: str | None = None
+    require_approval: bool = False
+    approval_mode: str = "off"
+
+
+class BeforeAfterRequest(BaseModel):
+    question: str
+    max_recovery_steps: int = 3
+    validation_mode: str = "balanced"
+    require_approval: bool = False
+    approval_mode: str = "off"
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     runtime_settings = settings or Settings()
     agent = RagEnterpriseAgent(runtime_settings)
-    orchestrator = EnterpriseRagOrchestrator(runtime_settings)
+    audit_log = AuditLog(runtime_settings.audit_log_path)
+    approval_store = ApprovalStore(runtime_settings.approvals_path)
+    eval_store = EvalStore(runtime_settings.eval_runs_dir)
+    orchestrator = EnterpriseRagOrchestrator(
+        runtime_settings, audit_log=audit_log, approval_store=approval_store
+    )
     app = FastAPI(title=runtime_settings.app_name)
 
     @app.get("/healthz")
@@ -55,7 +75,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     ):
         questions = resolve_demo_questions(questions=question)
         runtime_orchestrator = (
-            EnterpriseRagOrchestrator(runtime_settings, rules_path=rules_path, journal_path=journal_path)
+            EnterpriseRagOrchestrator(
+                runtime_settings,
+                rules_path=rules_path,
+                journal_path=journal_path,
+                audit_log=audit_log,
+                approval_store=approval_store,
+            )
             if rules_path or journal_path
             else orchestrator
         )
@@ -75,7 +101,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.post("/ask-orchestrated")
     async def ask_orchestrated(request: AskOrchestratedRequest):
         runtime_orchestrator = (
-            EnterpriseRagOrchestrator(runtime_settings, rules_path=request.rules_path, journal_path=request.journal_path)
+            EnterpriseRagOrchestrator(
+                runtime_settings,
+                rules_path=request.rules_path,
+                journal_path=request.journal_path,
+                audit_log=audit_log,
+                approval_store=approval_store,
+            )
             if request.rules_path or request.journal_path
             else orchestrator
         )
@@ -86,8 +118,32 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             validation_mode=request.validation_mode,
             expected_answer=request.expected_answer,
             journal_path=request.journal_path,
+            require_approval=request.require_approval,
+            approval_mode=request.approval_mode,
         )
         return result.to_dict()
+
+    @app.post("/demo/before-after")
+    async def demo_before_after(request: BeforeAfterRequest):
+        return await run_before_after(
+            orchestrator,
+            request.question,
+            max_recovery_steps=request.max_recovery_steps,
+            validation_mode=request.validation_mode,
+            require_approval=request.require_approval,
+            approval_mode=request.approval_mode,
+        )
+
+    app.include_router(build_approval_router(approval_store, audit_log))
+    app.include_router(build_audit_router(audit_log))
+    app.include_router(build_eval_router(eval_store, runtime_settings))
+    app.include_router(
+        build_red_team_router(
+            findings_path=runtime_settings.red_team_findings_path,
+            latest_path=runtime_settings.red_team_latest_path,
+        )
+    )
+    app.include_router(build_ui_router())
 
     return app
 

@@ -49,6 +49,16 @@ class Settings(BaseSettings):
     api_host: str = "127.0.0.1"
     api_port: int = 8080
 
+    audit_log_path: str = "runs/audit-log.jsonl"
+    approvals_path: str = "runs/approvals.jsonl"
+    eval_runs_dir: str = "runs/eval-runs"
+    red_team_findings_path: str = "config/red-team-findings.json"
+    red_team_latest_path: str = "runs/red-team/latest.json"
+
+    input_token_cost_per_1m: float = 3.0
+    output_token_cost_per_1m: float = 15.0
+    default_estimated_tokens_per_query: int = 2500
+
     def _dotenv_values(self) -> dict[str, str]:
         values = dotenv_values(".env")
         return {key: str(value).strip() for key, value in values.items() if value is not None}

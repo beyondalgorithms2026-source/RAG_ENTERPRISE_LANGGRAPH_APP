@@ -27,10 +27,16 @@ Minimal LangGraph application that uses the existing
 - `src/rag_enterprise_langgraph/evidence.py` evidence validation and editable rules
 - `src/rag_enterprise_langgraph/eval_runner.py` Excel QA eval harness
 - `src/rag_enterprise_langgraph/journal.py` safe JSONL decision journal
+- `src/rag_enterprise_langgraph/approval.py` human approval gate and persisted approval store
+- `src/rag_enterprise_langgraph/audit.py` tamper-evident hash-chained audit log
+- `src/rag_enterprise_langgraph/eval_store.py` persisted eval run summaries and metrics
+- `src/rag_enterprise_langgraph/red_team.py` red-team scenario runner and report
+- `src/rag_enterprise_langgraph/ui.py` browser dashboard (approvals, audit, evals, red team, demo)
 - `src/rag_enterprise_langgraph/cli.py` local smoke-test entrypoint
-- `src/rag_enterprise_langgraph/server.py` tiny FastAPI wrapper
+- `src/rag_enterprise_langgraph/server.py` FastAPI API + dashboard
 - `config/orchestration-rules.json` user-editable rule extensions
-- `tests/` config, graph, orchestration, proof, eval, and journal tests
+- `config/red-team-findings.json` red-team scenario definitions
+- `tests/` config, graph, orchestration, proof, eval, journal, approval, audit, UI, and red-team tests
 
 ## Python version
 
@@ -176,6 +182,108 @@ curl -X POST http://127.0.0.1:8080/ask-orchestrated \
 See `docs/portfolio-demo-proof.md` for screenshot guidance and Upwork-ready
 caption ideas.
 
+## Governance: human approval gate, audit log, and dashboard
+
+This app can be truthfully described as a LangGraph/MCP reasoning workflow
+with human approval and a full audit log — automation you can inspect.
+
+### Start the API + browser dashboard
+
+```bash
+PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.server
+```
+
+Then open <http://127.0.0.1:8080/app>. Pages:
+
+- `/app` ask panel with "Require approval" toggle, workflow timeline, decision trail
+- `/app/approvals` approval queue with approve/reject, reviewer name, and comment
+- `/app/audit` run list and hash-chained event timeline per `run_id`
+- `/app/evals` accuracy, faithfulness/grounding, latency, estimated cost/query
+- `/app/red-team` red-team findings table
+- `/app/demo` before/after automation comparison for screen recordings
+
+### Human approval gate
+
+High-risk answers (HR, legal, finance, medical, security, compliance/policy,
+plus any `needs_review`/`partial`/`review_recommended` result) can be held at
+`pending_approval`. The answer is withheld until a named reviewer approves or
+rejects it; decisions are persisted in `runs/approvals.jsonl` and written to
+the audit log.
+
+```bash
+# Run a high-risk question through the gated workflow
+PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.cli \
+  "What is the employee termination policy?" --require-approval
+
+# Review the queue, then approve or reject
+PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.cli --list-approvals
+PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.cli \
+  --approve APPROVAL_ID --reviewer "Alice" --comment "Verified against source"
+PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.cli \
+  --reject APPROVAL_ID --reviewer "Alice" --comment "Wrong source cited"
+```
+
+Approval modes: `--approval-risk-mode off|high-risk-only|always`.
+API: `POST /approval/request`, `GET /approval/pending`, `GET /approval/{id}`,
+`POST /approval/{id}/approve`, `POST /approval/{id}/reject`.
+
+### Full audit log
+
+Every orchestrated run has a stable `run_id` and emits sanitized,
+hash-chained events (`run_started`, `question_classified`, `tool_call_*`,
+`answer_reviewed`, `evidence_validated`, `recovery_*`, `approval_*`,
+`run_completed`) to `runs/audit-log.jsonl`. The chain survives restarts and
+tampering is detectable.
+
+```bash
+PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.cli --show-audit RUN_ID
+PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.cli --export-audit RUN_ID
+```
+
+API: `GET /audit/runs`, `GET /audit/runs/{run_id}`, `GET /audit/events`,
+`GET /audit/export/{run_id}`.
+
+### Eval dashboard
+
+Persist eval runs and view accuracy, faithfulness/grounding rate, average
+latency, and estimated cost/query (a labeled estimate from configurable token
+costs — never presented as exact billing):
+
+```bash
+PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.cli \
+  --eval-xlsx /Users/Work/Desktop/acquired-qa-evaluation.xlsx --save-eval-run
+PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.cli --eval-runs
+PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.cli --show-eval-run EVAL_RUN_ID
+```
+
+Cost settings: `RAG_AGENT_INPUT_TOKEN_COST_PER_1M`,
+`RAG_AGENT_OUTPUT_TOKEN_COST_PER_1M`,
+`RAG_AGENT_DEFAULT_ESTIMATED_TOKENS_PER_QUERY`.
+API: `POST /eval/run`, `GET /eval/runs`, `GET /eval/runs/{id}`, `GET /eval/latest`.
+
+### Red-team findings
+
+Deterministic checks run the real validation code paths offline (prompt
+injection in retrieved text, missing/irrelevant citations, numeric mismatch,
+unsupported list items, timeout/auth failures, high-risk approval, rule
+override attempts). Backend-dependent scenarios are honestly labeled
+`requires_backend` — no fabricated security passes.
+
+```bash
+PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.cli --red-team \
+  --red-team-output red-team-report.md \
+  --red-team-json red-team-results.json
+```
+
+API: `GET /red-team/findings`, `POST /red-team/run`, `GET /red-team/latest`.
+
+### Before/after automation demo
+
+`/app/demo` (or `POST /demo/before-after`) runs the actual raw first-pass
+`ask_grounded` answer next to the governed orchestrated result. If the backend
+is unavailable it shows a clean error state — the "before" column is never an
+invented bad answer.
+
 ## Notes
 
 - The agent prompt tells the model to prefer `ask_grounded` first for direct
@@ -207,22 +315,28 @@ caption ideas.
 
 ## Proof screenshots
 
-- Test proof: `.venv312/bin/pytest` showing all tests passed.
-- MCP discovery proof: CLI output showing `tools/list` with `ask_grounded`,
-  `search_documents`, and `get_document_excerpt`.
-- Verified proof: final answer with `Status: verified`, validation summary,
-  and decision trail showing early stop when first-pass citations are enough.
-- Recovery proof: final answer plus execution timeline showing
-  `ask_grounded -> search_documents -> get_document_excerpt` when recovery is
-  needed.
-- Needs-review proof: a cited or retrieved result rejected because evidence
-  does not support the requested value/list item.
-- Backend proof: backend terminal showing `POST /ask HTTP/1.1 200 OK`.
-- API proof: `curl http://127.0.0.1:8080/demo-proof` or
-  `/ask-orchestrated` returning strict grounding status.
-- Code proof: `graph.py` for LangGraph orchestration prompt,
-  `orchestrator.py` for conditional routing and attempt comparison, and
-  `answer_quality.py` for custom validation logic.
+Exact portfolio screenshot names and where to capture each:
+
+1. `Automated Test Suite: 45 Passing Governance & RAG Orchestration Tests` —
+   `.venv312/bin/python -m pytest` (now 88 tests including governance).
+2. `MCP Tool Discovery: Grounded RAG Tools Exposed via Stdio` —
+   `--check-config` output listing `ask_grounded`, `search_documents`, `get_document_excerpt`.
+3. `LangGraph Recovery Flow: Evidence-Gated Answer Validation` —
+   `--demo-proof` execution timeline showing recovery steps.
+4. `Enterprise Security Boundary: No Direct DB Access from Agent Layer` —
+   the architecture diagram below rendered as PNG/SVG.
+5. `Orchestrator Implementation: Bounded Recovery and Evidence Validation` —
+   `orchestrator.py` open in an editor.
+6. `Human Approval Gate: High-Risk RAG Automation Awaiting Review` —
+   `/app/approvals` with a pending item, or CLI `--require-approval` output.
+7. `Full Audit Log: Inspectable LangGraph/MCP Run Timeline` —
+   `/app/audit` event timeline, or `--export-audit RUN_ID`.
+8. `Eval Dashboard: Accuracy, Faithfulness, Latency, and Estimated Cost` —
+   `/app/evals` after `--eval-xlsx ... --save-eval-run`.
+9. `Red-Team Findings: Failure Modes Tested Before Deployment` —
+   `/app/red-team` after running the checks, or `red-team-report.md`.
+10. `Before/After Automation: From Weak RAG Answer to Governed Workflow` —
+    `/app/demo` comparison view (also the 90-second screen recording page).
 
 ## LangGraph vs Custom Logic
 

@@ -205,6 +205,8 @@ async def build_demo_proof(
     show_review_note: bool = True,
     rules_path: str | Path | None = None,
     journal_path: str | Path | None = None,
+    require_approval: bool = False,
+    approval_mode: str = "off",
 ) -> dict[str, Any]:
     runtime_orchestrator = orchestrator or (
         None
@@ -229,6 +231,11 @@ async def build_demo_proof(
         check_error = str(exc)
 
     tool_names = [str(item) for item in diagnostics.get("mcp_tool_names", [])] if diagnostics else []
+    approval_kwargs: dict[str, Any] = (
+        {"require_approval": require_approval, "approval_mode": approval_mode}
+        if require_approval or approval_mode != "off"
+        else {}
+    )
     runs: list[dict[str, Any]] = []
     for question in resolved_questions:
         if runtime_orchestrator:
@@ -239,6 +246,7 @@ async def build_demo_proof(
                     max_attempts=max_attempts,
                     validation_mode=validation_mode,
                     journal_path=str(journal_path) if journal_path else None,
+                    **approval_kwargs,
                 )
             ).to_dict()
         else:
@@ -327,6 +335,11 @@ def render_text_report(proof: dict[str, Any]) -> str:
                     f"   - {step.get('step')}. {step.get('tool_name')} -> "
                     f"{step.get('purpose')} -> {step.get('result_status')}{reason}"
                 )
+        if run.get("run_id"):
+            lines.append(f"   Run ID: {run.get('run_id')} | Audit events: {run.get('audit_event_count', 0)}")
+        if run.get("approval_status") and run.get("approval_status") != "approval_not_required":
+            approval_id = f" | Approval ID: {run.get('approval_id')}" if run.get("approval_id") else ""
+            lines.append(f"   Approval: {run.get('approval_status')}{approval_id}")
         if run.get("latency_ms") is not None:
             lines.append(f"   Latency: {run.get('latency_ms')} ms")
         verdict = run.get("evidence_verdict") or {}

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import re
+import time
+import uuid
 from dataclasses import dataclass, field
 from typing import Any, Sequence
 
@@ -14,6 +16,14 @@ from rag_enterprise_langgraph.answer_quality import (
     review_guidance,
     review_note,
 )
+from rag_enterprise_langgraph.approval import (
+    APPROVAL_NOT_REQUIRED,
+    PENDING_APPROVAL,
+    ApprovalStore,
+    approval_required,
+    assess_risk,
+)
+from rag_enterprise_langgraph.audit import AuditLog
 from rag_enterprise_langgraph.config import Settings
 from rag_enterprise_langgraph.evidence import EvidenceVerdict, load_rules, matching_rule, validate_evidence
 from rag_enterprise_langgraph.journal import write_journal_entry
@@ -118,6 +128,12 @@ class OrchestratedRunResult:
     attempts: list[dict[str, Any]] = field(default_factory=list)
     review_guidance: str | None = None
     review_note: str | None = None
+    run_id: str | None = None
+    approval_status: str = APPROVAL_NOT_REQUIRED
+    approval_id: str | None = None
+    risk_reasons: list[str] = field(default_factory=list)
+    audit_event_count: int = 0
+    audit_log_path: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -148,6 +164,12 @@ class OrchestratedRunResult:
             "review_guidance": self.review_guidance,
             "review_note": self.review_note,
             "message_count": len(self.tool_outputs),
+            "run_id": self.run_id,
+            "approval_status": self.approval_status,
+            "approval_id": self.approval_id,
+            "risk_reasons": self.risk_reasons,
+            "audit_event_count": self.audit_event_count,
+            "audit_log_path": self.audit_log_path,
         }
 
 
@@ -711,11 +733,15 @@ class EnterpriseRagOrchestrator:
         quiet_mcp: bool = True,
         rules_path: str | None = None,
         journal_path: str | None = None,
+        audit_log: AuditLog | None = None,
+        approval_store: ApprovalStore | None = None,
     ):
         self.settings = settings or Settings()
         self.quiet_mcp = quiet_mcp
         self.rules = load_rules(rules_path)
         self.journal_path = journal_path
+        self.audit_log = audit_log
+        self.approval_store = approval_store
         self._tools: dict[str, BaseTool] | None = None
 
     async def _get_tools(self) -> dict[str, BaseTool]:
@@ -826,6 +852,11 @@ class EnterpriseRagOrchestrator:
         validation_mode: str = "balanced",
         expected_answer: str | None = None,
         journal_path: str | None = None,
+        require_approval: bool = False,
+        approval_mode: str = "off",
+        run_id: str | None = None,
+        audit_log: AuditLog | None = None,
+        approval_store: ApprovalStore | None = None,
     ) -> OrchestratedRunResult:
         token = set_current_question(question)
         tool_outputs: list[dict[str, Any]] = []
@@ -838,6 +869,46 @@ class EnterpriseRagOrchestrator:
         question_profile = classify_question(question)
         phrase_bias = exact_phrase_bias(question, anchors)
         max_recovery_steps = max_attempts if max_attempts is not None else max_recovery_steps
+        run_id = run_id or uuid.uuid4().hex
+        audit = audit_log or self.audit_log
+        effective_approval_mode = (
+            approval_mode
+            if approval_mode != "off"
+            else ("high-risk-only" if require_approval else "off")
+        )
+        audit_events_emitted = 0
+
+        def emit(event_type: str, summary: str, payload: dict[str, Any] | None = None) -> None:
+            nonlocal audit_events_emitted
+            if audit is None:
+                return
+            audit.append(
+                event_type=event_type,
+                run_id=run_id,
+                actor="orchestrator",
+                summary=summary,
+                payload=payload,
+            )
+            audit_events_emitted += 1
+
+        emit(
+            "run_started",
+            "Orchestrated run started",
+            {
+                "question_preview": question[:200],
+                "validation_mode": validation_mode,
+                "approval_mode": effective_approval_mode,
+                "max_recovery_steps": max_recovery_steps,
+            },
+        )
+        emit(
+            "question_classified",
+            ", ".join(question_profile.question_types) or "unclassified",
+            {
+                "question_types": question_profile.question_types,
+                "answer_risk": question_profile.answer_risk,
+            },
+        )
         decision_trail.append(
             _decision_step(
                 1,
@@ -866,6 +937,91 @@ class EnterpriseRagOrchestrator:
         )
 
         def finish(result: OrchestratedRunResult) -> OrchestratedRunResult:
+            result.run_id = run_id
+            for attempt in result.attempts:
+                emit(
+                    "answer_reviewed",
+                    f"Attempt {attempt.get('attempt')} via {attempt.get('tool')}: {attempt.get('status')}",
+                    {
+                        "attempt": attempt.get("attempt"),
+                        "tool": attempt.get("tool"),
+                        "status": attempt.get("status"),
+                        "reason": attempt.get("reason"),
+                    },
+                )
+            if result.evidence_verdict or result.validation_summary:
+                emit(
+                    "evidence_validated",
+                    f"Evidence support: {(result.validation_summary or {}).get('evidence_support', 'unknown')}",
+                    {
+                        "evidence_verdict": result.evidence_verdict,
+                        "validation_summary": result.validation_summary,
+                    },
+                )
+            if result.recovery_attempted:
+                emit(
+                    "recovery_planned",
+                    "Recovery planned after first-pass answer was not accepted",
+                    {"reason": next((item.get("reason") for item in result.attempts if item.get("reason")), None)},
+                )
+                emit(
+                    "recovery_attempted",
+                    f"Recovery attempted; successful={result.recovery_successful}",
+                    {"recovery_successful": result.recovery_successful},
+                )
+
+            risk_reasons = assess_risk(
+                question,
+                {
+                    "grounding_status": result.grounding_status,
+                    "validation_summary": result.validation_summary,
+                },
+            )
+            result.risk_reasons = risk_reasons
+            if approval_required(mode=effective_approval_mode, risk_reasons=risk_reasons):
+                reasons = risk_reasons or ["approval_mode_always"]
+                store = approval_store or self.approval_store or ApprovalStore()
+                record = store.create(
+                    question=question,
+                    answer=result.answer,
+                    run_id=run_id,
+                    evidence_status=(result.validation_summary or {}).get("evidence_support"),
+                    grounding_status=result.grounding_status,
+                    risk_reasons=reasons,
+                )
+                result.approval_status = PENDING_APPROVAL
+                result.approval_id = record["approval_id"]
+                result.risk_reasons = reasons
+                result.answer = (
+                    f"Answer withheld pending human approval (approval_id={record['approval_id']}). "
+                    "A reviewer must approve or reject this run before the answer is released."
+                )
+                emit(
+                    "approval_requested",
+                    f"Approval requested: {record['approval_id']}",
+                    {
+                        "approval_id": record["approval_id"],
+                        "risk_reasons": reasons,
+                        "grounding_status": result.grounding_status,
+                    },
+                )
+            else:
+                result.approval_status = APPROVAL_NOT_REQUIRED
+
+            emit(
+                "run_completed",
+                f"Run completed: {result.grounding_status} (approval: {result.approval_status})",
+                {
+                    "grounding_status": result.grounding_status,
+                    "approval_status": result.approval_status,
+                    "recovery_attempted": result.recovery_attempted,
+                    "recovery_successful": result.recovery_successful,
+                    "failure_reason": result.failure_reason,
+                },
+            )
+            if audit is not None:
+                result.audit_event_count = audit_events_emitted
+                result.audit_log_path = str(audit.path)
             self._record_journal(
                 result=result,
                 anchors=anchors,
@@ -875,6 +1031,8 @@ class EnterpriseRagOrchestrator:
             return result
 
         async def call(name: str, purpose: str, arguments: dict[str, Any]) -> dict[str, Any]:
+            emit("tool_call_started", f"{name} ({purpose})", {"tool": name, "purpose": purpose})
+            started_at = time.perf_counter()
             with suppress_mcp_stdio_stderr(self.quiet_mcp):
                 try:
                     content, output = await self._call_tool(name, arguments)
@@ -885,6 +1043,32 @@ class EnterpriseRagOrchestrator:
                         "exception_type": exc.__class__.__name__,
                     }
                     output = {"tool_name": name, "tool_call_id": None, "content": content}
+            client_latency_ms = round((time.perf_counter() - started_at) * 1000, 1)
+            failure = classify_transport_failure(content)
+            if failure:
+                emit(
+                    "tool_call_failed",
+                    f"{name} failed: {failure}",
+                    {
+                        "tool": name,
+                        "purpose": purpose,
+                        "failure": failure,
+                        "failure_reason": _short_error_text(content),
+                        "client_latency_ms": client_latency_ms,
+                    },
+                )
+            else:
+                emit(
+                    "tool_call_completed",
+                    f"{name} completed",
+                    {
+                        "tool": name,
+                        "purpose": purpose,
+                        "citation_count": len(_citations(content)),
+                        "result_count": len(_results(content)),
+                        "client_latency_ms": client_latency_ms,
+                    },
+                )
             tool_outputs.append(output)
             tools_used.append(name)
             timeline.append(
@@ -1381,6 +1565,79 @@ def _dedupe(items: Sequence[str]) -> list[str]:
         seen.add(item)
         output.append(item)
     return output
+
+
+async def run_before_after(
+    orchestrator: EnterpriseRagOrchestrator,
+    question: str,
+    *,
+    max_recovery_steps: int = 3,
+    validation_mode: str = "balanced",
+    require_approval: bool = False,
+    approval_mode: str = "off",
+    audit_log: AuditLog | None = None,
+    approval_store: ApprovalStore | None = None,
+) -> dict[str, Any]:
+    """Run a raw first-pass ask_grounded call, then the full orchestrated workflow.
+
+    The 'before' column is the actual first-pass output (or an honest unavailable
+    state) — never an invented bad answer.
+    """
+    first_pass_answer: str | None = None
+    first_pass_status = "unavailable"
+    first_pass_error: str | None = None
+    first_pass_citation_count = 0
+    try:
+        with suppress_mcp_stdio_stderr(orchestrator.quiet_mcp):
+            content, _ = await orchestrator._call_tool(
+                "ask_grounded", {"question": question, "k_chunks": 6, "mode": "hybrid"}
+            )
+        failure = classify_transport_failure(content)
+        if failure:
+            first_pass_status = failure
+            first_pass_error = _short_error_text(content)
+        else:
+            quality = classify_answer_quality(
+                content, question=question, anchors=extract_anchor_terms(question)
+            )
+            first_pass_status = quality.status
+            first_pass_answer = str(content.get("answer") or "").strip() or None
+            first_pass_citation_count = len(_citations(content))
+    except Exception as exc:
+        first_pass_status = "unavailable"
+        first_pass_error = _short_error_text({"error": str(exc)})
+
+    result = await orchestrator.run(
+        question,
+        max_recovery_steps=max_recovery_steps,
+        validation_mode=validation_mode,
+        require_approval=require_approval,
+        approval_mode=approval_mode,
+        audit_log=audit_log,
+        approval_store=approval_store,
+    )
+    run = result.to_dict()
+    return {
+        "question": question,
+        "first_pass_answer": first_pass_answer,
+        "first_pass_status": first_pass_status,
+        "first_pass_error": first_pass_error,
+        "first_pass_citation_count": first_pass_citation_count,
+        "orchestrated_answer": run.get("answer"),
+        "orchestrated_status": run.get("grounding_status"),
+        "recovery_used": bool(run.get("recovery_attempted")),
+        "recovery_successful": bool(run.get("recovery_successful")),
+        "approval_status": run.get("approval_status"),
+        "approval_id": run.get("approval_id"),
+        "risk_reasons": run.get("risk_reasons") or [],
+        "run_id": run.get("run_id"),
+        "audit_event_count": run.get("audit_event_count"),
+        "timeline": run.get("execution_timeline") or [],
+        "decision_trail": run.get("decision_trail") or [],
+        "citation_count": run.get("citation_count", 0),
+        "evidence_count": run.get("evidence_count", 0),
+        "validation_summary": run.get("validation_summary"),
+    }
 
 
 def overall_status(runs: Sequence[dict[str, Any]]) -> str:
