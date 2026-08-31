@@ -277,6 +277,22 @@ PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.cli --red-team \
 
 API: `GET /red-team/findings`, `POST /red-team/run`, `GET /red-team/latest`.
 
+### Answer readability: extractive by default, verified synthesis optional
+
+On the evidence-recovery path the answer is built from the retrieved source,
+never invented. By default it is **extractive**: the crisp value plus the exact
+supporting sentence, with the verbatim passage shown beneath as
+`Source evidence (verbatim)` proof.
+
+Setting `RAG_AGENT_ENABLE_SYNTHESIS=true` turns on **grounded synthesis**: the
+recovery path composes a readable one–two sentence answer from the retrieved
+evidence and shows it **only if it passes verification against the source**
+(every number and named entity in the answer must appear in the evidence; any
+novel fact is rejected and it falls back to the extractive answer). The verbatim
+proof is always shown below so a reader can check the synthesized sentence
+against the literal source. Synthesis reuses the app's configured chat model
+and is off by default, keeping the layer non-generative unless you opt in.
+
 ### Before/after automation demo
 
 `/app/demo` (or `POST /demo/before-after`) runs the actual raw first-pass
@@ -317,8 +333,8 @@ invented bad answer.
 
 Exact portfolio screenshot names and where to capture each:
 
-1. `Automated Test Suite: 45 Passing Governance & RAG Orchestration Tests` —
-   `.venv312/bin/python -m pytest` (now 88 tests including governance).
+1. `Automated Test Suite: 109 Passing Governance & RAG Orchestration Tests` —
+   `.venv312/bin/python -m pytest` (now 109 tests including governance).
 2. `MCP Tool Discovery: Grounded RAG Tools Exposed via Stdio` —
    `--check-config` output listing `ask_grounded`, `search_documents`, `get_document_excerpt`.
 3. `LangGraph Recovery Flow: Evidence-Gated Answer Validation` —
@@ -356,33 +372,78 @@ the validator can be adapted to each backend's evidence format.
 ## Architecture proof diagram
 
 ```mermaid
-flowchart LR
-    U["User / API Client"] --> Q["Classify Question Type<br/>custom answer-quality code"]
-    Q --> LG["LangGraph Workflow<br/>state, routing, retries"]
-    LG --> A["ask_grounded<br/>first-pass backend answer"]
-    A --> V["Validate Answer Shape<br/>+ Citation Support"]
-    V -->|complete| F["Verified Answer<br/>decision trail + review note"]
-    V -->|weak| P["Recovery Planner<br/>targeted MCP calls"]
-    P -->|stdio MCP| MCP["RAG Enterprise MCP Server<br/>search_documents<br/>get_document_excerpt"]
-    MCP -->|HTTP + auth cookie/token| BE["Enterprise RAG Backend<br/>FastAPI"]
-    BE --> AUTH["Auth + ACL Layer<br/>dev/OIDC auth<br/>SQL-level access trimming"]
-    BE --> RET["Retrieval Layer<br/>hybrid/vector/keyword/graph modes"]
-    BE --> LLM["Backend Answer Model<br/>grounded JSON answer<br/>citations"]
-    RET --> DB["Postgres + pgvector<br/>documents, chunks, ACLs"]
-    LLM --> BE
+---
+config:
+  layout: fixed
+---
+flowchart TB
+ subgraph MAIN["Application and Retrieval Architecture"]
+    direction TB
+        Q["Classify Question Type<br>custom answer-quality code"]
+        U["User / API Client"]
+        LG["LangGraph Workflow<br>state, routing, retries"]
+        A["ask_grounded<br>first-pass backend answer"]
+        V["Validate Answer Shape<br>+ Citation Support"]
+        F["Verified Answer<br>decision trail + review note"]
+        P["Recovery Planner<br>targeted MCP calls"]
+        MCP["RAG Enterprise MCP Server<br>search_documents<br>get_document_excerpt"]
+        BE["Enterprise RAG Backend<br>FastAPI"]
+        AUTH["Auth + ACL Layer<br>dev/OIDC auth<br>SQL-level access trimming"]
+        RET["Retrieval Layer<br>hybrid/vector/keyword/graph modes"]
+        DB["Postgres + pgvector<br>documents, chunks, ACLs"]
+        LLM["Backend Answer Model<br>grounded JSON answer<br>citations"]
+        H["Needs Review / Refusal"]
+  end
+ subgraph SECURITY["Security Boundaries"]
+    direction TB
+        S1["LangGraph does not access DB"]
+        S2["MCP has read-only RAG tools"]
+        S3["Backend enforces auth + ACL"]
+        S4["Retrieved text treated as untrusted evidence"]
+        S5["Tool args validated and normalized"]
+  end
+    U --> Q
+    Q --> LG
+    LG --> A
+    A --> V
+    V --> F & P
+    P --> MCP & V
+    MCP --> BE & P
+    BE --> AUTH & LLM
     AUTH --> RET
-    BE -->|evidence + citations| MCP
-    MCP --> P
-    P --> V
-    V -->|insufficient| H["Needs Review / Refusal"]
-    MCP -->|structured tool output| LG
-    LG -->|final answer + visible tool output| U
+    RET --> DB
+    LLM --> BE
+    BE -- evidence + citations --> MCP
+    V -- insufficient --> H
+    MCP -- structured tool output --> LG
+    LG -- final answer + visible tool output --> U
+    S1 --> S2
+    S2 --> S3
+    S3 --> S4
+    S4 --> S5
+    U ~~~ S1
+    H ~~~ S5
 
-    subgraph Security Boundaries
-      S1["LangGraph does not access DB"]
-      S2["MCP has read-only RAG tools"]
-      S3["Backend enforces auth + ACL"]
-      S4["Retrieved text treated as untrusted evidence"]
-      S5["Tool args validated and normalized"]
-    end
+     Q:::main
+     U:::main
+     LG:::main
+     A:::main
+     V:::main
+     F:::main
+     P:::main
+     MCP:::main
+     BE:::main
+     AUTH:::main
+     RET:::main
+     DB:::main
+     LLM:::main
+     H:::main
+     S1:::securityNode
+     S2:::securityNode
+     S3:::securityNode
+     S4:::securityNode
+     S5:::securityNode
+    classDef main fill:#eef2ff,stroke:#818cf8,stroke-width:2px
+    classDef security fill:#f0fdfa,stroke:#2dd4bf,stroke-width:2px
+    classDef securityNode fill:#ffffff,stroke:#2dd4bf,stroke-width:1px
 ```

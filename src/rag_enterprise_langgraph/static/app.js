@@ -58,15 +58,182 @@ function decisionTrail(trail) {
 
 /* ---------------- Dashboard (ask panel) ---------------- */
 
+let approvalPollTimer = null;
+
+function stopApprovalWatch() {
+  if (approvalPollTimer) {
+    clearInterval(approvalPollTimer);
+    approvalPollTimer = null;
+  }
+}
+
+function decisionLine(record) {
+  const comment = record.comment ? ` — “${esc(record.comment)}”` : "";
+  return `${pill(record.status)} by ${esc(record.reviewer || "-")} at ${esc((record.decided_at || "").slice(0, 19))}${comment}`;
+}
+
+function watchApproval(approvalId, runId, output) {
+  const check = async () => {
+    try {
+      const record = await fetchJSON(`/approval/${approvalId}`);
+      if (record.status !== "approved" && record.status !== "rejected") return;
+      stopApprovalWatch();
+      if (runId && output) {
+        try {
+          const view = await fetchJSON(`/runs/${runId}`);
+          renderRunResult(view, output);
+          loadRunHistory();
+          return;
+        } catch (err) {
+          /* run store unavailable — fall back to inline release below */
+        }
+      }
+      const container = document.getElementById("approval-release");
+      if (!container) return;
+      if (record.status === "approved") {
+        container.innerHTML = `
+          <h2 style="margin-top:16px">Released answer</h2>
+          <div class="answer-box">${esc(record.full_answer || record.answer_preview || "")}</div>
+          <p class="small muted">${decisionLine(record)}</p>`;
+      } else {
+        container.innerHTML = `<p class="small" style="margin-top:12px">${decisionLine(record)}. The answer was not released.</p>`;
+      }
+    } catch (err) {
+      /* keep polling; transient errors are fine */
+    }
+  };
+  stopApprovalWatch();
+  approvalPollTimer = setInterval(check, 5000);
+  const button = document.getElementById("check-approval");
+  if (button) button.addEventListener("click", check);
+}
+
+function renderRunResult(result, output) {
+  const citations = (result.citations || []).concat(result.evidence || []);
+  const citationList = citations.length
+    ? `<ul class="trail">${citations
+        .slice(0, 5)
+        .map((c) => `<li class="small">${esc(c.file_name || c.source_id || "source")}${c.locator ? " — " + esc(c.locator) : ""}</li>`)
+        .join("")}</ul>`
+    : '<div class="muted small">No citations returned.</div>';
+  const releasedInfo =
+    result.answer_released && result.approved_by
+      ? `<p class="small muted">${pill("approved")} by ${esc(result.approved_by)} at ${esc((result.approved_at || "").slice(0, 19))}${result.approval_comment ? " — “" + esc(result.approval_comment) + "”" : ""} — released answer shown above.</p>`
+      : "";
+  const rejectedInfo =
+    result.approval_status === "rejected" && result.decided_by
+      ? `<p class="small muted">${pill("rejected")} by ${esc(result.decided_by)} at ${esc((result.decided_at || "").slice(0, 19))}${result.approval_comment ? " — “" + esc(result.approval_comment) + "”" : ""}</p>`
+      : "";
+  const pending = result.approval_status === "pending_approval" && result.approval_id;
+  const answerLabel =
+    result.synthesis_verified && result.synthesized_answer
+      ? '<span class="pill ok" style="margin-left:8px">synthesized · verified against source</span>'
+      : "";
+  output.innerHTML = `
+    <h2 style="margin:0 0 4px">Question</h2>
+    <p style="margin:0 0 14px">${esc(result.question || "-")}</p>
+    <div class="row" style="margin-bottom:10px">
+      ${pill(result.grounding_status)} ${pill(result.approval_status)}
+      ${result.recovery_attempted ? '<span class="pill info">recovery attempted</span>' : ""}
+      <span class="muted small mono">run_id: ${esc(result.run_id || "-")}</span>
+      <span class="muted small">${esc(result.audit_event_count || 0)} audit events</span>
+    </div>
+    <h2 style="margin:0 0 6px">Answer${answerLabel}</h2>
+    <div class="answer-box">${esc(result.answer || "[no answer]")}</div>
+    ${result.review_guidance ? `<p class="small muted" style="margin-top:8px"><strong>Review guidance:</strong> ${esc(result.review_guidance)}</p>` : ""}
+    ${releasedInfo}
+    ${rejectedInfo}
+    ${pending ? `<p class="small muted">Approval pending: <a href="/app/approvals">review it in the approval queue</a> (id <span class="mono">${esc(result.approval_id)}</span>). This panel updates automatically once a reviewer decides. <button id="check-approval" class="secondary" style="padding:4px 10px;font-size:12px">Check approval status</button></p><div id="approval-release"></div>` : ""}
+    ${sourceEvidenceSection(result)}
+    <h2 style="margin-top:16px">Citations / evidence (${citations.length})</h2>
+    ${citationList}
+    ${decisionTrail(result.decision_trail)}
+    <h2 style="margin-top:16px">Workflow timeline</h2>
+    ${timelineTable(result.execution_timeline)}
+  `;
+  if (pending) watchApproval(result.approval_id, result.run_id, output);
+}
+
+function sourceEvidenceSection(result) {
+  const spans = result.source_evidence || [];
+  if (!spans.length) return "";
+  const proofNote = result.synthesis_verified && result.synthesized_answer
+    ? "The answer above was composed from these exact source passages and verified against them — nothing was added."
+    : "The answer above quotes these exact source passages.";
+  const items = spans
+    .map((span) => {
+      const loc = span.locator ? ` <span class="muted small">(${esc(span.locator)})</span>` : "";
+      return `<div style="margin-bottom:10px">
+        <div class="small mono" style="margin-bottom:2px">${esc(span.file_name || "source")}${loc}</div>
+        <blockquote class="answer-box small" style="margin:0">${esc(span.quote)}</blockquote>
+      </div>`;
+    })
+    .join("");
+  return `
+    <h2 style="margin-top:16px">Source evidence (verbatim)</h2>
+    <p class="small muted" style="margin:0 0 10px">${proofNote}</p>
+    ${items}
+  `;
+}
+
+async function loadRunHistory() {
+  const target = document.getElementById("run-history");
+  if (!target) return;
+  try {
+    const data = await fetchJSON("/runs");
+    const runs = data.runs || [];
+    if (!runs.length) {
+      target.innerHTML = '<div class="empty">No runs yet. Every orchestrated question will appear here.</div>';
+      return;
+    }
+    const rows = runs
+      .slice(0, 30)
+      .map(
+        (run) => `<tr class="clickable" data-run="${esc(run.run_id)}">
+          <td>${esc(run.question || "-")}</td>
+          <td>${pill(run.grounding_status || "unknown")}</td>
+          <td>${pill(run.approval_status || "approval_not_required")}</td>
+          <td class="muted small">${esc((run.created_at || "").slice(0, 19))}</td>
+        </tr>`
+      )
+      .join("");
+    target.innerHTML = `<table><thead><tr><th>Question</th><th>Status</th><th>Approval</th><th>When</th></tr></thead><tbody>${rows}</tbody></table>`;
+    target.querySelectorAll("tr.clickable").forEach((row) => {
+      row.addEventListener("click", () => openHistoryRun(row.dataset.run));
+    });
+  } catch (err) {
+    target.innerHTML = `<div class="error-box">${esc(err.message)}</div>`;
+  }
+}
+
+async function openHistoryRun(runId) {
+  const output = document.getElementById("ask-result");
+  if (!output) return;
+  stopApprovalWatch();
+  output.innerHTML = '<div class="spinner">Loading run…</div>';
+  try {
+    const view = await fetchJSON(`/runs/${runId}`);
+    const questionInput = document.getElementById("ask-question");
+    if (questionInput && view.question) questionInput.value = view.question;
+    renderRunResult(view, output);
+    const card = output.closest(".card");
+    if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (err) {
+    output.innerHTML = `<div class="error-box">${esc(err.message)}</div>`;
+  }
+}
+
 function initDashboard() {
   const form = document.getElementById("ask-form");
   const output = document.getElementById("ask-result");
   loadDashboardCounts();
+  loadRunHistory();
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const question = document.getElementById("ask-question").value.trim();
     const requireApproval = document.getElementById("ask-require-approval").checked;
     if (!question) return;
+    stopApprovalWatch();
     output.innerHTML = '<div class="spinner">Running orchestrated workflow…</div>';
     try {
       const result = await fetchJSON("/ask-orchestrated", {
@@ -74,28 +241,9 @@ function initDashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question, require_approval: requireApproval }),
       });
-      const citations = (result.citations || []).concat(result.evidence || []);
-      const citationList = citations.length
-        ? `<ul class="trail">${citations
-            .slice(0, 5)
-            .map((c) => `<li class="small">${esc(c.file_name || c.source_id || "source")}${c.locator ? " — " + esc(c.locator) : ""}</li>`)
-            .join("")}</ul>`
-        : '<div class="muted small">No citations returned.</div>';
-      output.innerHTML = `
-        <div class="row" style="margin-bottom:10px">
-          ${pill(result.grounding_status)} ${pill(result.approval_status)}
-          ${result.recovery_attempted ? '<span class="pill info">recovery attempted</span>' : ""}
-          <span class="muted small mono">run_id: ${esc(result.run_id || "-")}</span>
-          <span class="muted small">${esc(result.audit_event_count || 0)} audit events</span>
-        </div>
-        <div class="answer-box">${esc(result.answer || "[no answer]")}</div>
-        ${result.approval_id ? `<p class="small muted">Approval pending: <a href="/app/approvals">review it in the approval queue</a> (id <span class="mono">${esc(result.approval_id)}</span>).</p>` : ""}
-        <h2 style="margin-top:16px">Citations / evidence (${citations.length})</h2>
-        ${citationList}
-        ${decisionTrail(result.decision_trail)}
-        <h2 style="margin-top:16px">Workflow timeline</h2>
-        ${timelineTable(result.execution_timeline)}
-      `;
+      renderRunResult(result, output);
+      loadRunHistory();
+      loadDashboardCounts();
     } catch (err) {
       output.innerHTML = `<div class="error-box">Run failed: ${esc(err.message)}. If the MCP backend is not running, this is expected — no fabricated answer is shown.</div>`;
     }
@@ -125,6 +273,44 @@ async function loadDashboardCounts() {
 
 function initApprovals() {
   loadApprovals();
+  loadDecisions();
+}
+
+async function loadDecisions() {
+  const target = document.getElementById("decision-list");
+  if (!target) return;
+  try {
+    const data = await fetchJSON("/approval");
+    const decided = (data.approvals || []).filter(
+      (record) => record.status === "approved" || record.status === "rejected"
+    );
+    decided.sort((a, b) => String(b.decided_at || "").localeCompare(String(a.decided_at || "")));
+    if (!decided.length) {
+      target.innerHTML = '<div class="empty">No decisions yet. Approved answers will be released here.</div>';
+      return;
+    }
+    target.innerHTML = decided
+      .slice(0, 20)
+      .map(
+        (item) => `<div class="approval-item">
+          <div class="q">${esc(item.question)}</div>
+          <div class="row" style="margin:0 0 8px">
+            ${pill(item.status)} ${pill(item.grounding_status || "unknown")}
+            <span class="muted small mono">run_id: ${esc(item.run_id || "-")}</span>
+            <span class="muted small">decided ${esc((item.decided_at || "").slice(0, 19))} by ${esc(item.reviewer || "-")}</span>
+          </div>
+          ${item.comment ? `<div class="small muted">Comment: ${esc(item.comment)}</div>` : ""}
+          ${
+            item.status === "approved"
+              ? `<div class="answer-box small" style="margin-top:8px">${esc(item.released_answer || item.answer_preview || "")}</div>`
+              : `<div class="small muted" style="margin-top:8px">Answer not released (rejected).</div>`
+          }
+        </div>`
+      )
+      .join("");
+  } catch (err) {
+    target.innerHTML = `<div class="error-box">${esc(err.message)}</div>`;
+  }
 }
 
 async function loadApprovals() {
@@ -184,7 +370,10 @@ async function decideApproval(button) {
     });
     message.innerHTML = `${pill(record.status)} <span class="muted">by ${esc(record.reviewer)} at ${esc((record.decided_at || "").slice(0, 19))}</span>`;
     item.querySelectorAll("button").forEach((b) => (b.disabled = true));
-    setTimeout(loadApprovals, 1200);
+    setTimeout(() => {
+      loadApprovals();
+      loadDecisions();
+    }, 1200);
   } catch (err) {
     message.innerHTML = `<span class="pill bad">${esc(err.message)}</span>`;
   }
@@ -228,6 +417,28 @@ async function loadAuditRuns() {
   }
 }
 
+function auditRunSummary(data) {
+  const summary = data.run_summary || {};
+  const approval = data.approval;
+  const approvalStatus = (approval && approval.status) || summary.approval_status || "approval_not_required";
+  let html = `
+    <div class="row" style="margin:0 0 6px">${pill(summary.final_status || "in_progress")} ${pill(approvalStatus)}</div>
+    <p style="margin:4px 0 12px"><strong>${esc(summary.question_preview || "(question preview unavailable)")}</strong></p>`;
+  if (approval) {
+    if (approval.released_answer) {
+      html += `
+        <h2>Released answer</h2>
+        <div class="answer-box">${esc(approval.released_answer)}</div>
+        <p class="small muted">${decisionLine(approval)}</p>`;
+    } else if (approval.status === "rejected") {
+      html += `<p class="small">${decisionLine(approval)}. The answer was not released.</p>`;
+    } else if (approval.status === "pending_approval") {
+      html += `<p class="small">Awaiting review — the answer stays withheld until decided. <a href="/app/approvals">Open the approval queue</a>.</p>`;
+    }
+  }
+  return html;
+}
+
 async function loadAuditEvents(runId, detail) {
   detail.innerHTML = '<div class="spinner">Loading events…</div>';
   try {
@@ -243,7 +454,9 @@ async function loadAuditEvents(runId, detail) {
       )
       .join("");
     detail.innerHTML = `
-      <h2>Events for <span class="mono">${esc(runId.slice(0, 12))}…</span></h2>
+      <h2>Run <span class="mono">${esc(runId.slice(0, 12))}…</span></h2>
+      ${auditRunSummary(data)}
+      <h2 style="margin-top:16px">Events</h2>
       <p class="small muted">Tamper-evident hash chain — each event hash covers the previous one. <a href="/audit/export/${esc(runId)}" target="_blank">Export JSON</a></p>
       <table><thead><tr><th>Time</th><th>Event</th><th>Summary</th><th>Hash</th></tr></thead><tbody>${rows}</tbody></table>
     `;

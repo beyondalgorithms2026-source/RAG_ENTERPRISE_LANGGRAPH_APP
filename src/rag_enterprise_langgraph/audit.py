@@ -33,7 +33,7 @@ EVENT_TYPES = (
 
 _BEARER_PATTERN = re.compile(r"(?i)\bbearer\b[\s=:]+\S+")
 _SECRET_VALUE_PATTERN = re.compile(
-    r"(?i)\b(password|passwd|secret|token|api[_-]?key|authorization|cookie)\b(\s*[=:]\s*|\s+)\S+"
+    r"(?i)\b(password|passwd|secret|token|api[_-]?key|authorization|cookie)\b\s*[=:]\s*\S+"
 )
 
 
@@ -190,7 +190,7 @@ class AuditLog:
         }
 
 
-def build_audit_router(audit_log: AuditLog) -> APIRouter:
+def build_audit_router(audit_log: AuditLog, approval_store=None) -> APIRouter:
     router = APIRouter(prefix="/audit", tags=["audit"])
 
     @router.get("/runs")
@@ -202,7 +202,19 @@ def build_audit_router(audit_log: AuditLog) -> APIRouter:
         events = audit_log.events(run_id=run_id)
         if not events:
             raise HTTPException(status_code=404, detail="run_id not found in audit log")
-        return {"run_id": run_id, "event_count": len(events), "events": events}
+        payload = {
+            "run_id": run_id,
+            "event_count": len(events),
+            "run_summary": next((run for run in audit_log.runs() if run["run_id"] == run_id), None),
+            "events": events,
+        }
+        if approval_store is not None:
+            record = approval_store.by_run_id(run_id)
+            if record is not None:
+                from rag_enterprise_langgraph.approval import released_view
+
+                payload["approval"] = released_view(record)
+        return payload
 
     @router.get("/events")
     async def list_events(limit: int = 200):

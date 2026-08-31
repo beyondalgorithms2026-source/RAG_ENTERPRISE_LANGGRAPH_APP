@@ -162,8 +162,12 @@ def test_evidence_gate_rejects_irrelevant_walmart_revenue_snippet():
         ],
     )
 
-    assert evidence is None
-    assert verdict is None
+    # The candidate is still rejected as support, but it is returned (with its
+    # non-supporting verdict) so the review path keeps the full snippet.
+    assert verdict is not None
+    assert verdict.status != "supports"
+    assert evidence is not None
+    assert "from a $25 million revenue base" in evidence["snippet"]
     assert rejected[0]["verdict"]["reason"] == "missing_required_terms"
 
 
@@ -225,10 +229,13 @@ def test_orchestrator_does_not_recover_from_irrelevant_excerpt():
     assert result.grounding_status == "needs_review"
     assert result.error is None
     assert result.failure_reason == "human_review_required"
-    assert "Nearest relevant evidence requires human review" in result.answer
+    # The review requirement lives in review_guidance, not inside the answer text.
+    assert "requires human review" not in result.answer.lower()
+    assert "human review" in (result.review_guidance or "").lower()
     assert result.evidence_count == 1
     assert result.rejected_evidence
-    assert "get_document_excerpt" not in calls
+    # Weak candidates now trigger the excerpt lookup so the reviewer gets full context.
+    assert "get_document_excerpt" in calls
 
 
 def test_numeric_expected_answer_equivalence_for_eval_terms():
@@ -290,3 +297,84 @@ def test_recovered_answer_focuses_relevant_span_in_long_transcript_excerpt():
 
     assert "seminar at IBM on how to use computing technology in business" in answer
     assert not answer.startswith("Recovered answer from walmart.txt: from a $25 million")
+
+
+def test_focused_evidence_window_completes_fragment_sentences():
+    from rag_enterprise_langgraph.orchestrator import _focused_evidence_text
+
+    rules = EnterpriseRagOrchestrator(quiet_mcp=False).rules
+    focused = _focused_evidence_text(
+        question="What is the cost of rocket travel based on the materials?",
+        evidence=[
+            {
+                "snippet": (
+                    "The raw materials of a rocket are only about two percent of the cost "
+                    "of rocket travel, which stunned the group of billionaires who started "
+                    "rocket companies. That insight drove the reusability push."
+                ),
+            }
+        ],
+        anchors=["cost", "rocket", "travel", "materials"],
+        rules=rules,
+    )
+
+    # The focused quote must be complete prose, not a mid-sentence fragment.
+    assert "two percent of the cost" in focused
+    assert not focused[:1].islower()
+
+
+def test_focused_evidence_ignores_off_topic_percentage():
+    from rag_enterprise_langgraph.orchestrator import _focused_evidence_text
+    from rag_enterprise_langgraph.answer_quality import classify_question
+
+    rules = EnterpriseRagOrchestrator(quiet_mcp=False).rules
+    # Snippet has the relevant "2% hard materials" caveat AND an unrelated "55%"
+    # (a stock-pop figure). The picker must not surface the off-topic 55%.
+    snippet = (
+        "You're not going to get it all the way down to 2% of what that rocket costs, "
+        "but 2% being the hard materials of the rocket. "
+        "They were the one bright spot in the dot-com winter. The stock pops 55% right after the IPO."
+    )
+    focused = _focused_evidence_text(
+        question="What is the cost of rocket travel based on the materials?",
+        evidence=[{"snippet": snippet}],
+        anchors=["cost", "rocket", "materials"],
+        rules=rules,
+        shape=classify_question("What is the cost of rocket travel based on the materials?").expected_answer_shape,
+    )
+    assert "2%" in focused
+    assert "55%" not in focused
+
+
+def test_needs_review_answer_uses_full_snippet_not_preview_truncation():
+    orchestrator = EnterpriseRagOrchestrator(quiet_mcp=False)
+    long_tail = "the raw materials are only about two percent of the total cost of rocket travel according to the analysis"
+    weak_snippet = (
+        "Completely unrelated preamble about company culture and hiring practices that "
+        "keeps going for a long while to exceed the old two-hundred-and-twenty character "
+        "preview cap before anything relevant appears. Deep in the chunk, " + long_tail + "."
+    )
+
+    async def fake_tool_call(name, arguments):  # noqa: ANN001, ARG001
+        if name == "ask_grounded":
+            return {"answer": "Not found in provided sources.", "citations": []}, {"tool_name": name, "tool_call_id": None, "content": {}}
+        if name == "search_documents":
+            return {
+                "results": [{"source_id": 9, "source_part_id": 12, "file_name": "spacex.txt", "snippet": weak_snippet}]
+            }, {"tool_name": name, "tool_call_id": None, "content": {}}
+        return {
+            "matched": True,
+            "excerpt": weak_snippet,
+            "result": {"source_id": 9, "source_part_id": 12, "file_name": "spacex.txt"},
+        }, {"tool_name": name, "tool_call_id": None, "content": {}}
+
+    orchestrator._call_tool = fake_tool_call  # type: ignore[method-assign]
+
+    result = asyncio.run(orchestrator.run("What is the cost of rocket travel based on the materials?"))
+
+    assert result.grounding_status == "needs_review"
+    # The review evidence keeps the full snippet — content beyond the old
+    # 220-char preview cap must be present in the answer's focused quote.
+    assert "two percent of the total cost" in result.answer
+    assert "requires human review" not in result.answer.lower()
+    assert result.review_guidance

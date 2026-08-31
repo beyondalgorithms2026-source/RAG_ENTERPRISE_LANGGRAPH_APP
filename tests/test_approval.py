@@ -11,6 +11,7 @@ from rag_enterprise_langgraph.approval import (
     ApprovalStore,
     approval_required,
     assess_risk,
+    released_view,
 )
 from rag_enterprise_langgraph.audit import AuditLog
 from rag_enterprise_langgraph.orchestrator import EnterpriseRagOrchestrator
@@ -74,6 +75,34 @@ def test_double_decision_and_missing_reviewer_are_rejected(tmp_path):
 
     with pytest.raises(KeyError):
         store.approve("does-not-exist", reviewer="Alice")
+
+
+def test_released_view_releases_answer_only_when_approved(tmp_path):
+    store = ApprovalStore(tmp_path / "approvals.jsonl")
+    approved = store.create(question="Q1?", answer="Secret answer one.", run_id="run-1")
+    rejected = store.create(question="Q2?", answer="Secret answer two.", run_id="run-2")
+    pending = store.create(question="Q3?", answer="Secret answer three.", run_id="run-3")
+    store.approve(approved["approval_id"], reviewer="Alice")
+    store.reject(rejected["approval_id"], reviewer="Bob")
+
+    approved_view = released_view(store.get(approved["approval_id"]))
+    assert approved_view["released_answer"] == "Secret answer one."
+    assert "full_answer" not in approved_view
+
+    rejected_view = released_view(store.get(rejected["approval_id"]))
+    assert "released_answer" not in rejected_view
+    assert "full_answer" not in rejected_view
+
+    pending_view = released_view(store.get(pending["approval_id"]))
+    assert "released_answer" not in pending_view
+    assert "full_answer" not in pending_view
+
+
+def test_by_run_id_finds_record(tmp_path):
+    store = ApprovalStore(tmp_path / "approvals.jsonl")
+    record = store.create(question="Q?", answer="A", run_id="run-77")
+    assert store.by_run_id("run-77")["approval_id"] == record["approval_id"]
+    assert store.by_run_id("missing") is None
 
 
 def test_assess_risk_flags_high_risk_categories_and_statuses():

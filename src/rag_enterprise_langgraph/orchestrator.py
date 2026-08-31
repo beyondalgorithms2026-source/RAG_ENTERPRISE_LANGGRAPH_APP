@@ -28,6 +28,7 @@ from rag_enterprise_langgraph.config import Settings
 from rag_enterprise_langgraph.evidence import EvidenceVerdict, load_rules, matching_rule, validate_evidence
 from rag_enterprise_langgraph.journal import write_journal_entry
 from rag_enterprise_langgraph.mcp_client import load_mcp_tools, suppress_mcp_stdio_stderr
+from rag_enterprise_langgraph.synthesis import synthesize_and_verify
 from rag_enterprise_langgraph.tool_guard import reset_current_question, set_current_question
 
 
@@ -134,6 +135,10 @@ class OrchestratedRunResult:
     risk_reasons: list[str] = field(default_factory=list)
     audit_event_count: int = 0
     audit_log_path: str | None = None
+    source_evidence: list[dict[str, Any]] = field(default_factory=list)
+    synthesized_answer: str | None = None
+    verbatim_answer: str | None = None
+    synthesis_verified: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -170,6 +175,10 @@ class OrchestratedRunResult:
             "risk_reasons": self.risk_reasons,
             "audit_event_count": self.audit_event_count,
             "audit_log_path": self.audit_log_path,
+            "source_evidence": self.source_evidence,
+            "synthesized_answer": self.synthesized_answer,
+            "verbatim_answer": self.verbatim_answer,
+            "synthesis_verified": self.synthesis_verified,
         }
 
 
@@ -462,6 +471,7 @@ def _rejected_evidence_summary(evidence: dict[str, Any], verdict: EvidenceVerdic
         "evidence_type": evidence.get("evidence_type"),
         "verdict": verdict.to_dict(),
         "snippet_preview": str(evidence.get("snippet") or "")[:220],
+        "snippet": str(evidence.get("snippet") or "")[:1200],
     }
 
 
@@ -491,8 +501,12 @@ def _select_evidence_candidate(
     for _, evidence, verdict in sorted(ranked, key=lambda item: item[0], reverse=True):
         if verdict.status == "supports":
             return evidence, verdict, rejected
+    # No candidate supports the question. Still return the best-ranked one (with
+    # its non-supporting verdict) so the review path keeps the full snippet and
+    # can fetch a real excerpt for context. Success paths downstream all require
+    # verdict.status == "supports", so weak evidence can never become an answer.
     best = sorted(ranked, key=lambda item: item[0], reverse=True)[0] if ranked else None
-    if best and best[2].status == "partial":
+    if best:
         return best[1], best[2], rejected
     return None, None, rejected
 
@@ -529,12 +543,69 @@ def _term_hits(text: str, terms: Sequence[str]) -> int:
     return sum(1 for term in terms if term and term.lower() in normalized)
 
 
+# Conversational hedges/asides that read as speculation rather than a stated fact.
+# Sentences containing these are demoted so the picker prefers the assertive claim
+# (e.g. "it's about 2% of what rockets cost") over the caveat ("you're not going
+# to get it all the way down to 2%...").
+_HEDGE_MARKERS = (
+    "you're not going to",
+    "youre not going to",
+    "not going to get",
+    "i'm not someone",
+    "im not someone",
+    "i have to imagine",
+    "i want to say",
+    "i think",
+    "i guess",
+    "i'm not sure",
+    "i don't know",
+    "i wonder",
+    "probably",
+    "i'd guess",
+)
+
+_ASSERTIVE_MARKERS = (
+    "it's about",
+    "its about",
+    "is about",
+    "are about",
+    "amount to",
+    "amounts to",
+    "roughly",
+    "approximately",
+    "works out to",
+    "comes out to",
+    "equal to",
+    "equals",
+)
+
+
+def _wants_percentage(question: str, shape=None) -> bool:
+    lowered = question.lower()
+    if shape is not None and getattr(shape, "requires_percentage", False):
+        return True
+    return "percentage" in lowered or "percent" in lowered or "%" in lowered
+
+
+def _wants_numeric(question: str, shape=None) -> bool:
+    if shape is not None and (getattr(shape, "requires_numeric", False) or getattr(shape, "requires_percentage", False)):
+        return True
+    return _wants_percentage(question, shape)
+
+
+def _wants_date(question: str, shape=None) -> bool:
+    if shape is not None and getattr(shape, "requires_date", False):
+        return True
+    return "when" in question.lower()
+
+
 def _focused_evidence_text(
     *,
     question: str,
     evidence: Sequence[dict[str, Any]],
     anchors: Sequence[str],
     rules,
+    shape=None,
 ) -> str:
     text = " ".join(str(item.get("snippet") or item.get("excerpt") or "") for item in evidence)
     sentences = _split_evidence_sentences(text)
@@ -549,44 +620,79 @@ def _focused_evidence_text(
         rule_terms.extend(rule.answer_any)
     anchor_terms = [anchor for anchor in anchors if len(anchor) >= 4]
     lowered_question = question.lower()
+    wants_percentage = _wants_percentage(question, shape)
+    wants_numeric = _wants_numeric(question, shape)
+    wants_date = _wants_date(question, shape)
 
     ranked: list[tuple[int, int, str]] = []
     for index, sentence in enumerate(sentences):
-        score = _term_hits(sentence, rule_terms) * 3
-        score += _term_hits(sentence, anchor_terms)
-        if ("percentage" in lowered_question or "percent" in lowered_question or "%" in lowered_question) and re.search(r"\b\d+(?:\.\d+)?\s*%|\b0\.\d+\b", sentence):
+        lowered_sentence = sentence.lower()
+        # Topical relevance to the question drives eligibility. A sentence with no
+        # question-relevant terms is never rewarded for merely containing a number,
+        # so an off-topic figure (e.g. "the stock pops 55%") can't be picked as the
+        # answer to a rocket-materials question.
+        relevance = _term_hits(sentence, rule_terms) * 3 + _term_hits(sentence, anchor_terms)
+        score = relevance
+        # Question-specific relevance signals (these define on-topic-ness themselves).
+        if "what seminar" in lowered_question and "seminar" in lowered_sentence:
             score += 5
-        if "when" in lowered_question and re.search(r"\b\d{4}\b", sentence):
+            relevance += 5
+        if "where" in lowered_question and any(place in lowered_sentence for place in ("texas", "van horn", "west texas", "poughkeepsie")):
             score += 4
-        if "what seminar" in lowered_question and "seminar" in sentence.lower():
-            score += 5
-        if "where" in lowered_question and any(place in sentence.lower() for place in ("texas", "van horn", "west texas", "poughkeepsie")):
-            score += 4
+            relevance += 4
+        # Answer-shape boosts apply ONLY to on-topic sentences.
+        if relevance > 0:
+            if wants_percentage and re.search(r"\b\d+(?:\.\d+)?\s*%|\b0\.\d+\b", sentence):
+                score += 5
+            if wants_numeric and re.search(r"\b\d+(?:\.\d+)?\s*(?:percent|%)|\b\d[\d,]*(?:\.\d+)?\b", sentence):
+                score += 2
+            if wants_date and re.search(r"\b\d{4}\b", sentence):
+                score += 4
+            if any(marker in lowered_sentence for marker in _ASSERTIVE_MARKERS):
+                score += 2
+        # Prefer a stated fact over a conversational hedge/aside carrying the same terms.
+        if any(marker in lowered_sentence for marker in _HEDGE_MARKERS):
+            score -= 4
         ranked.append((score, -index, sentence))
 
     best_score, neg_index, best_sentence = max(ranked, key=lambda item: item[0])
+    # Require the winner to be genuinely on-topic; otherwise quote the leading
+    # relevant text rather than surfacing an unrelated figure.
     if best_score <= 0:
         return text[:900].strip()
     index = -neg_index
-    focused = best_sentence
-    if len(focused) < 140 and index + 1 < len(sentences):
-        next_sentence = sentences[index + 1]
-        if _term_hits(next_sentence, rule_terms + anchor_terms):
-            focused = f"{focused} {next_sentence}"
-    return focused[:1200].strip()
+    # Build a window around the best sentence so the quote reads as complete
+    # prose: chunk snippets often start mid-sentence, so a lone "sentence" can
+    # be a fragment (e.g. one that starts lowercase).
+    window = [best_sentence]
+    if index > 0 and (best_sentence[:1].islower() or len(best_sentence) < 80):
+        window.insert(0, sentences[index - 1])
+    # Extend forward only to complete a still-short fragment or to pull in a
+    # neighbouring sentence that carries relevant terms — not merely to fill space,
+    # which would drag in rhetorical asides.
+    next_index = index + 1
+    if next_index < len(sentences) and (
+        len(" ".join(window)) < 80 or _term_hits(sentences[next_index], rule_terms + anchor_terms)
+    ):
+        window.append(sentences[next_index])
+    return " ".join(window)[:1200].strip()
 
 
-def _short_answer_from_focus(question: str, focused: str) -> str | None:
+def _short_answer_from_focus(question: str, focused: str, shape=None) -> str | None:
     lowered_question = question.lower()
     if "what seminar" in lowered_question:
         match = re.search(r"\b(?:in|to)\s+(a\s+seminar\s+at\s+IBM[^.?!]*)(?:[.?!]|$)", focused, re.IGNORECASE)
         if match:
             return match.group(1).strip()
-    if "percentage" in lowered_question or "percent" in lowered_question or "%" in lowered_question:
+    if _wants_percentage(question, shape):
+        # Prefer an explicit percent token, then a written-out "N percent".
         match = re.search(r"\b\d+(?:\.\d+)?\s*%|\b0\.\d+\b", focused)
         if match:
             return match.group(0).strip()
-    if "when" in lowered_question:
+        written = re.search(r"\b(\d+(?:\.\d+)?|one|two|three|four|five|six|seven|eight|nine|ten)\s+percent\b", focused, re.IGNORECASE)
+        if written:
+            return written.group(0).strip()
+    if _wants_date(question, shape):
         match = re.search(r"\b\d{4}\b", focused)
         if match:
             return match.group(0).strip()
@@ -599,15 +705,17 @@ def _answer_from_evidence(
     *,
     anchors: Sequence[str] = (),
     rules=(),
+    question_profile=None,
 ) -> str:
     if not evidence:
         return "No grounded answer could be produced from the available MCP evidence."
     top = evidence[0]
     source = top.get("file_name") or f"source_id={top.get('source_id')}"
-    focused = _focused_evidence_text(question=question, evidence=evidence, anchors=anchors, rules=rules)
+    shape = question_profile.expected_answer_shape if question_profile is not None else None
+    focused = _focused_evidence_text(question=question, evidence=evidence, anchors=anchors, rules=rules, shape=shape)
     if not focused:
         return f"Recovered supporting evidence from {source}, but no safe snippet was available to quote."
-    short_answer = _short_answer_from_focus(question, focused)
+    short_answer = _short_answer_from_focus(question, focused, shape)
     if short_answer:
         return f"Recovered answer from {source}: {short_answer}. Evidence: {focused}"
     return f"Recovered supporting evidence from {source}: {focused}"
@@ -619,11 +727,37 @@ def _answer_for_human_review(
     *,
     anchors: Sequence[str] = (),
     rules=(),
+    question_profile=None,
 ) -> str:
+    # The review requirement is conveyed by grounding_status=needs_review and the
+    # review_guidance field — not baked into the answer text.
     if not evidence:
-        return "No sufficiently relevant evidence was found. Human review is required before using this answer."
-    nearest = _answer_from_evidence(question, evidence, anchors=anchors, rules=rules)
-    return f"Nearest relevant evidence requires human review. {nearest}"
+        return "No sufficiently relevant evidence was found in the indexed sources."
+    return _answer_from_evidence(question, evidence, anchors=anchors, rules=rules, question_profile=question_profile)
+
+
+def _source_evidence_spans(evidence: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
+    """The exact verbatim quotes (with provenance) that back an answer.
+
+    Shown to the user as proof beneath the answer so a synthesized sentence can
+    always be checked against the literal source text.
+    """
+    spans: list[dict[str, Any]] = []
+    for item in evidence:
+        quote = str(item.get("snippet") or item.get("excerpt") or "").strip()
+        if not quote:
+            continue
+        spans.append(
+            {
+                "file_name": item.get("file_name") or (f"source_id={item.get('source_id')}" if item.get("source_id") is not None else "source"),
+                "locator": item.get("locator") or item.get("heading"),
+                "source_id": item.get("source_id"),
+                "source_part_id": item.get("source_part_id"),
+                "chunk_id": item.get("chunk_id"),
+                "quote": quote[:1200],
+            }
+        )
+    return spans
 
 
 def _decision_step(step: int, label: str, summary: str) -> dict[str, Any]:
@@ -735,6 +869,7 @@ class EnterpriseRagOrchestrator:
         journal_path: str | None = None,
         audit_log: AuditLog | None = None,
         approval_store: ApprovalStore | None = None,
+        run_store=None,
     ):
         self.settings = settings or Settings()
         self.quiet_mcp = quiet_mcp
@@ -742,6 +877,8 @@ class EnterpriseRagOrchestrator:
         self.journal_path = journal_path
         self.audit_log = audit_log
         self.approval_store = approval_store
+        self.run_store = run_store
+        self.synthesis_model = None  # optional injected chat model for Tier 2 synthesis
         self._tools: dict[str, BaseTool] | None = None
 
     async def _get_tools(self) -> dict[str, BaseTool]:
@@ -843,6 +980,40 @@ class EnterpriseRagOrchestrator:
             },
         )
 
+    async def _compose_answer(
+        self,
+        *,
+        question: str,
+        evidence: Sequence[dict[str, Any]],
+        anchors: Sequence[str],
+        question_profile,
+    ) -> dict[str, Any]:
+        """Build the verbatim answer, its source-evidence proof, and (optionally) a verified synthesis."""
+        verbatim = _answer_from_evidence(
+            question, evidence, anchors=anchors, rules=self.rules, question_profile=question_profile
+        )
+        source_evidence = _source_evidence_spans(evidence)
+        synthesized: str | None = None
+        verified = False
+        if getattr(self.settings, "enable_synthesis", False) and evidence:
+            result = await synthesize_and_verify(
+                question=question,
+                evidence=list(evidence),
+                question_profile=question_profile,
+                model=self.synthesis_model,
+                settings=self.settings,
+            )
+            if result.get("verified"):
+                synthesized = result.get("answer")
+                verified = True
+        return {
+            "display": synthesized if verified else verbatim,
+            "verbatim": verbatim,
+            "synthesized": synthesized,
+            "verified": verified,
+            "source_evidence": source_evidence,
+        }
+
     async def run(
         self,
         question: str,
@@ -857,6 +1028,7 @@ class EnterpriseRagOrchestrator:
         run_id: str | None = None,
         audit_log: AuditLog | None = None,
         approval_store: ApprovalStore | None = None,
+        run_store=None,
     ) -> OrchestratedRunResult:
         token = set_current_question(question)
         tool_outputs: list[dict[str, Any]] = []
@@ -970,6 +1142,7 @@ class EnterpriseRagOrchestrator:
                     {"recovery_successful": result.recovery_successful},
                 )
 
+            real_answer = result.answer
             risk_reasons = assess_risk(
                 question,
                 {
@@ -1022,12 +1195,34 @@ class EnterpriseRagOrchestrator:
             if audit is not None:
                 result.audit_event_count = audit_events_emitted
                 result.audit_log_path = str(audit.path)
+            results_store = run_store or self.run_store
+            if results_store is not None:
+                # Persist the real answer and source evidence so an approver can
+                # release them later; this happens before withholding below.
+                results_store.save(result.to_dict(), real_answer=real_answer)
             self._record_journal(
                 result=result,
                 anchors=anchors,
                 expected_answer=expected_answer,
                 journal_path=journal_path,
             )
+            if result.approval_status == PENDING_APPROVAL:
+                # Withhold every field that carries the answer/snippet content from
+                # the live response until a reviewer approves. The stored copy above
+                # keeps the real content for release via GET /runs/{run_id}. Process
+                # metadata (decision trail, timeline, validation summary) stays visible.
+                result.source_evidence = []
+                result.synthesized_answer = None
+                result.verbatim_answer = None
+                result.evidence = []
+                result.evidence_count = 0
+                result.citations = []
+                result.citation_count = 0
+                result.tool_outputs = []
+                result.rejected_evidence = []
+                result.attempts = [
+                    {**attempt, "answer_preview": "[withheld pending approval]"} for attempt in result.attempts
+                ]
             return result
 
         async def call(name: str, purpose: str, arguments: dict[str, Any]) -> dict[str, Any]:
@@ -1372,9 +1567,12 @@ class EnterpriseRagOrchestrator:
                 evidence = [selected_evidence]
                 final_verdict = selected_verdict
             if evidence and final_verdict and final_verdict.status == "supports":
+                composed = await self._compose_answer(
+                    question=question, evidence=evidence, anchors=anchors, question_profile=question_profile
+                )
                 recovered_review = review_answer(
                     question=question,
-                    answer=_answer_from_evidence(question, evidence, anchors=anchors, rules=self.rules),
+                    answer=composed["verbatim"],
                     evidence=evidence,
                     question_profile=question_profile,
                 )
@@ -1383,7 +1581,7 @@ class EnterpriseRagOrchestrator:
                         attempt=len(attempts) + 1,
                         tool="retrieval_evidence",
                         status="verified" if recovered_review.status == "verified" else final_verdict.status,
-                        answer=_answer_from_evidence(question, evidence, anchors=anchors, rules=self.rules),
+                        answer=composed["verbatim"],
                         review=recovered_review,
                     )
                 )
@@ -1394,10 +1592,18 @@ class EnterpriseRagOrchestrator:
                         f"{recovered_review.status}: {recovered_review.reason}",
                     )
                 )
+                if composed["verified"]:
+                    decision_trail.append(
+                        _decision_step(
+                            len(decision_trail) + 1,
+                            "Answer synthesized",
+                            "Composed from retrieved evidence and verified against the source text.",
+                        )
+                    )
                 status = "recovered" if recovered_review.status == "verified" else "partial"
                 return finish(self._success_result(
                     question=question,
-                    answer=_answer_from_evidence(question, evidence, anchors=anchors, rules=self.rules),
+                    answer=composed["display"],
                     status=status,
                     citations=[],
                     evidence=evidence,
@@ -1414,6 +1620,10 @@ class EnterpriseRagOrchestrator:
                     attempts=attempts,
                     review_guidance_text=review_guidance(status),
                     review_note_text=review_note(),
+                    source_evidence=composed["source_evidence"],
+                    synthesized_answer=composed["synthesized"],
+                    verbatim_answer=composed["verbatim"],
+                    synthesis_verified=composed["verified"],
                 ))
             if evidence and final_verdict:
                 rejected_evidence.append(_rejected_evidence_summary(evidence[0], final_verdict))
@@ -1437,15 +1647,30 @@ class EnterpriseRagOrchestrator:
                         "source_part_id": first_rejected.get("source_part_id"),
                         "chunk_id": first_rejected.get("chunk_id"),
                         "file_name": first_rejected.get("file_name"),
-                        "snippet": first_rejected.get("snippet_preview"),
+                        "snippet": first_rejected.get("snippet") or first_rejected.get("snippet_preview"),
                         "evidence_type": first_rejected.get("evidence_type") or "review_candidate",
                     }
                 ]
-            final_answer = (
-                _answer_for_human_review(question, review_evidence, anchors=anchors, rules=self.rules)
-                if final_status == "needs_review"
-                else "No grounded answer could be produced from the available MCP evidence."
-            )
+            composed_review: dict[str, Any] = {
+                "display": "No grounded answer could be produced from the available MCP evidence.",
+                "verbatim": None,
+                "synthesized": None,
+                "verified": False,
+                "source_evidence": [],
+            }
+            if final_status == "needs_review":
+                composed_review = await self._compose_answer(
+                    question=question, evidence=review_evidence, anchors=anchors, question_profile=question_profile
+                )
+            final_answer = composed_review["display"]
+            if final_status == "needs_review" and composed_review["verified"]:
+                decision_trail.append(
+                    _decision_step(
+                        len(decision_trail) + 1,
+                        "Answer synthesized",
+                        "Composed from nearest evidence and verified against the source text; still routed to human review.",
+                    )
+                )
             decision_trail.append(
                 _decision_step(
                     len(decision_trail) + 1,
@@ -1474,6 +1699,10 @@ class EnterpriseRagOrchestrator:
                 attempts=attempts,
                 review_guidance=review_guidance(final_status),
                 review_note=review_note(),
+                source_evidence=composed_review["source_evidence"] if final_status == "needs_review" else [],
+                synthesized_answer=composed_review["synthesized"],
+                verbatim_answer=composed_review["verbatim"],
+                synthesis_verified=composed_review["verified"],
             ))
         finally:
             reset_current_question(token)
@@ -1499,6 +1728,10 @@ class EnterpriseRagOrchestrator:
         attempts: list[dict[str, Any]] | None = None,
         review_guidance_text: str | None = None,
         review_note_text: str | None = None,
+        source_evidence: list[dict[str, Any]] | None = None,
+        synthesized_answer: str | None = None,
+        verbatim_answer: str | None = None,
+        synthesis_verified: bool = False,
     ) -> OrchestratedRunResult:
         return OrchestratedRunResult(
             question=question,
@@ -1524,6 +1757,10 @@ class EnterpriseRagOrchestrator:
             attempts=attempts or [],
             review_guidance=review_guidance_text,
             review_note=review_note_text,
+            source_evidence=source_evidence or [],
+            synthesized_answer=synthesized_answer,
+            verbatim_answer=verbatim_answer,
+            synthesis_verified=synthesis_verified,
         )
 
     def _failure_result(

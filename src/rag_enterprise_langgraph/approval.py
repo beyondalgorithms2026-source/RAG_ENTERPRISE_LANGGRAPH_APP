@@ -128,6 +128,35 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+PUBLIC_FIELDS = (
+    "approval_id",
+    "run_id",
+    "status",
+    "question",
+    "evidence_status",
+    "grounding_status",
+    "risk_reasons",
+    "requested_at",
+    "decided_at",
+    "reviewer",
+    "comment",
+)
+
+
+def released_view(record: dict[str, Any]) -> dict[str, Any]:
+    """User-facing view of an approval record.
+
+    The answer (and its preview) is released only once approved; pending and
+    rejected records stay withheld. Reviewer-facing surfaces use the raw
+    records from the store instead.
+    """
+    view = {key: record.get(key) for key in PUBLIC_FIELDS}
+    if record.get("status") == APPROVED:
+        view["answer_preview"] = record.get("answer_preview")
+        view["released_answer"] = record.get("full_answer")
+    return view
+
+
 class ApprovalStore:
     """Append-only JSONL approval records; the latest record per approval_id wins."""
 
@@ -193,6 +222,9 @@ class ApprovalStore:
 
     def pending(self) -> list[dict[str, Any]]:
         return [record for record in self.all() if record.get("status") == PENDING_APPROVAL]
+
+    def by_run_id(self, run_id: str) -> dict[str, Any] | None:
+        return next((record for record in self.all() if record.get("run_id") == run_id), None)
 
     def _decide(self, approval_id: str, status: str, reviewer: str, comment: str | None) -> dict[str, Any]:
         record = self.get(approval_id)
@@ -272,6 +304,13 @@ def build_approval_router(store: ApprovalStore, audit_log: AuditLog | None = Non
                 payload={"approval_id": record["approval_id"], "risk_reasons": record["risk_reasons"]},
             )
         return record
+
+    @router.get("")
+    async def list_approvals(status: str | None = None):
+        records = store.all()
+        if status:
+            records = [record for record in records if record.get("status") == status]
+        return {"approvals": [released_view(record) for record in records]}
 
     @router.get("/pending")
     async def pending_approvals():

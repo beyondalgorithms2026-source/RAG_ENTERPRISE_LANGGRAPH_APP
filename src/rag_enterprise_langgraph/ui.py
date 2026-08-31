@@ -85,6 +85,11 @@ def build_ui_router() -> APIRouter:
   <h2>Result</h2>
   <div id="ask-result"><div class="empty">No run yet. Ask a question above — the answer, evidence, decision trail, and tool timeline will appear here.</div></div>
 </div>
+<div class="card">
+  <h2>Run history</h2>
+  <p class="small muted" style="margin:0 0 10px">Click a question to load its full result above. Approved answers are released; pending and rejected answers stay withheld.</p>
+  <div id="run-history"><div class="spinner">Loading…</div></div>
+</div>
 """,
         )
 
@@ -94,8 +99,14 @@ def build_ui_router() -> APIRouter:
             title="Approval Queue",
             page="approvals",
             active="/app/approvals",
-            lede="High-risk answers are held at pending_approval until a named reviewer approves or rejects them. Decisions are persisted and written to the audit log.",
-            body='<div id="approval-list"></div>',
+            lede="High-risk answers are held at pending_approval until a named reviewer approves or rejects them. Decisions are persisted and written to the audit log; approved answers are released below.",
+            body="""
+<div id="approval-list"></div>
+<div class="card">
+  <h2>Recent decisions</h2>
+  <div id="decision-list"><div class="spinner">Loading…</div></div>
+</div>
+""",
         )
 
     @router.get("/app/audit", response_class=HTMLResponse)

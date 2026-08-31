@@ -14,6 +14,7 @@ from rag_enterprise_langgraph.demo_proof import build_demo_proof, resolve_demo_q
 from rag_enterprise_langgraph.eval_store import EvalStore, build_eval_router
 from rag_enterprise_langgraph.orchestrator import EnterpriseRagOrchestrator, run_before_after
 from rag_enterprise_langgraph.red_team import build_red_team_router
+from rag_enterprise_langgraph.run_store import RunStore, build_runs_router
 from rag_enterprise_langgraph.ui import build_ui_router
 
 
@@ -47,8 +48,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     audit_log = AuditLog(runtime_settings.audit_log_path)
     approval_store = ApprovalStore(runtime_settings.approvals_path)
     eval_store = EvalStore(runtime_settings.eval_runs_dir)
+    run_store = RunStore(runtime_settings.run_results_dir)
     orchestrator = EnterpriseRagOrchestrator(
-        runtime_settings, audit_log=audit_log, approval_store=approval_store
+        runtime_settings, audit_log=audit_log, approval_store=approval_store, run_store=run_store
     )
     app = FastAPI(title=runtime_settings.app_name)
 
@@ -81,6 +83,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 journal_path=journal_path,
                 audit_log=audit_log,
                 approval_store=approval_store,
+                run_store=run_store,
             )
             if rules_path or journal_path
             else orchestrator
@@ -107,6 +110,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 journal_path=request.journal_path,
                 audit_log=audit_log,
                 approval_store=approval_store,
+                run_store=run_store,
             )
             if request.rules_path or request.journal_path
             else orchestrator
@@ -135,7 +139,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
     app.include_router(build_approval_router(approval_store, audit_log))
-    app.include_router(build_audit_router(audit_log))
+    app.include_router(build_audit_router(audit_log, approval_store))
+    app.include_router(build_runs_router(run_store, approval_store))
     app.include_router(build_eval_router(eval_store, runtime_settings))
     app.include_router(
         build_red_team_router(

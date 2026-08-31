@@ -52,12 +52,19 @@ class Settings(BaseSettings):
     audit_log_path: str = "runs/audit-log.jsonl"
     approvals_path: str = "runs/approvals.jsonl"
     eval_runs_dir: str = "runs/eval-runs"
+    run_results_dir: str = "runs/run-results"
     red_team_findings_path: str = "config/red-team-findings.json"
     red_team_latest_path: str = "runs/red-team/latest.json"
 
     input_token_cost_per_1m: float = 3.0
     output_token_cost_per_1m: float = 15.0
     default_estimated_tokens_per_query: int = 2500
+
+    # Grounded synthesis (Tier 2): when enabled, the recovery path composes a
+    # readable answer from the retrieved verbatim evidence and only shows it if
+    # it passes verification against the source. Default off keeps the layer
+    # non-generative and the answer purely extractive.
+    enable_synthesis: bool = False
 
     def _dotenv_values(self) -> dict[str, str]:
         values = dotenv_values(".env")

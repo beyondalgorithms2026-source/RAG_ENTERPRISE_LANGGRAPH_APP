@@ -19,6 +19,7 @@ from rag_enterprise_langgraph.eval_runner import render_eval_markdown, run_eval,
 from rag_enterprise_langgraph.eval_store import EvalStore, build_eval_run_summary
 from rag_enterprise_langgraph.orchestrator import EnterpriseRagOrchestrator
 from rag_enterprise_langgraph.red_team import render_red_team_markdown, run_red_team, save_latest
+from rag_enterprise_langgraph.run_store import RunStore
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -185,6 +186,7 @@ async def _run(args: argparse.Namespace) -> int:
     approval_gating = args.require_approval or args.approval_risk_mode != "off"
     audit_log = AuditLog(args.audit_log or settings.audit_log_path)
     approval_store = ApprovalStore(args.approvals_file or settings.approvals_path)
+    run_store = RunStore(settings.run_results_dir)
 
     if args.eval_xlsx:
         report = await run_eval(
@@ -219,6 +221,7 @@ async def _run(args: argparse.Namespace) -> int:
             journal_path=args.journal,
             audit_log=audit_log,
             approval_store=approval_store,
+            run_store=run_store,
         )
         proof = await build_demo_proof(
             orchestrator=orchestrator,
@@ -257,6 +260,7 @@ async def _run(args: argparse.Namespace) -> int:
             journal_path=args.journal,
             audit_log=audit_log,
             approval_store=approval_store,
+            run_store=run_store,
         )
         result = await orchestrator.run(
             args.question,
