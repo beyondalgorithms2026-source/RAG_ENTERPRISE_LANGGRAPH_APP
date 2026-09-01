@@ -25,7 +25,7 @@ It is **permanently out of B004 scope and must never be made public.**
 
 ## Days
 
-- [ ] D1 Tue 1 Sep — branches, MCP into git, JWT history purge, secret defaults
+- [x] D1 Tue 1 Sep — branches, MCP into git, JWT history purge, secret defaults
 - [ ] D2 Wed 2 Sep — paths, config, langchain-ollama, clean-clone run, corpus start
 - [ ] D3 Thu 3 Sep — corpus done, evidence.py fix, evals re-run   <-- GATE
 - [ ] D4 Fri 4 Sep — starter skip guards, cleanup, LICENSE x3
@@ -49,7 +49,8 @@ It is **permanently out of B004 scope and must never be made public.**
 
 - [x] 3 JWTs purged from the starter's local history (D1) — 73 of 101 commits carried
       the file; 0 occurrences remain across all refs
-- [ ] Purged history force-pushed to origin — **awaiting approval**
+- [x] Purged history force-pushed to origin (approved) — 6 branches and 82 tags
+      rewritten; verified 0 occurrences of the file across all remote refs
 - [x] 3 JWTs invalidated by nulling `DEV_LOCAL_JWT_SECRET` (D1) — see note below
 - [x] 4 secret defaults nulled and made required (D1, commit `d0a813e`) —
       `AUTH_STATE_SIGNING_SECRET`, `DEV_LOCAL_JWT_SECRET`, `DEV_TEST_USER_PASSWORD`,
@@ -121,15 +122,28 @@ no instance can mint or verify a token with the old key.
 
 - Nothing.
 
+- **Force-pushed the purged starter history** after approval. `git push --force --all`
+  also pushed `RAG_Enterprise_MCP_DEV`, a local-only branch that had never existed on the
+  remote; deleted it again to restore the prior remote branch set. Remote now carries the
+  same 6 branches as before, all rewritten, with 0 occurrences of the token file.
+- Checked whether receipt text had leaked into the `runs/` logs that *are* backed up on
+  GitHub. It has not — the only match in the assets repo is the README prose describing
+  the exclusion.
+
 **Not done / carried to D2**
 
-- Force-push of the purged starter history (needs approval).
 - The starter's backend test suite could not be run to check the secret-default change:
   it requires a live migrated Postgres and has no skip guards. That is the D4 item.
 
+**Known, not a B004 item**
+
+- The three personal billing documents were ingested into the local Postgres corpus, so
+  their extracted text sits in the local pgvector database. That database is local Docker
+  only and is never published. Deleting the source files does not remove the rows.
+
 **Hours**
 
-- ~3h of 6h
+- ~3.5h of 6h. D1 finished early; stopped rather than pulling D2 work forward.
 
 **Commits**
 
@@ -140,9 +154,9 @@ no instance can mint or verify a token with the old key.
 
 ## Open blockers
 
-1. **Force-push of the purged starter history to origin.** The rewrite is done locally
-   and verified. GitHub still holds the old history until it is overwritten. Awaiting
-   approval — this rewrites 6 remote branches and 82 tags.
+1. **MCP server: standalone repository or submodule of the app repo?** Recorded as
+   standalone (the status quo, no action needed) pending confirmation. Decision needed
+   before the D6 READMEs describe the clone path.
 2. **Starter default-branch resolution for D6.** `master` is 94 commits behind the line
    B004 sits on (which runs through `experimental-fable-ui-v2`). "Merge to the default
    branch" is not yet a well-defined operation there. Needs a decision before D6.
