@@ -26,7 +26,7 @@ It is **permanently out of B004 scope and must never be made public.**
 ## Days
 
 - [x] D1 Tue 1 Sep — branches, MCP into git, JWT history purge, secret defaults
-- [ ] D2 Wed 2 Sep — paths, config, langchain-ollama, clean-clone run, corpus start
+- [x] D2 Wed 2 Sep — paths, config, langchain-ollama, clean-clone run, corpus start
 - [ ] D3 Thu 3 Sep — corpus done, evidence.py fix, evals re-run   <-- GATE
 - [ ] D4 Fri 4 Sep — starter skip guards, cleanup, LICENSE x3
 - [ ] D5 Sat 5 Sep — red-team wording, CI + badge, evals page, GitHub Pages
@@ -54,7 +54,9 @@ It is **permanently out of B004 scope and must never be made public.**
 
 ## Verified facts — correct these against reality, never the reverse
 
-- App tests: 109, all offline (audit-verified, `pytest --collect-only` and full run, 2.08s)
+- App tests: **113** as of D2 (was 109; +4 new config tests). All offline. Verified from
+  a clean clone, with no `.env` present and an empty environment — the pre-D2 suite
+  depended on ambient state.
 - Starter tests: 354-357 claimed, 26 files DB-bound. Offline-passing count: `<D4>`
 - Red team: 10 scenarios, 9 defended, 0 failed, 1 requires_backend by design
 - Eval numbers after the evidence.py fix: `<D3 — whatever they turn out to be>`
@@ -171,6 +173,88 @@ no instance can mint or verify a token with the old key.
 - App: `f13b883` (build log)
 - Starter: `d0a813e` (secret defaults) — on rewritten history
 - Assets: `e894b0d` (copyright removal record)
+
+### D2 — Tue 1 Sep 2026 (brought forward from Wed 2 Sep at owner's request)
+
+**Done**
+
+- `config.py:11-12` no longer hardcodes `/Users/Work` paths. `mcp_server_repo` has no
+  default and raises `ConfigError` naming the variable and what to set it to;
+  `validate_paths()` checks the checkout before spawning the MCP child.
+  `mcp_server_python` defaults to the running interpreter.
+- Rewrote the tests that passed for the wrong reason. `test_config.py:23` asserted
+  `PYTHONPATH` started with the same hardcoded path the code defaulted to. Tests now
+  assert against values they set themselves.
+- **All 23 `/Users/Work` references removed from the app repo.** Path-redaction fixtures
+  use a neutral `/Users/example` so `scrub_text()` is still exercised without publishing
+  a directory layout.
+- Declared `langchain-ollama`. Rewrote `.env.example`: every variable named, no real
+  values, and the three contradictory model defaults reconciled to one (`ollama` /
+  `gemma3:4b-it-qat`, matching the documented local stack).
+- Moved the 399-file, 54 MB corpus out of the repository tree to
+  `~/.rag-enterprise/uploads`; `UPLOAD_DIR` now defaults there. Protection is now
+  structural rather than one `.gitignore` line.
+- Began the synthetic public corpus: deterministic generator, 5 HR/policy documents for
+  an invented company, with public/internal/restricted classifications that drive the
+  seeded ACL.
+
+**Found by the clean-clone test — two real bugs invisible from the working venv**
+
+1. **`mcp 2.x` broke the app on a fresh install.** `langchain-mcp-adapters 0.2.x` imports
+   `RequestContext` from `mcp.shared.context`, which `mcp` 2.x removed. Unpinned, a clean
+   resolve picked 2.1.1 and the app failed on import, while the developer venv
+   (`mcp 1.27.1`) kept working. Pinned `mcp>=1.27,<2`.
+2. **The MCP child was spawned outside the app's environment.** `resolved_mcp_server_python()`
+   called `.resolve()`, and a virtualenv's `bin/python` is a symlink to the base
+   interpreter — so `sys.executable` resolved out of the venv. Harmless today because the
+   MCP server is pure standard library, but it would break the moment it gains a
+   dependency, and it matters for the Track B containers.
+
+**Clean-clone verification (the D2 gate)**
+
+Three fresh clones into a temp directory, new venv, `pip install -e .[dev]`:
+
+- 113 tests pass from the clean clone
+- unset config → a clear error naming `RAG_AGENT_MCP_SERVER_REPO` and what to set it to
+- wrong directory → an error saying it does not look like the MCP repo
+- configured correctly → the app spawns the MCP server over stdio and loads all three
+  tools (`ask_grounded`, `search_documents`, `get_document_excerpt`)
+- `--demo-proof` with no backend running → the pipeline runs and refuses cleanly:
+  "Failed to reach backend at http://127.0.0.1:8000: Connection refused", with
+  "No grounded answer could be produced". The governed refusal behaviour working.
+
+Full end-to-end answers still need Docker, Postgres, Ollama and an ingested corpus.
+That is D3, not a D2 failure.
+
+**Decided**
+
+- The public corpus is **internal HR and company policy** for an invented company. It is
+  the clearest setting for the ACL story, and it aligns the corpus with red-team RT-09
+  (high-risk HR/legal/compliance answers) and RT-06 (restricted documents the agent layer
+  cannot reach).
+- Ingestion will reuse the existing `app/seed/` pack mechanism (sources + ACL + chunks
+  through the application's own code path) rather than a parallel ingest script.
+
+**Not done / carried forward**
+
+- The starter still has `/Users/Work` in `STATUS.md`, 8 docs, and
+  `backend/tests/test_deployment_portability_ar8.py`. The docs are rewritten on D6
+  anyway; the test goes with the other starter test work on D4.
+- `CLAUDE.md` documents the dev logins as `password123`, which D1 invalidated. Fix when
+  CLAUDE.md is trimmed to public form on D6.
+
+**Broke**
+
+- Nothing.
+
+**Hours**
+
+- ~4h. D2 brought forward into D1's day at the owner's request.
+
+**Commits**
+
+- App: `0fc0ec4` (paths and config), `6879a77` (dependency pin, interpreter fix)
+- Starter: `72625d5` (corpus out of tree), `5e9e798` (synthetic corpus begun)
 
 ## Open blockers
 
