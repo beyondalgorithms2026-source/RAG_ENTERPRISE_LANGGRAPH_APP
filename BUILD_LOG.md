@@ -93,6 +93,8 @@ no instance can mint or verify a token with the old key.
   at. **The D6 instruction "merge to the default branch" is therefore not yet a
   well-defined operation for the starter.** Open decision — see blockers.
 
+**Done (continued)**
+
 - Installed `git-filter-repo` (Homebrew, `/opt/homebrew/bin/git-filter-repo`). One-off
   developer tool; it is not a dependency of any published package.
 - **Private assets repo cleaned.** Removed 8 Acquired podcast transcripts, 16 third-party
@@ -124,9 +126,7 @@ no instance can mint or verify a token with the old key.
   boundary visible from the repository list itself. The D6 READMEs must present the split
   as a deliberate choice so a reader does not mistake it for disorganisation.
 
-**Broke**
-
-- Nothing.
+**Done (continued)**
 
 - **Force-pushed the purged starter history** after approval. `git push --force --all`
   also pushed `RAG_Enterprise_MCP_DEV`, a local-only branch that had never existed on the
@@ -135,6 +135,10 @@ no instance can mint or verify a token with the old key.
 - Checked whether receipt text had leaked into the `runs/` logs that *are* backed up on
   GitHub. It has not — the only match in the assets repo is the README prose describing
   the exclusion.
+
+**Broke**
+
+- Nothing.
 
 **Not done / carried to D2**
 
