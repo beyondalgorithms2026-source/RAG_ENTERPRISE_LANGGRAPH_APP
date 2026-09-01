@@ -98,7 +98,10 @@ class Settings(BaseSettings):
         return BACKEND_ENV_DEFAULTS.get(key, "")
 
     def resolved_mcp_server_python(self) -> str:
-        return str(self.mcp_server_python.expanduser().resolve())
+        # Absolute but NOT symlink-resolved: a virtualenv's bin/python is a
+        # symlink to the base interpreter, and resolving it would spawn the MCP
+        # server outside the environment the app was installed into.
+        return os.path.abspath(os.path.expanduser(str(self.mcp_server_python)))
 
     def resolved_mcp_server_repo(self) -> str:
         if self.mcp_server_repo is None:

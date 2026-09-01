@@ -12,7 +12,7 @@ def test_build_stdio_connection_uses_absolute_paths(tmp_path):
     connection = build_stdio_connection(settings)
 
     assert connection["transport"] == "stdio"
-    assert connection["command"] == str(python.resolve())
+    assert connection["command"] == str(python)
     assert connection["args"] == ["-m", "rag_enterprise_mcp.server"]
     assert connection["cwd"] == str(repo.resolve())
 

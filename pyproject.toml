@@ -11,6 +11,10 @@ dependencies = [
   "fastapi>=0.136,<0.137",
   "langchain>=1.3.2,<1.4",
   "langchain-mcp-adapters>=0.2.2,<0.3",
+  # langchain-mcp-adapters 0.2.x imports RequestContext from mcp.shared.context,
+  # which mcp 2.x removed. Unpinned, a clean install resolves mcp 2.x and the
+  # app fails on import. Pinned to the major version the suite is tested against.
+  "mcp>=1.27,<2",
   # Both provider packages are declared because the model provider is selected at
   # runtime by RAG_AGENT_MODEL_PROVIDER. Ollama is the default for local use.
   "langchain-ollama>=1.1,<2",

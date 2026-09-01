@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import sys
-from pathlib import Path
 
 import pytest
 
@@ -47,8 +46,15 @@ def test_mcp_server_repo_has_no_default_and_reports_how_to_set_it(monkeypatch):
     assert "RAG_ENTERPRISE_MCP_SERVER" in message
 
 
-def test_mcp_server_python_defaults_to_the_running_interpreter():
-    assert Settings().resolved_mcp_server_python() == str(Path(sys.executable).resolve())
+def test_mcp_server_python_defaults_to_the_running_interpreter(tmp_path, monkeypatch):
+    # chdir so no developer .env is picked up: this asserts the code default,
+    # not whatever happens to be configured on the machine running the tests.
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("RAG_AGENT_MCP_SERVER_PYTHON", raising=False)
+
+    # Not symlink-resolved: inside a virtualenv this must stay the venv's own
+    # interpreter, not the base interpreter it links to.
+    assert Settings().resolved_mcp_server_python() == sys.executable
 
 
 def test_validate_paths_rejects_a_directory_that_is_not_the_mcp_server(tmp_path):
