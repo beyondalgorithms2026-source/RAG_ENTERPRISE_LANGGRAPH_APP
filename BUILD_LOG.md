@@ -31,6 +31,11 @@ It is **permanently out of B004 scope and must never be made public.**
 - [ ] D4 Fri 4 Sep — starter skip guards, cleanup, LICENSE x3
 - [ ] D5 Sat 5 Sep — red-team wording, CI + badge, evals page, GitHub Pages
 - [ ] D6 Sun 6 Sep — READMEs, capability matrix, go/no-go, PUBLIC  <-- MIN COMPLETE
+      **Three-repo split is a deliberate architectural choice, not an accident, and the
+      READMEs must say so explicitly.** Each README states that the agent layer, the
+      integration layer and the data layer are published separately because the agent
+      layer has no direct data access, and that the split makes that boundary externally
+      visible. Without that sentence a reader may read three repos as disorganisation.
 - [ ] D7 Mon 8 Sep — buffer / docs polish
 - [ ] D8 Tue 9 Sep — provider abstraction, corpus trim, hosted pgvector
 - [ ] D9 Wed 10 Sep — deploy backend
@@ -113,10 +118,11 @@ no instance can mint or verify a token with the old key.
 - Before rewriting, `origin/master` on the starter turned out to be 1 commit **ahead** of
   local `master`, not diverged. Fast-forwarded local `master` first so that commit was
   carried through the rewrite rather than destroyed by a later force-push.
-- MCP server stays a **standalone repository**, not a submodule — provisional, pending
-  confirmation. Submodules produce empty-directory confusion for anyone cloning, and
-  three separate public repos make the three-layer security boundary legible from the
-  repository list alone.
+- **DECIDED: the MCP server stays a standalone repository, not a submodule.** Submodules
+  give a first-time cloner an empty directory and the impression the project is broken.
+  More importantly, three separately published repositories make the three-layer security
+  boundary visible from the repository list itself. The D6 READMEs must present the split
+  as a deliberate choice so a reader does not mistake it for disorganisation.
 
 **Broke**
 
@@ -154,13 +160,10 @@ no instance can mint or verify a token with the old key.
 
 ## Open blockers
 
-1. **MCP server: standalone repository or submodule of the app repo?** Recorded as
-   standalone (the status quo, no action needed) pending confirmation. Decision needed
-   before the D6 READMEs describe the clone path.
-2. **Starter default-branch resolution for D6.** `master` is 94 commits behind the line
+1. **Starter default-branch resolution for D6.** `master` is 94 commits behind the line
    B004 sits on (which runs through `experimental-fable-ui-v2`). "Merge to the default
    branch" is not yet a well-defined operation there. Needs a decision before D6.
-3. **GitHub retains unreachable objects after a force-push** until it garbage-collects,
+2. **GitHub retains unreachable objects after a force-push** until it garbage-collects,
    on a schedule you do not control. Fully removing them requires deleting and recreating
    the repository, which needs a `delete_repo` token scope the current `gh` login does not
    have. Applies to both the starter and the assets repo.
