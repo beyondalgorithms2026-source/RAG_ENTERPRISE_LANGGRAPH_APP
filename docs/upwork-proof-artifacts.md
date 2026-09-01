@@ -51,7 +51,7 @@ Open <http://127.0.0.1:8080/app>.
 8. `Eval Dashboard: Accuracy, Faithfulness, Latency, and Estimated Cost`
    ```bash
    PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.cli \
-     --eval-xlsx /Users/Work/Desktop/acquired-qa-evaluation.xlsx --save-eval-run
+     --eval-xlsx path/to/your-eval-questions.xlsx --save-eval-run
    ```
    Then capture `/app/evals`. Cost/query is a labeled estimate, not billing.
 9. `Red-Team Findings: Failure Modes Tested Before Deployment`

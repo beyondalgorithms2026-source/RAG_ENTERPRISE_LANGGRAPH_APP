@@ -200,7 +200,7 @@ def test_redaction_removes_raw_prompts_and_tracebacks_even_with_debug_enabled():
                 "answer_generation_path": "not_found",
                 "system_prompt": "secret prompt",
                 "user_prompt": "raw source prompt",
-                "traceback": "Traceback File \"/Users/Work/private.py\"",
+                "traceback": "Traceback File \"/Users/example/private.py\"",
                 "retrieval_trace": {"score_diagnostics": [{"chunk_id": 1}]},
             },
             "raw": "raw backend payload",

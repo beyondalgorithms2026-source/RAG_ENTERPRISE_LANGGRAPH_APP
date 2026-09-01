@@ -141,7 +141,7 @@ Run the Acquired workbook eval:
 
 ```bash
 rag-enterprise-agent \
-  --eval-xlsx /Users/Work/Desktop/acquired-qa-evaluation.xlsx \
+  --eval-xlsx path/to/your-eval-questions.xlsx \
   --eval-output acquired-eval-report.md \
   --eval-json acquired-eval-results.json \
   --journal runs/orchestration-journal.jsonl \
@@ -285,7 +285,7 @@ PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.cli --export-audi
 
 # Eval dashboard data and red-team findings
 PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.cli \
-  --eval-xlsx /Users/Work/Desktop/acquired-qa-evaluation.xlsx --save-eval-run
+  --eval-xlsx path/to/your-eval-questions.xlsx --save-eval-run
 PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.cli --red-team \
   --red-team-output red-team-report.md --red-team-json red-team-results.json
 ```

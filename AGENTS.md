@@ -29,7 +29,7 @@ flows**. It sits between a user (CLI/API) and the `rag-enterprise-mcp` server.
 **Connection model:** the app spawns the MCP server as a child process over
 **stdio** via `MultiServerMCPClient` (`build_stdio_connection` in
 [mcp_client.py](src/rag_enterprise_langgraph/mcp_client.py)). The MCP server
-repo defaults to `/Users/Work/Projects/repos/RAG_ENTERPRISE_MCP_SERVER` and is
+repo is set by `RAG_AGENT_MCP_SERVER_REPO`, has no default, and is
 launched with `python -m rag_enterprise_mcp.server`, with backend env vars
 (`RAG_BACKEND_*`) passed through from `.env` / the environment
 ([config.py](src/rag_enterprise_langgraph/config.py)).
@@ -49,7 +49,7 @@ the MCP/backend repos, not here — stop and say so.
 Install (Python 3.12 venv is the project convention):
 
 ```bash
-/Users/Work/.local/bin/python3.12 -m venv .venv312
+python3.12 -m venv .venv312
 .venv312/bin/pip install -e .[dev]
 ```
 

@@ -45,7 +45,7 @@ Use Python 3.10+.
 The current `langchain-mcp-adapters` package does not support Python 3.9.
 This workspace was scaffolded and tested with:
 
-- `/Users/Work/.local/bin/python3.12`
+- Python 3.12 (any interpreter on your PATH)
 
 ## Environment
 
@@ -66,7 +66,7 @@ Important settings:
 ## Install
 
 ```bash
-/Users/Work/.local/bin/python3.12 -m venv .venv312
+python3.12 -m venv .venv312
 .venv312/bin/pip install -e .[dev]
 ```
 
@@ -154,7 +154,7 @@ Run the Acquired QA workbook against the same orchestrator:
 
 ```bash
 PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.cli \
-  --eval-xlsx /Users/Work/Desktop/acquired-qa-evaluation.xlsx \
+  --eval-xlsx path/to/your-eval-questions.xlsx \
   --eval-output acquired-eval-report.md \
   --eval-json acquired-eval-results.json \
   --journal runs/orchestration-journal.jsonl \
@@ -251,7 +251,7 @@ costs — never presented as exact billing):
 
 ```bash
 PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.cli \
-  --eval-xlsx /Users/Work/Desktop/acquired-qa-evaluation.xlsx --save-eval-run
+  --eval-xlsx path/to/your-eval-questions.xlsx --save-eval-run
 PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.cli --eval-runs
 PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.cli --show-eval-run EVAL_RUN_ID
 ```

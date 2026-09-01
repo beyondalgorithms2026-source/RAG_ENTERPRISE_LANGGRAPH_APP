@@ -60,7 +60,7 @@ def test_audit_sanitization_removes_secrets_paths_and_tracebacks(tmp_path):
         event_type="tool_call_failed",
         run_id="run-1",
         actor="orchestrator",
-        summary='failed with Authorization: Bearer abc123secret at /Users/Work/private/file.py',
+        summary='failed with Authorization: Bearer abc123secret at /Users/example/private/file.py',
         payload={
             "password": "hunter2",
             "api_key": "sk-live-123",
@@ -75,14 +75,14 @@ def test_audit_sanitization_removes_secrets_paths_and_tracebacks(tmp_path):
     assert "abc123secret" not in text
     assert "xyz789" not in text
     assert "session=abc" not in text
-    assert "/Users/Work/private" not in text
+    assert "/Users/example/private" not in text
     assert "most recent call last" not in text
     assert event["payload"]["nested"]["safe"] == "keep-me"
 
 
 def test_scrub_text_and_sanitize_for_audit_helpers():
     assert "secret-value" not in scrub_text("bearer secret-value")
-    assert "[path-redacted]" in scrub_text("/Users/Work/some/file.txt")
+    assert "[path-redacted]" in scrub_text("/Users/example/some/file.txt")
     sanitized = sanitize_for_audit({"prompt": "raw prompt text", "answer": "ok"})
     assert "prompt" not in sanitized
     assert sanitized["answer"] == "ok"

@@ -14,7 +14,7 @@ def test_journal_sanitizes_debug_paths_and_secrets(tmp_path):
             "question": "Q",
             "backend_bearer_token": "secret",
             "debug_info": {"system_prompt": "hidden"},
-            "trace": 'File "/Users/Work/private.py"',
+            "trace": 'File "/Users/example/private.py"',
             "nested": {"api_key": "hidden", "kept": "ok"},
         },
     )

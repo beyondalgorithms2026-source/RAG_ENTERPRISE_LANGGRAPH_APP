@@ -11,6 +11,9 @@ dependencies = [
   "fastapi>=0.136,<0.137",
   "langchain>=1.3.2,<1.4",
   "langchain-mcp-adapters>=0.2.2,<0.3",
+  # Both provider packages are declared because the model provider is selected at
+  # runtime by RAG_AGENT_MODEL_PROVIDER. Ollama is the default for local use.
+  "langchain-ollama>=1.1,<2",
   "langchain-openai>=1.2.2,<1.3",
   "langgraph>=1.2.2,<1.3",
   "python-dotenv>=1.2,<2",

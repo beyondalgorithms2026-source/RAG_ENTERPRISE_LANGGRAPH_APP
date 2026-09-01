@@ -3,12 +3,13 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import sys
 from pathlib import Path
 
 from rag_enterprise_langgraph.agent import RagEnterpriseAgent
 from rag_enterprise_langgraph.approval import ApprovalStore
 from rag_enterprise_langgraph.audit import AuditLog
-from rag_enterprise_langgraph.config import Settings
+from rag_enterprise_langgraph.config import ConfigError, Settings
 from rag_enterprise_langgraph.demo_proof import (
     build_demo_proof,
     render_text_report,
@@ -183,6 +184,10 @@ async def _run(args: argparse.Namespace) -> int:
     if standalone is not None:
         return standalone
 
+    # Everything past this point spawns the MCP server, so check the paths now
+    # rather than letting a child process fail with an opaque import error.
+    settings.validate_paths()
+
     approval_gating = args.require_approval or args.approval_risk_mode != "off"
     audit_log = AuditLog(args.audit_log or settings.audit_log_path)
     approval_store = ApprovalStore(args.approvals_file or settings.approvals_path)
@@ -298,7 +303,13 @@ async def _run(args: argparse.Namespace) -> int:
 
 def main() -> int:
     args = build_parser().parse_args()
-    return asyncio.run(_run(args))
+    try:
+        return asyncio.run(_run(args))
+    except ConfigError as exc:
+        # Configuration problems are the user's to fix, so report them as a
+        # message rather than a traceback.
+        print(f"Configuration error:\n{exc}", file=sys.stderr)
+        return 2
 
 
 if __name__ == "__main__":

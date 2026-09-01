@@ -5,7 +5,7 @@ from rag_enterprise_langgraph.eval_store import EvalStore, build_eval_run_summar
 
 
 SAMPLE_REPORT = {
-    "xlsx_path": "/Users/Work/somewhere/eval-questions.xlsx",
+    "xlsx_path": "/Users/example/somewhere/eval-questions.xlsx",
     "total": 4,
     "passed": 3,
     "failed": 0,

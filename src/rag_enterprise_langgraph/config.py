@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 
 from pydantic import Field
@@ -8,8 +9,22 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from dotenv import dotenv_values
 
 
-DEFAULT_MCP_REPO = Path("/Users/Work/Projects/repos/RAG_ENTERPRISE_MCP_SERVER")
-DEFAULT_MCP_PYTHON = Path("/Users/Work/.local/bin/python3.12")
+class ConfigError(RuntimeError):
+    """Raised when required configuration is missing or points somewhere unusable.
+
+    Carries a message naming the environment variable and what it should be set
+    to, so the failure is actionable without reading this file.
+    """
+
+
+# The MCP server lives in its own repository, so its location cannot be guessed
+# and has no default: see resolved_mcp_server_repo(). The interpreter, by
+# contrast, defaults to the one already running, which is correct whenever the
+# MCP server is installed into the same environment as this app.
+def _default_mcp_python() -> Path:
+    return Path(sys.executable)
+
+
 DEFAULT_BACKEND_ENV_KEYS = (
     "RAG_BACKEND_BASE_URL",
     "RAG_BACKEND_TIMEOUT_SECONDS",
@@ -34,13 +49,16 @@ class Settings(BaseSettings):
     app_name: str = "rag-enterprise-agent"
     debug: bool = False
 
-    model_provider: str = "openai"
-    model_name: str = "gpt-4.1-mini"
+    # Local by default: the whole system is designed to run on your own hardware
+    # with no data leaving it. Set RAG_AGENT_MODEL_PROVIDER=openai (or any other
+    # provider supported by init_chat_model) to use a hosted model instead.
+    model_provider: str = "ollama"
+    model_name: str = "gemma3:4b-it-qat"
     model_temperature: float = 0.0
 
     mcp_server_name: str = "rag-enterprise-mcp"
-    mcp_server_python: Path = Field(default=DEFAULT_MCP_PYTHON)
-    mcp_server_repo: Path = Field(default=DEFAULT_MCP_REPO)
+    mcp_server_python: Path = Field(default_factory=_default_mcp_python)
+    mcp_server_repo: Path | None = Field(default=None)
     mcp_server_module: str = "rag_enterprise_mcp.server"
     mcp_server_version: str = "0.1.0"
     mcp_server_encoding: str = "utf-8"
@@ -83,7 +101,40 @@ class Settings(BaseSettings):
         return str(self.mcp_server_python.expanduser().resolve())
 
     def resolved_mcp_server_repo(self) -> str:
+        if self.mcp_server_repo is None:
+            raise ConfigError(
+                "RAG_AGENT_MCP_SERVER_REPO is not set and has no default. Set it to your "
+                "local clone of the RAG_ENTERPRISE_MCP_SERVER repository, for example:\n"
+                "  RAG_AGENT_MCP_SERVER_REPO=/path/to/RAG_ENTERPRISE_MCP_SERVER\n"
+                "The MCP server is a separate repository because the agent layer has no "
+                "direct data access. See .env.example and the README."
+            )
         return str(self.mcp_server_repo.expanduser().resolve())
+
+    def validate_paths(self) -> None:
+        """Check the configured paths before anything tries to spawn a subprocess.
+
+        Called at start-up so a misconfigured checkout fails with an explanation
+        rather than an opaque error from the child process.
+        """
+        repo = Path(self.resolved_mcp_server_repo())
+        if not repo.is_dir():
+            raise ConfigError(
+                f"RAG_AGENT_MCP_SERVER_REPO points at '{repo}', which does not exist. "
+                "Set it to your local clone of the RAG_ENTERPRISE_MCP_SERVER repository."
+            )
+        if not (repo / "src" / "rag_enterprise_mcp").is_dir():
+            raise ConfigError(
+                f"RAG_AGENT_MCP_SERVER_REPO points at '{repo}', which does not look like "
+                "the MCP server repository: expected to find src/rag_enterprise_mcp/ "
+                "inside it."
+            )
+        python = Path(self.resolved_mcp_server_python())
+        if not python.exists():
+            raise ConfigError(
+                f"RAG_AGENT_MCP_SERVER_PYTHON points at '{python}', which does not exist. "
+                "Leave it unset to use the interpreter running this app."
+            )
 
     def mcp_server_args(self) -> list[str]:
         return ["-m", self.mcp_server_module]
@@ -99,13 +150,18 @@ class Settings(BaseSettings):
             if value:
                 env[key] = value
         existing_pythonpath = os.environ.get("PYTHONPATH", "").strip()
-        repo_src = str((self.mcp_server_repo.expanduser().resolve() / "src"))
+        repo_src = str(Path(self.resolved_mcp_server_repo()) / "src")
         env["PYTHONPATH"] = repo_src if not existing_pythonpath else f"{repo_src}{os.pathsep}{existing_pythonpath}"
         env["MCP_SERVER_NAME"] = self.mcp_server_name
         env["MCP_SERVER_VERSION"] = self.mcp_server_version
         return env
 
     def diagnostic_summary(self) -> dict[str, object]:
+        # A diagnostic must describe a broken configuration rather than fail on it.
+        try:
+            mcp_server_repo = self.resolved_mcp_server_repo()
+        except ConfigError:
+            mcp_server_repo = "<not set: RAG_AGENT_MCP_SERVER_REPO>"
         return {
             "app_name": self.app_name,
             "debug": self.debug,
@@ -113,7 +169,7 @@ class Settings(BaseSettings):
             "model_name": self.model_name,
             "mcp_server_name": self.mcp_server_name,
             "mcp_server_python": self.resolved_mcp_server_python(),
-            "mcp_server_repo": self.resolved_mcp_server_repo(),
+            "mcp_server_repo": mcp_server_repo,
             "mcp_server_module": self.mcp_server_module,
             "backend_base_url": self.backend_env_value("RAG_BACKEND_BASE_URL"),
             "backend_timeout_seconds": self.backend_env_value("RAG_BACKEND_TIMEOUT_SECONDS"),
