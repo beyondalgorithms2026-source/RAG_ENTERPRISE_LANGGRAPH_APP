@@ -38,6 +38,16 @@ It is **permanently out of B004 scope and must never be made public.**
       visible. Without that sentence a reader may read three repos as disorganisation.
 - [ ] D7 Mon 8 Sep — buffer / docs polish
 - [ ] D8 Tue 9 Sep — provider abstraction, corpus trim, hosted pgvector
+      **Scope confirmed to include an embedding-provider abstraction (3-5h), now a
+      formal part of B004.** `backend/app/embedding/embedder.py` calls
+      `SentenceTransformer()` directly and has no hosted path, unlike the LLM layer which
+      already has a provider registry. Hosted embeddings are also what let the deployed
+      backend drop PyTorch and fit a free tier. Absorbed by D7's buffer; D11 unchanged.
+      D8 must begin by reading the live `vector(N)` column type rather than trusting
+      any document: `core/config.py:28` says `BAAI/bge-small-en-v1.5` (384 dims), not
+      BGE Base (768). The chosen hosted model's dimension is frozen once the corpus is
+      loaded. Pin a versioned model identifier — ingest and query vectors must come from
+      the identical model or retrieval degrades silently.
 - [ ] D9 Wed 10 Sep — deploy backend
 - [ ] D10 Thu 11 Sep — deploy front end
 - [ ] D11 Fri 12 Sep — walkthrough
