@@ -31,8 +31,8 @@ It is **permanently out of B004 scope and must never be made public.**
 - [x] D1 Tue 1 Sep — branches, MCP into git, JWT history purge, secret defaults
 - [x] D2 Wed 2 Sep — paths, config, langchain-ollama, clean-clone run, corpus start
 - [x] D3 Thu 3 Sep — corpus done, evidence.py fix, evals re-run   <-- GATE
-- [ ] D4 Fri 4 Sep — starter skip guards, cleanup, LICENSE x3
-- [ ] D5 Sat 5 Sep — red-team wording, CI + badge, evals page, GitHub Pages
+- [x] D4 Fri 4 Sep — starter skip guards, cleanup, LICENSE x3
+- [x] D5 Sat 5 Sep — red-team wording, CI + badge, evals page, GitHub Pages
       The evaluation page links to the published corpus, so a reader can check any
       answer against the source documents themselves.
       **DECIDED: generate on D5, publish on D6.** GitHub Pages does not serve from a
@@ -89,7 +89,21 @@ It is **permanently out of B004 scope and must never be made public.**
 - App tests: **113** as of D2 (was 109; +4 new config tests). All offline. Verified from
   a clean clone, with no `.env` present and an empty environment — the pre-D2 suite
   depended on ambient state.
-- Starter tests: 354-357 claimed, 26 files DB-bound. Offline-passing count: `<D4>`
+- Starter tests: **27 pass, 34 skipped, 0 failures offline** (D4). 22 of 36 files are
+  DB-bound; before the guards the suite hard-failed on connection errors, which is
+  indistinguishable from genuine failure. `RAG_REQUIRE_DB=1` turns the skip into a hard
+  failure so a CI job that should have a database cannot pass by skipping everything.
+- **Third configuration (D5): retrieval augmentation ON changed nothing measurable.**
+  Same model, same corpus, same questions; reranking, MMR, transform, rewrite,
+  expansion, HyDE, multi-query and RRF fusion all enabled via the product's own profile
+  API. 0 fixed, 0 broken, identical 17/25, ~6x latency. Verified the pipeline actually
+  ran (cross-encoder loaded; answer wording changed on 5 of 25) rather than silently
+  no-opping. Published with the corpus-size caveat: 131 chunks and 60 candidates means
+  retrieval already considers half the corpus before ranking, and ranking cannot promote
+  a chunk that was never a candidate. Not generalisable to larger corpora.
+- Red-team wording needed **no correction in the repos** - the runner already reports
+  9 defended / 0 failed / 1 requires_backend. The "1 failure" phrasing the audit warned
+  about is in the Upwork portfolio, outside these repositories. Correct it there.
 - Red team: 10 scenarios, 9 defended, 0 failed, 1 requires_backend by design
 - Eval numbers after the evidence.py fix: **17 of 25**, on the synthetic Northwind
   corpus with `llama3.2:3b` running locally. Refusal cases 5/5. Answerable 12/20.
