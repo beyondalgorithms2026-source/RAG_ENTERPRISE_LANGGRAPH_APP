@@ -1,13 +1,4 @@
 {
-  "rules": [
-    {
-      "id": "custom_example",
-      "question_terms": ["example", "question"],
-      "required_any": [["required term", "accepted alias"]],
-      "answer_any": ["expected answer term"],
-      "aliases": {
-        "expected answer term": ["accepted alias"]
-      }
-    }
-  ]
+  "_comment": "No rules configured. See orchestration-rules.example.json for the shape.",
+  "rules": []
 }

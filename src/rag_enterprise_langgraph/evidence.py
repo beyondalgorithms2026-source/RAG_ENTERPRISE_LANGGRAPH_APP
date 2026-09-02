@@ -12,7 +12,6 @@ class OrchestrationRule:
     id: str
     question_terms: list[str] = field(default_factory=list)
     required_any: list[list[str]] = field(default_factory=list)
-    answer_any: list[str] = field(default_factory=list)
     aliases: dict[str, list[str]] = field(default_factory=dict)
 
 
@@ -36,63 +35,19 @@ class EvidenceVerdict:
         }
 
 
-DEFAULT_RULES = [
-    OrchestrationRule(
-        id="aws_formation_head",
-        question_terms=["aws", "formed", "head"],
-        required_any=[["2002"], ["collin", "collin brier"]],
-        answer_any=["2002", "collin", "collin brier"],
-    ),
-    OrchestrationRule(
-        id="werner_vogels_quora_2011",
-        question_terms=["werner", "vogels", "quora", "2011"],
-        required_any=[
-            ["excess capacity", "excess infrastructure"],
-            ["myth"],
-            ["two months", "within two months"],
-            ["business by itself", "standalone business"],
-        ],
-        answer_any=["excess capacity", "myth", "two months", "business by itself", "standalone business"],
-    ),
-    OrchestrationRule(
-        id="jeff_bezos_boots_jacket",
-        question_terms=["bezos", "boots", "jacket"],
-        required_any=[["cowboy boots"], ["jacket"]],
-        answer_any=["cowboy boots", "jacket"],
-    ),
-    OrchestrationRule(
-        id="blue_origin_operations",
-        question_terms=["blue", "origin", "operations"],
-        required_any=[["van horn", "west texas", "texas"]],
-        answer_any=["van horn", "west texas", "texas"],
-    ),
-    OrchestrationRule(
-        id="first_free_email_service",
-        question_terms=["first", "free", "email"],
-        required_any=[["juno"]],
-        answer_any=["juno"],
-    ),
-    OrchestrationRule(
-        id="sam_walton_ibm_seminar",
-        question_terms=["sam", "walton", "seminar", "poughkeepsie"],
-        required_any=[["seminar", "training"], ["ibm"], ["computer", "computing", "technology"]],
-        answer_any=["ibm computer training seminar", "ibm seminar", "computing technology", "computer technology"],
-    ),
-    OrchestrationRule(
-        id="sam_walton_ben_franklin_rent",
-        question_terms=["rent", "sales", "ben", "franklin"],
-        required_any=[["5%", "0.05", "five percent"]],
-        answer_any=["5%", "0.05", "five percent"],
-        aliases={"5%": ["0.05", "five percent"]},
-    ),
-    OrchestrationRule(
-        id="walmart_ipo_revenue_growth",
-        question_terms=["walmart", "ipo", "revenue"],
-        required_any=[["77%", "0.77", "seventy seven percent"]],
-        answer_any=["77%", "0.77", "seventy seven percent"],
-        aliases={"77%": ["0.77", "seventy seven percent"]},
-    ),
-]
+# No rules ship in source.
+#
+# This list previously held eight rules whose `answer_any` fields contained the
+# literal answers to eight questions in the project's own evaluation set - and
+# `load_rules()` seeded them even when a custom rules path was given, so there was
+# no way to opt out. `expected_terms_from_answer()` then returned those terms
+# directly, which meant the function deciding whether an answer was supported had
+# been told the answers in advance.
+#
+# Any eval number produced that way is uninterpretable. Rules are configuration
+# now: supply them with --rules, and see config/orchestration-rules.example.json
+# for the shape.
+DEFAULT_RULES: list[OrchestrationRule] = []
 
 
 def _normalize_text(value: Any) -> str:
@@ -137,13 +92,19 @@ def _expand_aliases(values: Sequence[str], rule: OrchestrationRule | None = None
 
 
 def load_rules(path: str | Path | None = None) -> list[OrchestrationRule]:
+    """Load orchestration rules from a file. With no file, there are no rules.
+
+    Nothing is seeded from source. Passing a path yields exactly the rules in
+    that file - previously a custom path was appended to the built-in rules
+    rather than replacing them, so the built-ins could not be escaped.
+    """
     if path is None:
-        return list(DEFAULT_RULES)
+        return []
     rule_path = Path(path)
     if not rule_path.exists():
-        return list(DEFAULT_RULES)
+        return []
     payload = json.loads(rule_path.read_text(encoding="utf-8"))
-    rules = list(DEFAULT_RULES)
+    rules: list[OrchestrationRule] = []
     for item in payload.get("rules", []):
         if not isinstance(item, dict):
             continue
@@ -152,8 +113,7 @@ def load_rules(path: str | Path | None = None) -> list[OrchestrationRule]:
                 id=str(item.get("id") or "custom_rule"),
                 question_terms=[str(value) for value in item.get("question_terms", [])],
                 required_any=[[str(value) for value in group] for group in item.get("required_any", []) if isinstance(group, list)],
-                answer_any=[str(value) for value in item.get("answer_any", [])],
-                aliases={str(key): [str(value) for value in values] for key, values in (item.get("aliases") or {}).items() if isinstance(values, list)},
+                    aliases={str(key): [str(value) for value in values] for key, values in (item.get("aliases") or {}).items() if isinstance(values, list)},
             )
         )
     return rules
@@ -172,8 +132,11 @@ def matching_rule(question: str, rules: Sequence[OrchestrationRule]) -> Orchestr
 
 
 def expected_terms_from_answer(expected_answer: str, rule: OrchestrationRule | None = None) -> list[str]:
-    if rule and rule.answer_any:
-        return _expand_aliases(rule.answer_any, rule)
+    """Derive the terms an answer must contain, from the expected answer itself.
+
+    A matching rule may supply aliases (so "5%" also matches "0.05"), but it can
+    no longer replace the expected answer with a stored one.
+    """
     terms: list[str] = []
     for percent in re.findall(r"\b\d+(?:\.\d+)?\s*%", expected_answer):
         terms.extend(_numeric_aliases(percent))
@@ -239,9 +202,10 @@ def validate_evidence(
     elif "when" in lowered_question:
         answer_type_score = 1.0 if re.search(r"\b\d{4}\b", normalized) else 0.0
     elif "where" in lowered_question:
-        answer_type_score = 1.0 if any(word in normalized for word in ("texas", "poughkeepsie", "van horn", "west texas")) else 0.0
-    elif "what seminar" in lowered_question:
-        answer_type_score = 1.0 if any(word in normalized for word in ("seminar", "training")) else 0.0
+        # A location answer should contain a proper noun. Naming specific places
+        # here would be the same mistake as the removed answer keys: it would
+        # score one corpus's answers rather than the shape of a location answer.
+        answer_type_score = 1.0 if re.search(r"\b[A-Z][a-z]{2,}", text) else 0.0
     else:
         answer_type_score = 1.0 if anchor_score > 0 else 0.0
 

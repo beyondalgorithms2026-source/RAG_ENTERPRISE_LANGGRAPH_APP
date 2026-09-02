@@ -108,15 +108,20 @@ def test_orchestrator_unwraps_mcp_text_blocks_before_classification():
                 {
                         "source_id": 3,
                         "source_part_id": 655,
-                        "file_name": "walmart.txt",
-                        "snippet": "He goes up to Poughkeepsie, New York for an IBM seminar on computing technology.",
+                        "file_name": "annual-leave-policy.md",
+                        "snippet": "Full-time employees receive 26 days of annual leave per calendar year, in addition to public holidays.",
                     }
                 ]
             }, {"tool_name": name, "tool_call_id": None, "content": {}}
 
     orchestrator._call_tool = fake_tool_call  # type: ignore[method-assign]
 
-    result = asyncio.run(orchestrator.run("What seminar did Sam Walton enroll himself in in Poughkeepsie New York?"))
+    result = asyncio.run(
+        orchestrator.run(
+            "How many days of annual leave do full-time employees receive?",
+            expected_answer="26 days",
+        )
+    )
 
     assert result.grounding_status == "recovered"
     assert result.recovery_attempted is True
@@ -146,18 +151,20 @@ def test_orchestrator_returns_not_grounded_for_answer_without_evidence():
     assert result.error == "answer_without_citations_or_evidence"
 
 
-def test_evidence_gate_rejects_irrelevant_walmart_revenue_snippet():
+def test_evidence_gate_rejects_a_snippet_without_the_expected_answer():
     evidence, verdict, rejected = _select_evidence_candidate(
-        question="What seminar did Sam Walton enroll himself in in Poughkeepsie New York?",
-        anchors=["Sam", "Walton", "seminar", "Poughkeepsie"],
+        question="How many days of annual leave do full-time employees receive?",
+        anchors=["annual", "leave", "entitlement", "employees"],
         rules=EnterpriseRagOrchestrator(quiet_mcp=False).rules,
-        expected_answer=None,
+        # The expected answer is supplied by the caller, as a real eval does. It
+        # is not stored anywhere the validator can reach on its own.
+        expected_answer="26 days",
         results=[
             {
                 "source_id": 3,
                 "source_part_id": 655,
-                "file_name": "walmart.txt",
-                "snippet": "from a $25 million revenue base. Ben: Those two decades propelled them and somehow still hold the crown for the highest revenue company in the world.",
+                "file_name": "sickness-absence-policy.md",
+                "snippet": "A return-to-work conversation is held after every absence, regardless of length. Its purpose is support and accurate recording.",
             }
         ],
     )
@@ -167,22 +174,22 @@ def test_evidence_gate_rejects_irrelevant_walmart_revenue_snippet():
     assert verdict is not None
     assert verdict.status != "supports"
     assert evidence is not None
-    assert "from a $25 million revenue base" in evidence["snippet"]
-    assert rejected[0]["verdict"]["reason"] == "missing_required_terms"
+    assert "return-to-work conversation" in evidence["snippet"]
+    assert rejected[0]["verdict"]["reason"] == "missing_expected_answer_terms"
 
 
-def test_evidence_gate_accepts_ibm_poughkeepsie_seminar_snippet():
+def test_evidence_gate_accepts_a_snippet_containing_the_expected_answer():
     evidence, verdict, rejected = _select_evidence_candidate(
-        question="What seminar did Sam Walton enroll himself in in Poughkeepsie New York?",
-        anchors=["Sam", "Walton", "seminar", "Poughkeepsie"],
+        question="How many days of annual leave do full-time employees receive?",
+        anchors=["annual", "leave", "entitlement", "employees"],
         rules=EnterpriseRagOrchestrator(quiet_mcp=False).rules,
-        expected_answer=None,
+        expected_answer="26 days",
         results=[
             {
                 "source_id": 3,
                 "source_part_id": 655,
-                "file_name": "walmart.txt",
-                "snippet": "Sam Walton went up to Poughkeepsie, New York for an IBM seminar on how to use computing technology in business.",
+                "file_name": "annual-leave-policy.md",
+                "snippet": "Full-time employees receive 26 days of annual leave per calendar year, in addition to public holidays observed in their country of employment.",
             }
         ],
     )

@@ -22,6 +22,10 @@ class EvalCase:
     expected_answer: str
     file_name: str | None = None
     post_url: str | None = None
+    # True for questions the corpus deliberately cannot answer. These pass only
+    # if the system declines to answer - inventing a plausible answer is the
+    # failure they exist to catch.
+    expect_refusal: bool = False
 
 
 def _column_index(cell_ref: str) -> int:
@@ -55,6 +59,37 @@ def _cell_value(cell: ET.Element, shared_strings: Sequence[str]) -> str:
         index = int(value.text)
         return shared_strings[index] if 0 <= index < len(shared_strings) else ""
     return value.text
+
+
+def read_eval_json(path: str | Path) -> list[EvalCase]:
+    """Read an eval set from JSON.
+
+    Preferred over .xlsx: the question set is then plain text in the repository,
+    so a reader can see exactly what was asked and what was expected.
+    """
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    cases: list[EvalCase] = []
+    for item in payload.get("questions", []):
+        question = str(item.get("question") or "").strip()
+        if not question:
+            continue
+        expects_refusal = item.get("expected_document", "__missing__") is None or bool(
+            item.get("expect_refusal")
+        )
+        cases.append(
+            EvalCase(
+                question=question,
+                expected_answer=str(item.get("expected_fact") or "").strip(),
+                file_name=item.get("expected_document"),
+                expect_refusal=expects_refusal,
+            )
+        )
+    return cases
+
+
+def read_eval_cases(path: str | Path) -> list[EvalCase]:
+    """Dispatch on file type so both eval-set formats work."""
+    return read_eval_json(path) if str(path).endswith(".json") else read_eval_xlsx(path)
 
 
 def read_eval_xlsx(path: str | Path) -> list[EvalCase]:
@@ -94,10 +129,20 @@ def read_eval_xlsx(path: str | Path) -> list[EvalCase]:
     return cases
 
 
-def _eval_status(run: dict[str, Any], expected_eval: dict[str, Any]) -> str:
-    if run.get("grounding_status") in {"verified", "grounded", "recovered"} and expected_eval.get("status") == "pass":
+REFUSAL_STATUSES = {"not_grounded", "needs_review", "no_answer", "error"}
+
+
+def _eval_status(run: dict[str, Any], expected_eval: dict[str, Any], case: EvalCase | None = None) -> str:
+    grounding = run.get("grounding_status")
+
+    if case is not None and case.expect_refusal:
+        # The corpus cannot answer this. Declining is correct; producing a
+        # confident grounded answer is the failure.
+        return "pass" if grounding in REFUSAL_STATUSES else "fail"
+
+    if grounding in {"verified", "grounded", "recovered"} and expected_eval.get("status") == "pass":
         return "pass"
-    if run.get("grounding_status") in {"partial", "needs_review"}:
+    if grounding in {"partial", "needs_review"}:
         return "manual_review"
     return "fail"
 
@@ -111,7 +156,7 @@ async def run_eval(
     max_recovery_steps: int = 3,
 ) -> dict[str, Any]:
     rules = load_rules(rules_path)
-    cases = read_eval_xlsx(xlsx_path)
+    cases = read_eval_cases(xlsx_path)
     runtime_orchestrator = orchestrator or EnterpriseRagOrchestrator(rules_path=str(rules_path) if rules_path else None, journal_path=str(journal_path) if journal_path else None)
     rows: list[dict[str, Any]] = []
     for case in cases:
@@ -137,7 +182,8 @@ async def run_eval(
                 "grounding_status": run.get("grounding_status"),
                 "evidence_verdict": run.get("evidence_verdict"),
                 "tools_used": run.get("tools_used") or [],
-                "eval_status": _eval_status(run, expected_eval),
+                "eval_status": _eval_status(run, expected_eval, case),
+                "expect_refusal": case.expect_refusal,
                 "expected_eval": expected_eval,
                 "failure_reason": run.get("failure_reason"),
                 "error": run.get("error"),
@@ -151,7 +197,7 @@ async def run_eval(
     failed = sum(1 for row in rows if row["eval_status"] == "fail")
     manual = sum(1 for row in rows if row["eval_status"] == "manual_review")
     return {
-        "xlsx_path": str(xlsx_path),
+        "eval_set": str(xlsx_path),
         "total": len(rows),
         "passed": passed,
         "failed": failed,
@@ -163,7 +209,7 @@ async def run_eval(
 
 def render_eval_markdown(report: dict[str, Any]) -> str:
     lines = [
-        "# Acquired RAG Evaluation Report",
+        "# RAG Evaluation Report",
         "",
         "| Metric | Value |",
         "| --- | ---: |",

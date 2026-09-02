@@ -85,7 +85,7 @@ def test_run_eval_marks_expected_answers_and_writes_reports(tmp_path):
     assert report["total"] == 2
     assert report["passed"] == 2
     assert report["status"] == "pass"
-    assert "Acquired RAG Evaluation Report" in rendered
+    assert "RAG Evaluation Report" in rendered
     assert written["markdown"] == str(markdown)
     assert markdown.exists()
     assert json_path.exists()

@@ -1,0 +1,27 @@
+{
+  "_comment": [
+    "Optional orchestration rules. Copy to orchestration-rules.json and pass with --rules.",
+    "A rule supplies ALIASES so that equivalent forms of the same answer match:",
+    "'5%' and '0.05' are the same number written differently, and a validator that",
+    "treats them as different is measuring formatting, not correctness.",
+    "",
+    "A rule CANNOT supply the answer itself. Expected answers come from the eval",
+    "set at run time. Earlier versions of this file shipped rules whose fields held",
+    "the literal answers to the project's own benchmark, and they were loaded",
+    "unconditionally - which made every number produced with them meaningless.",
+    "",
+    "required_any: groups of terms the retrieved evidence must contain. Operator",
+    "configuration for a known domain; still not a substitute for an expected answer."
+  ],
+  "rules": [
+    {
+      "id": "percentage_equivalence",
+      "question_terms": ["percentage", "percent"],
+      "required_any": [],
+      "aliases": {
+        "5%": ["0.05", "five percent"],
+        "77%": ["0.77", "seventy seven percent"]
+      }
+    }
+  ]
+}

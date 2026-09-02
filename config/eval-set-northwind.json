@@ -1,0 +1,131 @@
+{
+  "eval_set": "northwind-public-demo",
+  "note": "Questions and expected facts for the synthetic demo corpus. Questions with expected_document null cannot be answered from the corpus and must be refused.",
+  "questions": [
+    {
+      "question": "How many days in advance must domestic flights be booked?",
+      "expected_document": "travel-expense-policy",
+      "expected_fact": "fourteen days"
+    },
+    {
+      "question": "What is the daily meal allowance for international travel?",
+      "expected_document": "travel-expense-policy",
+      "expected_fact": "65 EUR"
+    },
+    {
+      "question": "How many days per week must hybrid employees attend the office?",
+      "expected_document": "remote-working-policy",
+      "expected_fact": "a minimum of two days"
+    },
+    {
+      "question": "How long can an employee work from another country?",
+      "expected_document": "remote-working-policy",
+      "expected_fact": "20 working days per calendar year"
+    },
+    {
+      "question": "How much annual leave do full-time employees receive?",
+      "expected_document": "annual-leave-policy",
+      "expected_fact": "26 days"
+    },
+    {
+      "question": "How many days of annual leave can be carried over, and by when must they be used?",
+      "expected_document": "annual-leave-policy",
+      "expected_fact": "five days, by 31 March"
+    },
+    {
+      "question": "How many days of absence can be self-certified before a fit note is required?",
+      "expected_document": "sickness-absence-policy",
+      "expected_fact": "up to seven consecutive calendar days"
+    },
+    {
+      "question": "How long is company sick pay paid at full pay?",
+      "expected_document": "sickness-absence-policy",
+      "expected_fact": "the first 20 working days"
+    },
+    {
+      "question": "How much leave is the primary carer entitled to?",
+      "expected_document": "parental-leave-policy",
+      "expected_fact": "26 weeks at full pay followed by 13 weeks at half pay"
+    },
+    {
+      "question": "How long is the standard probationary period?",
+      "expected_document": "probation-policy",
+      "expected_fact": "six months up to Band 5, three months for Band 6 and above"
+    },
+    {
+      "question": "What notice applies during probation?",
+      "expected_document": "probation-policy",
+      "expected_fact": "two weeks"
+    },
+    {
+      "question": "What performance ratings does the company use?",
+      "expected_document": "performance-review-cycle",
+      "expected_fact": "developing, effective, strong, exceptional"
+    },
+    {
+      "question": "What is the maximum value of a gift that may be accepted?",
+      "expected_document": "code-of-conduct",
+      "expected_fact": "50 EUR"
+    },
+    {
+      "question": "Are facilitation payments allowed?",
+      "expected_document": "anti-bribery-policy",
+      "expected_fact": "prohibited without exception"
+    },
+    {
+      "question": "How long are vehicle telematics records kept?",
+      "expected_document": "data-retention-schedule",
+      "expected_fact": "90 days"
+    },
+    {
+      "question": "Who can approve expenditure of 20,000 EUR?",
+      "expected_document": "expenses-approval-limits",
+      "expected_fact": "the finance director"
+    },
+    {
+      "question": "What goods-in-transit insurance must hauliers evidence?",
+      "expected_document": "supplier-onboarding",
+      "expected_fact": "at least 250,000 EUR per vehicle"
+    },
+    {
+      "question": "How often are driving licences checked?",
+      "expected_document": "fleet-and-driver-safety",
+      "expected_fact": "every six months"
+    },
+    {
+      "question": "What weight of load requires two people or mechanical assistance?",
+      "expected_document": "warehouse-health-and-safety",
+      "expected_fact": "above 23 kilograms"
+    },
+    {
+      "question": "What is the annual development budget per employee?",
+      "expected_document": "training-and-development",
+      "expected_fact": "1,200 EUR"
+    },
+    {
+      "question": "What is the company's pension contribution rate?",
+      "expected_document": null,
+      "expected_fact": null
+    },
+    {
+      "question": "How many employees work at the Rotterdam depot?",
+      "expected_document": null,
+      "expected_fact": null
+    },
+    {
+      "question": "What was Northwind Logistics' revenue last year?",
+      "expected_document": null,
+      "expected_fact": null
+    },
+    {
+      "question": "What is the policy on keeping pets in company accommodation?",
+      "expected_document": null,
+      "expected_fact": null
+    },
+    {
+      "question": "Which insurance provider underwrites the company fleet?",
+      "expected_document": null,
+      "expected_fact": null
+    }
+  ]
+}
