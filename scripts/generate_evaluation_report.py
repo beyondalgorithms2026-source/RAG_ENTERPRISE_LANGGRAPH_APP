@@ -105,6 +105,32 @@ def render(evals: list[tuple], red_team: dict, tests: dict) -> str:
         len(baselines) == 2 and baselines[0]["failed_questions"] == baselines[1]["failed_questions"]
     )
 
+    # Same-model off/on comparison, computed rather than narrated.
+    off = next((x for lbl, x in evals if "gpt-oss" in lbl and "augmentation" not in lbl), None)
+    on = next((x for lbl, x in evals if "augmentation" in lbl), None)
+    aug_note = ""
+    if off and on:
+        fixed = len(off["failed_questions"] - on["failed_questions"])
+        broken = len(on["failed_questions"] - off["failed_questions"])
+        aug_note = f"""<div class="note">
+      <strong>Turning retrieval augmentation on changed nothing measurable.</strong>
+      Holding the model constant and enabling cross-encoder reranking, MMR, query
+      transformation, rewrite, expansion, HyDE, multi-query and RRF fusion:
+      <strong>{fixed} questions fixed, {broken} broken</strong>, the same overall score,
+      and roughly six times the latency. The pipeline genuinely ran - answer wording
+      changed on several questions and the cross-encoder loaded - it simply changed no
+      outcomes.<br><br>
+      The likely reason is corpus size, and it is a caveat rather than a verdict on the
+      techniques. This corpus is 27 documents, 131 chunks. With 30 vector and 30 keyword
+      candidates, retrieval already considers close to half the corpus before ranking
+      begins, so re-ranking has very little room to help - and no ranking method can
+      promote a chunk that was never a candidate. The eight failures are cases where the
+      expected document was absent from the evidence entirely, which points at embedding
+      and chunking rather than at ranking. On a corpus of thousands of documents these
+      techniques would have far more to work with; this result should not be generalised
+      to say they do not help.
+    </div>"""
+
     rt_rows = red_team.get("findings") or red_team.get("results") or []
     defended = sum(1 for r in rt_rows if r.get("status") == "defended")
     requires_backend = sum(1 for r in rt_rows if r.get("status") == "requires_backend")
@@ -235,6 +261,8 @@ def render(evals: list[tuple], red_team: dict, tests: dict) -> str:
      from a document it was never given, which places the limit on retrieval rather than
      on generation. This is a mechanism, not a statistic, so it does not depend on the
      sample size.</div>''' if identical else ''}
+
+  {aug_note}
 
   <h2>Red-team scenarios</h2>
   <p>{e(defended)} defended, {e(failed_rt)} failed,

@@ -6,3 +6,6 @@ __pycache__/
 .env
 runs/
 
+
+# Generated evaluation report is committed (GitHub Pages serves it from docs/)
+!docs/evaluation/
