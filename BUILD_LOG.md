@@ -97,6 +97,22 @@ It is **permanently out of B004 scope and must never be made public.**
   as they are. There is NO comparison to any earlier figure: the old numbers came
   from a validator holding the answer keys, and were measured against a different
   (unpublishable) corpus. The two do not measure the same thing.
+- **Two models, identical failure sets.** The same 25 questions were run on
+  `llama3.2:3b` (local, 3B) and `gpt-oss:20b-cloud` (hosted, 20B). Both scored 17/25.
+  A per-question diff shows the failing sets are not merely the same size but the same
+  questions: intersection 8 of 8, with zero questions failing under one model and not
+  the other. Checking the retrieved evidence for those eight, **the expected source
+  document was absent from the citations in all eight cases under both models.**
+  The publishable sentence is: *the same eight questions failed under both models, and
+  in all eight the expected source document was absent from the retrieved evidence.*
+  This is a mechanism, not a statistic - it does not depend on the sample size. It
+  establishes retrieval, not generation, as the limiting factor, because no model can
+  answer from a document it was never given.
+- Two of those eight moved from a confidently wrong answer (`llama`) to human-review
+  routing (`gpt-oss`). Same retrieval failure; better response to bad evidence. That is
+  a governance result, not an accuracy one, and is reported separately.
+- Sample size is 25. A one- or two-question difference between configurations is noise.
+  This is stated on the evaluation page, not in a footnote.
 - Of the 8 answerable failures: 5 were over-refusals (declined a question the corpus
   answers - wrong in the safe direction), and 3 were answered while marked `verified`.
   One of those 3 is a confidently wrong answer: asked who approves 20,000 EUR, the
