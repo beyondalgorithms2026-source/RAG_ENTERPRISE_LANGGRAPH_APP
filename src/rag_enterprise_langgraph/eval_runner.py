@@ -129,7 +129,10 @@ def read_eval_xlsx(path: str | Path) -> list[EvalCase]:
     return cases
 
 
-REFUSAL_STATUSES = {"not_grounded", "needs_review", "no_answer", "error"}
+# Every status in which the system declined to produce a grounded answer.
+# "not_found" belongs here for the same reason "not_grounded" does: the system
+# said it could not answer. Omitting it scored a correct refusal as a failure.
+REFUSAL_STATUSES = {"not_grounded", "not_found", "needs_review", "no_answer", "error"}
 
 
 def _eval_status(run: dict[str, Any], expected_eval: dict[str, Any], case: EvalCase | None = None) -> str:
