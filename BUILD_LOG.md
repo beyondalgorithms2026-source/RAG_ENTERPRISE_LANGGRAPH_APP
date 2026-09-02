@@ -30,7 +30,7 @@ It is **permanently out of B004 scope and must never be made public.**
 
 - [x] D1 Tue 1 Sep — branches, MCP into git, JWT history purge, secret defaults
 - [x] D2 Wed 2 Sep — paths, config, langchain-ollama, clean-clone run, corpus start
-- [ ] D3 Thu 3 Sep — corpus done, evidence.py fix, evals re-run   <-- GATE
+- [x] D3 Thu 3 Sep — corpus done, evidence.py fix, evals re-run   <-- GATE
 - [ ] D4 Fri 4 Sep — starter skip guards, cleanup, LICENSE x3
 - [ ] D5 Sat 5 Sep — red-team wording, CI + badge, evals page, GitHub Pages
       The evaluation page links to the published corpus, so a reader can check any
@@ -91,7 +91,18 @@ It is **permanently out of B004 scope and must never be made public.**
   depended on ambient state.
 - Starter tests: 354-357 claimed, 26 files DB-bound. Offline-passing count: `<D4>`
 - Red team: 10 scenarios, 9 defended, 0 failed, 1 requires_backend by design
-- Eval numbers after the evidence.py fix: `<D3 — whatever they turn out to be>`
+- Eval numbers after the evidence.py fix: **17 of 25**, on the synthetic Northwind
+  corpus with `llama3.2:3b` running locally. Refusal cases 5/5. Answerable 12/20.
+  Reproduced across two runs. These are the honest numbers and they are published
+  as they are. There is NO comparison to any earlier figure: the old numbers came
+  from a validator holding the answer keys, and were measured against a different
+  (unpublishable) corpus. The two do not measure the same thing.
+- Of the 8 answerable failures: 5 were over-refusals (declined a question the corpus
+  answers - wrong in the safe direction), and 3 were answered while marked `verified`.
+  One of those 3 is a confidently wrong answer: asked who approves 20,000 EUR, the
+  system said "department head" (the policy says finance director for 5,001-50,000),
+  citing the training-budget document. The evidence check passed it. That is a real
+  failure of the mechanism this project is built on, and it is disclosed, not buried.
 - All four GitHub repositories are PRIVATE as of D1 (verified via `gh repo list`)
 
 ## Rotated credentials
@@ -287,6 +298,60 @@ That is D3, not a D2 failure.
 
 - App: `0fc0ec4` (paths and config), `6879a77` (dependency pin, interpreter fix)
 - Starter: `72625d5` (corpus out of tree), `5e9e798` (synthetic corpus begun)
+
+### D3 — Wed 2 Sep 2026 (brought forward from Thu 3 Sep)
+
+**Done**
+
+- Corpus completed: 27 synthetic HR/policy documents (13 public, 10 internal, 4
+  restricted) for an invented company, plus a paired 25-question eval set with 5
+  questions the corpus deliberately cannot answer. `--check` refuses an eval question
+  that points at a document which does not exist.
+- Seed pack `app/seed/public_demo.py` loads the corpus through the application's own
+  repository layer and embeds via the ordinary `process_embeddings()` path.
+- **First true end-to-end run of the whole system**: LangGraph app -> MCP server over
+  stdio -> FastAPI backend -> pgvector. Status `verified`, 1 citation,
+  `answer_shape_and_citations_supported`.
+- **evidence.py answer keys removed** (`97c5565`). See the commit for detail. A second
+  instance of the same leak, not in the audit, was found and fixed: `validate_evidence`
+  scored "where" questions by looking for `texas`, `poughkeepsie`, `van horn` - place
+  names from the old corpus.
+- Three orchestrator tests were rewritten: they passed `expected_answer=None` and relied
+  on the seeded rule to know the answer, so the suite itself depended on the answer key.
+- Eval sets can now be JSON, so the question set is reviewable in the repository rather
+  than locked inside a binary workbook that cannot be published.
+
+**Found**
+
+- **The local database was the wrong corpus.** 626 sources, of which 27 were the demo
+  corpus; the rest were the old copyrighted material. The first end-to-end run retrieved
+  from `2604.15306v1.pdf` and quoted it. Created a separate `rag_enterprise_demo`
+  database holding only the synthetic corpus - non-destructive, and it mirrors what D8
+  provisions. **The original database still contains the old corpus, including the
+  ingested text of the deleted billing documents.**
+- **Live vector dimension differs between databases.** The working DB is `vector(768)`
+  (bge-base, activated through the swap lifecycle); a fresh DB embeds at 384 (bge-small,
+  the config default). Exactly the D8 hazard, observed. Read the live column.
+- `gemma3:4b-it-qat` takes ~200s for a trivial prompt on this hardware and produced a
+  24-minute end-to-end answer. `llama3.2:3b` takes ~17s. Default changed to
+  `llama3.2:3b` everywhere, which is also what the quickstart already says to pull.
+- One scoring bug corrected: `not_found` was not counted as a refusal although
+  `not_grounded` already was, so a correct refusal scored as a failure. Nothing else in
+  the scorer was touched, and it will not be tuned to improve the number.
+
+**Broke**
+
+- Nothing.
+
+**Hours**
+
+- ~6h.
+
+**Commits**
+
+- App: `97c5565`, `ba8e7a8`, `3d02626`
+- Starter: `7398f4c`, `4217034`
+- MCP: `8f0abc0`
 
 ## Open blockers
 
