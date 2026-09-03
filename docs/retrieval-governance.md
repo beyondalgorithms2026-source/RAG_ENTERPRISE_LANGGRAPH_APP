@@ -61,9 +61,12 @@ Honest status per feature. "Implemented" means the code exists and runs.
 | Agent-layer recovery loop | yes | yes | on |
 | ACL trimming in retrieval SQL | yes | partially — see below | on |
 
-Retrieval augmentation ships **off by default**, and the published evaluation is the
-first measurement of what enabling it buys. Both configurations are published,
-whichever way the numbers went.
+Retrieval augmentation ships **off by default, by design.** It is part of the same
+boundary: the agent layer must not be able to reach these controls, and an operator
+turns them on in the backend when a corpus warrants it. The published evaluation is the
+first measurement of what enabling them buys on this corpus. Both configurations are
+published, whichever way the numbers went - and on this corpus they went nowhere, which
+is reported as plainly as a favourable result would have been.
 
 On the ACL row: the evaluation exercises retrieval with ACL active, but the red-team
 scenario that specifically tests ACL bypass (RT-06) is labelled `requires_backend` and
