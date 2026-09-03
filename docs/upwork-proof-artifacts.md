@@ -17,7 +17,7 @@ Open <http://127.0.0.1:8080/app>.
 
 ## Screenshot checklist (exact names)
 
-1. `Automated Test Suite: 45 Passing Governance & RAG Orchestration Tests`
+1. `Automated Test Suite: 113 Passing Governance & RAG Orchestration Tests`
    ```bash
    .venv312/bin/python -m pytest
    ```

@@ -368,7 +368,7 @@ The dashboard provides ask, approvals, audit runs/events, eval summaries, red-te
 8. **Local file stores are not concurrency-grade databases.** JSONL and one-file-per-run storage lack transactional locking, retention controls, encryption-at-rest management, backup policy, and multi-instance coordination.
 9. **The audit chain is not externally trusted.** It detects ordinary edits but is not signed or anchored outside the host.
 10. **Red-team coverage is mostly deterministic/offline.** Live ACL, tenant isolation, model attacks, and end-to-end deployment security still require backend and infrastructure testing.
-11. **No live-backend guarantee comes from the unit suite.** The 109 tests use fakes by design; configuration discovery and a live demo proof must be run separately.
+11. **No live-backend guarantee comes from the unit suite.** The 113 tests use fakes by design; configuration discovery and a live demo proof must be run separately.
 12. **The local dashboard/API needs deployment hardening.** It binds to localhost by default; exposing it would require authentication, authorization, CSRF/CORS decisions, TLS, rate limits, and protected approval/audit endpoints.
 
 ## Iterative learning embodied in the code
