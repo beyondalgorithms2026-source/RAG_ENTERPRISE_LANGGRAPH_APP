@@ -565,6 +565,48 @@ That is D3, not a D2 failure.
 - App: `84a2907` (evidence record, exact red-team wording, generator truthfulness)
 - App: D7 log closeout (this commit)
 
+### D8 — Fri 4 Sep 2026 (in progress; brought forward from Tue 8 Sep)
+
+**Done — first item**
+
+- Added `.github/workflows/tests.yml` to the starter. On every push and pull request it
+  installs `backend/requirements.txt` under Python 3.12, runs the complete offline suite,
+  runs the explicit reader-clarity gate, and runs repository hygiene. It provisions no
+  Docker service, database, or model; DB-bound coverage remains visibly skipped.
+- Extended an existing repository-hygiene test to assert that the workflow and all three
+  commands remain present. This protects the CI gate without changing the published test
+  count.
+
+**Found / decided**
+
+- The ordinary local run and a second run from outside the repository with an empty
+  environment both produced the published offline result: 61 tests run, 34 skipped,
+  therefore 27 passed, with 0 failures.
+- `make reader-clarity-check` passed 21/21 and `make repo-hygiene-check` passed.
+- The workflow follows the app CI structure and adds pip caching keyed by
+  `backend/requirements.txt`; no project dependency was added.
+
+**Broke**
+
+- The first empty-environment verification command failed before test collection because
+  it supplied a unittest top-level directory for a deliberately non-package `tests/`
+  directory. Rerunning with `tests/` as the discovery root passed. This was a verification
+  harness error, not a repository failure.
+
+**Not done / carried within D8**
+
+- The embedding-provider abstraction, corpus/hosted-database work, and all deployment
+  actions were not started. The owner asked for CI as D8's first item only.
+
+**Hours**
+
+- ~1.5h so far. Cumulative actual: ~20.5h of the 66h plan.
+
+**Commits**
+
+- Starter: `fc502f9` (offline CI workflow and contract guard)
+- App: D8 progress log (this commit)
+
 ## Open blockers
 
 - None at D7 start. The starter default branch was resolved to `main` on D6. GitHub's
