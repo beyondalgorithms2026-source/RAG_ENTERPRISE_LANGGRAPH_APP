@@ -585,6 +585,8 @@ That is D3, not a D2 failure.
 - `make reader-clarity-check` passed 21/21 and `make repo-hygiene-check` passed.
 - The workflow follows the app CI structure and adds pip caching keyed by
   `backend/requirements.txt`; no project dependency was added.
+- The first public run installed the existing full dependency set from a cold cache in
+  about 13 minutes. The replacement run used the pip cache and completed in 2m15s.
 
 **Broke**
 
@@ -592,6 +594,16 @@ That is D3, not a D2 failure.
   it supplied a unittest top-level directory for a deliberately non-package `tests/`
   directory. Rerunning with `tests/` as the discovery root passed. This was a verification
   harness error, not a repository failure.
+- The first public GitHub Actions run passed the full offline suite but failed the
+  reader-clarity step because the Make target assumed `backend/.venv`. The target now
+  accepts an overridable Python executable while retaining the local virtualenv default;
+  the workflow passes GitHub's configured `python` explicitly.
+
+**Remote verification**
+
+- Starter run `33794231689`: green in 2m15s. Offline suite, reader clarity, and repository
+  hygiene all passed on GitHub's runner.
+- App run `33792773347`: green in 29s. Test and red-team jobs both passed.
 
 **Not done / carried within D8**
 
@@ -600,11 +612,12 @@ That is D3, not a D2 failure.
 
 **Hours**
 
-- ~1.5h so far. Cumulative actual: ~20.5h of the 66h plan.
+- ~2.4h so far. Cumulative actual: ~21.4h of the 66h plan.
 
 **Commits**
 
 - Starter: `fc502f9` (offline CI workflow and contract guard)
+- Starter: `b0a837f` (CI-portable reader-clarity invocation)
 - App: D8 progress log (this commit)
 
 ## Open blockers
