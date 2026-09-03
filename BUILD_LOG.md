@@ -56,7 +56,7 @@ It is **permanently out of B004 scope and must never be made public.**
       integration layer and the data layer are published separately because the agent
       layer has no direct data access, and that the split makes that boundary externally
       visible. Without that sentence a reader may read three repos as disorganisation.
-- [ ] D7 Thu 3 Sep (brought forward from Mon 7 Sep) — buffer / docs polish
+- [x] D7 Thu 3 Sep (brought forward from Mon 7 Sep) — buffer / docs polish
 - [ ] D8 Fri 4 Sep (expected; brought forward from Tue 8 Sep) — provider abstraction, corpus trim, hosted pgvector
       **Scope confirmed to include an embedding-provider abstraction (3-5h), now a
       formal part of B004.** `backend/app/embedding/embedder.py` calls
@@ -484,6 +484,86 @@ That is D3, not a D2 failure.
 
 - ~1h implementation. The subsequent implementation-thread handoff and reconciliation
   took ~1h, bringing Thu 3 Sep to ~2h and cumulative actual time through D6 to ~16h.
+
+### D7 — Thu 3 Sep 2026 (brought forward from Mon 7 Sep)
+
+**Done**
+
+- Reconciled this log with the released state: public visibility, `main` defaults,
+  corrected calendar dates, ~16h cumulative time through D6, resolved blockers, and the
+  previously missing D4/D5 entries with their estimated split and verified commits.
+- Replaced the starter's internal lab-notebook-style `STATUS.md`, `CLAUDE.md`,
+  `AGENTS.md`, and `CONTEXT.md` with concise public operational and contributor guidance.
+- Preserved the buyer-facing starter README while adding a small repository map and
+  links to the current maintainer path.
+- Repaired all relative links in the linked quickstart and corrected the admin account's
+  password variable from `DEV_TEST_USER_PASSWORD` to `DEV_TEST_ADMIN_PASSWORD`.
+- Updated the starter's reader-contract tests to protect the buyer-facing README and the
+  corrected quickstart rather than the superseded internal README structure.
+- Restored the required red-team sentence in the app README and generated evaluation
+  page: "10 red-team scenarios: 9 defended, 0 failed, 1 labelled requires_backend by
+  design." Counts did not change.
+- Corrected the app README/evaluation statement that placed the corpus generator in the
+  wrong repository. The generator is public in the starter data-layer repository.
+- Removed the evaluation generator's unused `--skip-tests` option and corrected its
+  docstring: eval/red-team figures come from artifacts; the test count is measured by
+  running the suite.
+- Corrected two stale app documentation counts from 45/109 tests to the verified 113.
+
+**Fresh-eyes coverage**
+
+- Read completely: all three READMEs; the generated evaluation page;
+  `docs/retrieval-governance.md`; every non-boilerplate root file in all three repos; the
+  starter's four named root notes; and all local files linked from the starter README
+  (`docs/01_quickstart.md`, the navigation blueprint, and safe-extension blueprint).
+- Ran targeted case-insensitive searches across the remaining tracked files for
+  production, client, users, uptime, throughput, revenue, proven, and guarantee wording,
+  plus a separate red-team wording search.
+- Did not read all 572 tracked files line by line. Source/tests, standard licence text,
+  generated corpus/eval data, imported `_master_docs`, and most historical milestone
+  notes were covered only by the targeted searches. The dated May/June audits, duplicate
+  master guides, and broader documentation collapse remain the separately planned docs
+  consolidation work; no files were deleted in this pass.
+
+**Found / decided**
+
+- Before the fix, the starter's current `main` did **not** match its published offline
+  test claim: 15 passed, 34 skipped, 12 failed. All 12 failures were stale documentation
+  contract assertions left behind by the D6 README rewrite; runtime tests were not
+  failing. After aligning the tests with the approved public contract, the published
+  result is true again: 27 passed, 34 skipped, 0 failures.
+- `make reader-clarity-check` initially failed the same 12 assertions. It now passes all
+  21 checks.
+- The app report generator reran the suite while regenerating the page and measured 113
+  passed. A separate final app run also measured 113 passed.
+- Public README/evaluation numbers did not change. Only incorrect repository location,
+  stale documentation counts, and mandated wording were corrected.
+
+**Broke**
+
+- The first verification exposed the pre-existing 12-failure documentation regression
+  described above. No final verification failures remain.
+
+**Verification**
+
+- App: `113 passed in 2.38s`.
+- App red team: 10 total, 9 defended, 0 failed, 1 `requires_backend`.
+- Starter offline: 61 tests run, 34 skipped, therefore 27 passed; 0 failures.
+- Starter reader clarity: 21/21 passed.
+- Starter repository hygiene: passed.
+- `git diff --check`: passed in both changed repositories.
+- Staged secret-pattern scan: zero matches before each commit.
+
+**Hours**
+
+- ~3h. D7 finished early; stopped without bringing D8 forward. Cumulative actual: ~19h
+  of the 66h plan.
+
+**Commits**
+
+- Starter: `b3211ed` (public contributor guidance, quickstart and contract repair)
+- App: `84a2907` (evidence record, exact red-team wording, generator truthfulness)
+- App: D7 log closeout (this commit)
 
 ## Open blockers
 
