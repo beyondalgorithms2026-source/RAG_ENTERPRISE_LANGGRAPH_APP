@@ -34,6 +34,47 @@ def test_ui_routes_return_200(app_env):
     assert client.get("/healthz").json() == {"status": "ok"}
 
 
+def test_public_demo_is_read_only_and_hides_pending_answer(tmp_path):
+    settings = Settings(
+        public_demo=True,
+        public_backend_url="https://backend.example.test",
+        audit_log_path=str(tmp_path / "audit-log.jsonl"),
+        approvals_path=str(tmp_path / "approvals.jsonl"),
+        eval_runs_dir=str(tmp_path / "eval-runs"),
+        red_team_latest_path=str(tmp_path / "red-team-latest.json"),
+        run_results_dir=str(tmp_path / "run-results"),
+    )
+    client = TestClient(create_app(settings))
+
+    from rag_enterprise_langgraph.approval import ApprovalStore
+
+    record = ApprovalStore(settings.approvals_path).create(
+        question="Sensitive HR question?",
+        answer="Withheld answer text.",
+        run_id="public-run",
+        risk_reasons=["high_risk_category:hr"],
+    )
+
+    page = client.get("/app")
+    assert page.status_code == 200
+    assert 'data-public-demo="true"' in page.text
+    assert 'content="https://backend.example.test"' in page.text
+    assert "1 · Answerable" in page.text
+
+    pending = client.get("/approval/pending").json()["pending"]
+    fetched = client.get(f"/approval/{record['approval_id']}").json()
+    assert "full_answer" not in pending[0]
+    assert "answer_preview" not in pending[0]
+    assert "Withheld answer text" not in str(fetched)
+
+    assert client.post("/approval/request", json={"question": "Q", "answer": "A"}).status_code == 403
+    assert client.post(f"/approval/{record['approval_id']}/approve", json={"reviewer": "visitor"}).status_code == 403
+    assert client.post("/eval/run", json={"xlsx_path": "config/eval-set.xlsx"}).status_code == 403
+    assert client.post("/red-team/run").status_code == 403
+    assert client.post("/ask", json={"question": "Q"}).status_code == 403
+    assert client.get("/demo-proof").status_code == 403
+
+
 def test_approval_api_round_trip_writes_audit_events(app_env):
     client, settings = app_env
 

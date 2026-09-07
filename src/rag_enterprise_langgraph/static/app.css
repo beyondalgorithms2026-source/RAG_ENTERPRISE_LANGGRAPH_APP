@@ -55,6 +55,17 @@ h2 { font-size: 15px; font-weight: 650; margin: 0 0 12px; }
 .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
 @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
 
+.preset-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 12px 0 16px; }
+.preset { text-align: left; padding: 10px 12px; }
+.preset strong, .preset span { display: block; }
+.preset span { color: #6b7280; font-size: 11.5px; font-weight: 400; margin-top: 2px; }
+.result-layout { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(300px, .95fr); gap: 18px; align-items: start; }
+.governance-panel { background: #f8fafc; border: 1px solid #dbeafe; border-radius: 9px; padding: 14px; }
+.governance-panel .row.compact { margin-top: 0; }
+@media (max-width: 800px) {
+  .preset-grid, .result-layout { grid-template-columns: 1fr; }
+}
+
 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 18px; }
 .tile { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px 16px; }
 .tile .label { color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }

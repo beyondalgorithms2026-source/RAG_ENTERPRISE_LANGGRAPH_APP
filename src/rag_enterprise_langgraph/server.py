@@ -3,7 +3,8 @@ from __future__ import annotations
 import asyncio
 
 import uvicorn
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from rag_enterprise_langgraph.agent import RagEnterpriseAgent
@@ -53,6 +54,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         runtime_settings, audit_log=audit_log, approval_store=approval_store, run_store=run_store
     )
     app = FastAPI(title=runtime_settings.app_name)
+
+    if runtime_settings.public_demo:
+        blocked_public_posts = {"/eval/run", "/red-team/run", "/ask", "/demo/before-after"}
+
+        @app.middleware("http")
+        async def protect_operator_actions(request: Request, call_next):
+            blocked = (request.method == "POST" and request.url.path in blocked_public_posts) or request.url.path == "/demo-proof"
+            if blocked:
+                return JSONResponse(
+                    status_code=403,
+                    content={"detail": "This operator action is disabled in the public demo."},
+                )
+            return await call_next(request)
 
     @app.get("/healthz")
     async def healthz():
@@ -138,7 +152,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             approval_mode=request.approval_mode,
         )
 
-    app.include_router(build_approval_router(approval_store, audit_log))
+    app.include_router(build_approval_router(approval_store, audit_log, read_only=runtime_settings.public_demo))
     app.include_router(build_audit_router(audit_log, approval_store))
     app.include_router(build_runs_router(run_store, approval_store))
     app.include_router(build_eval_router(eval_store, runtime_settings))
@@ -148,7 +162,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             latest_path=runtime_settings.red_team_latest_path,
         )
     )
-    app.include_router(build_ui_router())
+    app.include_router(build_ui_router(runtime_settings))
 
     return app
 

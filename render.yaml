@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: rag-enterprise-governance-demo
+    runtime: python
+    plan: free
+    region: singapore
+    rootDir: .
+    buildCommand: bash scripts/render_build.sh
+    startCommand: python -m uvicorn rag_enterprise_langgraph.server:create_app --factory --host 0.0.0.0 --port $PORT
+    healthCheckPath: /healthz
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.12
+      - key: RAG_AGENT_MCP_SERVER_REPO
+        value: .render/mcp-server
+      - key: RAG_BACKEND_BASE_URL
+        value: https://rag-enterprise-starter-demo.onrender.com
+      - key: RAG_BACKEND_TIMEOUT_SECONDS
+        value: "120"
+      - key: RAG_AGENT_ENABLE_SYNTHESIS
+        value: "false"
+      - key: RAG_AGENT_PUBLIC_DEMO
+        value: "true"
+      - key: RAG_AGENT_PUBLIC_BACKEND_URL
+        value: https://rag-enterprise-starter-demo.onrender.com

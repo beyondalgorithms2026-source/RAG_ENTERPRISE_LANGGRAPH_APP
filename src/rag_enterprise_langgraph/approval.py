@@ -282,11 +282,18 @@ def _record_audit_decision(audit_log: AuditLog | None, record: dict[str, Any], e
     )
 
 
-def build_approval_router(store: ApprovalStore, audit_log: AuditLog | None = None) -> APIRouter:
+def build_approval_router(
+    store: ApprovalStore,
+    audit_log: AuditLog | None = None,
+    *,
+    read_only: bool = False,
+) -> APIRouter:
     router = APIRouter(prefix="/approval", tags=["approval"])
 
     @router.post("/request")
     async def request_approval(body: ApprovalRequestBody):
+        if read_only:
+            raise HTTPException(status_code=403, detail="Approval mutations are disabled in the public demo.")
         record = store.create(
             question=body.question,
             answer=body.answer,
@@ -314,17 +321,20 @@ def build_approval_router(store: ApprovalStore, audit_log: AuditLog | None = Non
 
     @router.get("/pending")
     async def pending_approvals():
-        return {"pending": store.pending()}
+        records = store.pending()
+        return {"pending": [released_view(record) for record in records] if read_only else records}
 
     @router.get("/{approval_id}")
     async def get_approval(approval_id: str):
         record = store.get(approval_id)
         if record is None:
             raise HTTPException(status_code=404, detail="approval_id not found")
-        return record
+        return released_view(record) if read_only else record
 
     @router.post("/{approval_id}/approve")
     async def approve(approval_id: str, body: ApprovalDecisionBody):
+        if read_only:
+            raise HTTPException(status_code=403, detail="Approval mutations are disabled in the public demo.")
         try:
             record = store.approve(approval_id, reviewer=body.reviewer, comment=body.comment)
         except KeyError:
@@ -336,6 +346,8 @@ def build_approval_router(store: ApprovalStore, audit_log: AuditLog | None = Non
 
     @router.post("/{approval_id}/reject")
     async def reject(approval_id: str, body: ApprovalDecisionBody):
+        if read_only:
+            raise HTTPException(status_code=403, detail="Approval mutations are disabled in the public demo.")
         try:
             record = store.reject(approval_id, reviewer=body.reviewer, comment=body.comment)
         except KeyError:

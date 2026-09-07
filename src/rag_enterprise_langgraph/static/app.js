@@ -1,5 +1,8 @@
 "use strict";
 
+const publicDemo = document.body.dataset.publicDemo === "true";
+const backendUrl = (document.querySelector('meta[name="rag-backend-url"]')?.content || "").replace(/\/$/, "");
+
 function esc(value) {
   const div = document.createElement("div");
   div.textContent = value === null || value === undefined ? "" : String(value);
@@ -31,6 +34,12 @@ function pill(status) {
   else if (warn.includes(text)) cls = "warn";
   else if (bad.includes(text)) cls = "bad";
   return `<span class="pill ${cls}">${esc(text)}</span>`;
+}
+
+function sourceLink(sourceId, label = "Open full source") {
+  const id = Number(sourceId);
+  if (!backendUrl || !Number.isInteger(id) || id < 1) return "";
+  return `<a href="${esc(backendUrl)}/corpus/${id}/file" target="_blank" rel="noopener noreferrer">${esc(label)}</a>`;
 }
 
 function timelineTable(timeline) {
@@ -113,7 +122,7 @@ function renderRunResult(result, output) {
   const citationList = citations.length
     ? `<ul class="trail">${citations
         .slice(0, 5)
-        .map((c) => `<li class="small">${esc(c.file_name || c.source_id || "source")}${c.locator ? " — " + esc(c.locator) : ""}</li>`)
+        .map((c) => `<li class="small">${esc(c.file_name || c.source_id || "source")}${c.locator ? " — " + esc(c.locator) : ""}${sourceLink(c.source_id) ? " · " + sourceLink(c.source_id) : ""}</li>`)
         .join("")}</ul>`
     : '<div class="muted small">No citations returned.</div>';
   const releasedInfo =
@@ -138,20 +147,29 @@ function renderRunResult(result, output) {
       <span class="muted small mono">run_id: ${esc(result.run_id || "-")}</span>
       <span class="muted small">${esc(result.audit_event_count || 0)} audit events</span>
     </div>
-    <h2 style="margin:0 0 6px">Answer${answerLabel}</h2>
-    <div class="answer-box">${esc(result.answer || "[no answer]")}</div>
-    ${result.review_guidance ? `<p class="small muted" style="margin-top:8px"><strong>Review guidance:</strong> ${esc(result.review_guidance)}</p>` : ""}
-    ${releasedInfo}
-    ${rejectedInfo}
-    ${pending ? `<p class="small muted">Approval pending: <a href="/app/approvals">review it in the approval queue</a> (id <span class="mono">${esc(result.approval_id)}</span>). This panel updates automatically once a reviewer decides. <button id="check-approval" class="secondary" style="padding:4px 10px;font-size:12px">Check approval status</button></p><div id="approval-release"></div>` : ""}
-    ${sourceEvidenceSection(result)}
-    <h2 style="margin-top:16px">Citations / evidence (${citations.length})</h2>
-    ${citationList}
+    <div class="result-layout">
+      <section>
+        <h2 style="margin:0 0 6px">Answer${answerLabel}</h2>
+        <div class="answer-box">${esc(result.answer || "[no answer]")}</div>
+        ${releasedInfo}
+        ${rejectedInfo}
+        ${pending ? `<p class="small muted">Routed to human review (id <span class="mono">${esc(result.approval_id)}</span>). ${publicDemo ? "Approval decisions are disabled for public visitors." : '<a href="/app/approvals">Open the approval queue</a>.'}</p><div id="approval-release"></div>` : ""}
+      </section>
+      <aside class="governance-panel">
+        <h2>Governance decision</h2>
+        <div class="row compact">${pill(result.grounding_status)} ${pill(result.approval_status)}</div>
+        ${result.validation_summary ? `<p class="small"><strong>Evidence check:</strong> ${esc(result.validation_summary.evidence_support || "unknown")}<br /><strong>Review recommended:</strong> ${result.validation_summary.review_recommended ? "yes" : "no"}</p>` : ""}
+        ${result.review_guidance ? `<p class="small"><strong>Review routing:</strong> ${esc(result.review_guidance)}</p>` : ""}
+        ${sourceEvidenceSection(result)}
+        <h2 style="margin-top:16px">Citations / full sources (${citations.length})</h2>
+        ${citationList}
+      </aside>
+    </div>
     ${decisionTrail(result.decision_trail)}
     <h2 style="margin-top:16px">Workflow timeline</h2>
     ${timelineTable(result.execution_timeline)}
   `;
-  if (pending) watchApproval(result.approval_id, result.run_id, output);
+  if (pending && !publicDemo) watchApproval(result.approval_id, result.run_id, output);
 }
 
 function sourceEvidenceSection(result) {
@@ -163,8 +181,9 @@ function sourceEvidenceSection(result) {
   const items = spans
     .map((span) => {
       const loc = span.locator ? ` <span class="muted small">(${esc(span.locator)})</span>` : "";
+      const link = sourceLink(span.source_id);
       return `<div style="margin-bottom:10px">
-        <div class="small mono" style="margin-bottom:2px">${esc(span.file_name || "source")}${loc}</div>
+        <div class="small mono" style="margin-bottom:2px">${esc(span.file_name || "source")}${loc}${link ? " · " + link : ""}</div>
         <blockquote class="answer-box small" style="margin:0">${esc(span.quote)}</blockquote>
       </div>`;
     })
@@ -228,6 +247,13 @@ function initDashboard() {
   const output = document.getElementById("ask-result");
   loadDashboardCounts();
   loadRunHistory();
+  document.querySelectorAll("button.preset").forEach((button) => {
+    button.addEventListener("click", () => {
+      document.getElementById("ask-question").value = button.dataset.question || "";
+      document.getElementById("ask-require-approval").checked = button.dataset.approval === "true";
+      form.requestSubmit();
+    });
+  });
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const question = document.getElementById("ask-question").value.trim();
@@ -321,6 +347,21 @@ async function loadApprovals() {
     const pending = data.pending || [];
     if (!pending.length) {
       target.innerHTML = '<div class="empty">No pending approvals. Run a high-risk question with "Require approval" enabled to create one.</div>';
+      return;
+    }
+    if (publicDemo) {
+      target.innerHTML = pending
+        .map(
+          (item) => `<div class="approval-item">
+            <div class="q">${esc(item.question)}</div>
+            <div class="row" style="margin:0 0 8px">
+              ${pill(item.status)} ${pill(item.grounding_status || "unknown")}
+              <span class="muted small mono">run_id: ${esc(item.run_id || "-")}</span>
+            </div>
+            <div class="small muted">Risk reasons: ${esc((item.risk_reasons || []).join(", ") || "-")}. Answer withheld; only a designated operator can review it outside this public demo.</div>
+          </div>`
+        )
+        .join("");
       return;
     }
     target.innerHTML = pending

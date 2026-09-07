@@ -84,6 +84,11 @@ class Settings(BaseSettings):
     # non-generative and the answer purely extractive.
     enable_synthesis: bool = False
 
+    # Hosted portfolio mode keeps the governed question path available while
+    # disabling operator-only mutations such as approval decisions and evals.
+    public_demo: bool = False
+    public_backend_url: str = ""
+
     def _dotenv_values(self) -> dict[str, str]:
         values = dotenv_values(".env")
         return {key: str(value).strip() for key, value in values.items() if value is not None}
