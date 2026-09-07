@@ -16,12 +16,13 @@ Actual through D9 progress: D1-D2 completed Tue 1 Sep (8h), D3-D5 completed Wed 
 (6h total; per-plan-day split estimated below), D6 plus implementation handoff and D7
 completed Thu 3 Sep (~5h), D8's first CI item also ran Thu 3 Sep (~2.4h), and D8 resumed
 Mon 7 Sep (~5.1h). D9's secret-free implementation and verification then continued on
-Mon 7 Sep (~1h). Cumulative actual is ~27.5h.
+Mon 7 Sep (~1.3h so far). Cumulative actual is ~27.8h.
 B004-MIN: 6 days, 36h, baseline Sat 6 Sep
 B004 FULL: 11 days, 66h, expected Thu 10 Sep (baseline Sat 12 Sep; the original plan's
 weekday labels from D7 onward were one day late)
 Public URLs:
 - Evaluation report: https://beyondalgorithms2026-source.github.io/RAG_ENTERPRISE_LANGGRAPH_APP/evaluation/
+- Backend demo:      https://rag-enterprise-starter-demo.onrender.com
 - App (P1):     https://github.com/beyondalgorithms2026-source/RAG_ENTERPRISE_LANGGRAPH_APP
 - Starter (P2): https://github.com/beyondalgorithms2026-source/RAG_ENTERPRISE_STARTER
 - MCP server:   https://github.com/beyondalgorithms2026-source/RAG_Langgraph_MCP_server
@@ -695,13 +696,15 @@ That is D3, not a D2 failure.
   test now injects a simulated HTTP 429 billing-limit response and proves the client
   returns no generated content. It does not deliberately consume the owner's USD 1 cap.
 
-**Not done / owner gate**
+**Live deployment**
 
-- No Render service exists yet. The owner must apply the Blueprint and paste the three
-  private values directly into Render's masked environment-variable form. The README's
-  “Not deployed anywhere” statement remains unchanged and true.
-- Live cold-start, health, retrieval, answer/refusal, upload-rejection and rate-limit
-  measurements wait for the public Render service URL.
+- The owner applied the Blueprint and entered the three values directly into Render.
+  The implementation thread received only the public service URL; no raw value entered
+  chat, source, logs, or the build record.
+- The public service is a Render Free portfolio demo over synthetic documents. It is not
+  a production or client deployment and has no real-user or workload evidence.
+- The owner approved the resulting public wording and measured results for publication.
+  The cold-start measurement remains open until the service has been idle for 15 minutes.
 
 **Broke**
 
@@ -718,10 +721,23 @@ That is D3, not a D2 failure.
 - Staged secret-pattern scan: zero matches.
 - GitHub Actions run `34117573600`: green in 40s; offline tests, reader clarity and
   repository hygiene all passed.
+- Warm `/health`: HTTP 200 in 0.27s; 27 total and 27 embedded synthetic sources; graph,
+  temporal, ontology, extraction and graph-on-ingest features all reported disabled.
+- Anonymous hybrid search: HTTP 200 in 3.69s; three results, led by
+  `annual-leave-policy.md` / `Entitlement`. The anonymous document-ACL SQL path admits
+  only sources labelled `public`.
+- Answerable live request: HTTP 200 in 4.25s; returned the supported 26-day entitlement
+  with citation S1 to `annual-leave-policy.md` / `Entitlement`.
+- Deliberately unsupported revenue question: HTTP 200 in 6.69s; returned exactly
+  `Not found in provided sources.` with zero citations.
+- Visitor upload: HTTP 403 `upload_disabled`.
+- Rate-limit check used dry-run answers and therefore no generation spend: requests 1-3
+  returned HTTP 200 and request 4 returned HTTP 429 with `limit_per_minute: 3`.
+- Response headers included HSTS, CSP, frame denial and content-type protection.
 
 **Hours**
 
-- ~1h so far, after D8 on Mon 7 Sep. Cumulative actual: ~27.5h of the 66h plan.
+- ~1.3h so far, after D8 on Mon 7 Sep. Cumulative actual: ~27.8h of the 66h plan.
 
 **Commits**
 
@@ -730,6 +746,6 @@ That is D3, not a D2 failure.
 
 ## Open blockers
 
-- Owner must apply the Render Blueprint, enter the three private values, and return only
-  the public service URL. Disposable full-database CI stabilization remains deliberately
-  deferred; it is measured follow-up work, not a B004 deployment blocker.
+- D9 cold-start latency remains to be measured after a 15-minute idle interval.
+  Disposable full-database CI stabilization remains deliberately deferred; it is
+  measured follow-up work, not a B004 deployment blocker.
