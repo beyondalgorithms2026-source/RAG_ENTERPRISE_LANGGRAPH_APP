@@ -12,11 +12,11 @@ Safety tag: pre-b004 (all three repos)
 Visibility: PUBLIC as of Thu 3 Sep 2026 (approved at the D6 gate).
 Licence decision: Apache-2.0
 Cadence: 6h/day from Tue 1 Sep 2026
-Actual through D9 progress: D1-D2 completed Tue 1 Sep (8h), D3-D5 completed Wed 2 Sep
+Actual through D9: D1-D2 completed Tue 1 Sep (8h), D3-D5 completed Wed 2 Sep
 (6h total; per-plan-day split estimated below), D6 plus implementation handoff and D7
 completed Thu 3 Sep (~5h), D8's first CI item also ran Thu 3 Sep (~2.4h), and D8 resumed
 Mon 7 Sep (~5.1h). D9's secret-free implementation and verification then continued on
-Mon 7 Sep (~1.3h so far). Cumulative actual is ~27.8h.
+Mon 7 Sep (~1.7h). Cumulative actual is ~28.2h.
 B004-MIN: 6 days, 36h, baseline Sat 6 Sep
 B004 FULL: 11 days, 66h, expected Thu 10 Sep (baseline Sat 12 Sep; the original plan's
 weekday labels from D7 onward were one day late)
@@ -72,7 +72,7 @@ It is **permanently out of B004 scope and must never be made public.**
       BGE Base (768). The chosen hosted model's dimension is frozen once the corpus is
       loaded. Pin a versioned model identifier — ingest and query vectors must come from
       the identical model or retrieval degrades silently.
-- [ ] D9 Mon 7 Sep (in progress; brought forward from Tue 8 Sep) — deploy backend
+- [x] D9 Mon 7 Sep (brought forward from Tue 8 Sep) — deploy backend
 - [ ] D10 Wed 9 Sep (expected) — deploy front end
       **DECIDED: verifiability by publication, not by visitor upload (Option 1).**
       A visitor must be able to check an answer rather than trust it. Three additions:
@@ -664,7 +664,7 @@ That is D3, not a D2 failure.
 - Starter: `f1d6d04` (approved public test-accounting correction)
 - App: D8 progress log (this commit)
 
-### D9 — Mon 7 Sep 2026 (in progress; brought forward from Tue 8 Sep)
+### D9 — Mon 7 Sep 2026 (brought forward from Tue 8 Sep)
 
 **Done so far**
 
@@ -704,7 +704,6 @@ That is D3, not a D2 failure.
 - The public service is a Render Free portfolio demo over synthetic documents. It is not
   a production or client deployment and has no real-user or workload evidence.
 - The owner approved the resulting public wording and measured results for publication.
-  The cold-start measurement remains open until the service has been idle for 15 minutes.
 
 **Broke**
 
@@ -734,10 +733,13 @@ That is D3, not a D2 failure.
 - Rate-limit check used dry-run answers and therefore no generation spend: requests 1-3
   returned HTTP 200 and request 4 returned HTTP 429 with `limit_per_minute: 3`.
 - Response headers included HSTS, CSP, frame denial and content-type protection.
+- After more than 15 minutes with no inbound request, `/health` returned HTTP 200 in
+  52.50s (52.49s to first byte); all 27 sources remained available. This is the measured
+  Render Free cold start, not a platform estimate. A later warm check remains 0.27s.
 
 **Hours**
 
-- ~1.3h so far, after D8 on Mon 7 Sep. Cumulative actual: ~27.8h of the 66h plan.
+- ~1.7h, after D8 on Mon 7 Sep. Cumulative actual: ~28.2h of the 66h plan.
 
 **Commits**
 
@@ -746,6 +748,6 @@ That is D3, not a D2 failure.
 
 ## Open blockers
 
-- D9 cold-start latency remains to be measured after a 15-minute idle interval.
-  Disposable full-database CI stabilization remains deliberately deferred; it is
-  measured follow-up work, not a B004 deployment blocker.
+- None for D10 implementation. The owner will need to apply the app's Render Blueprint
+  after its code is pushed. Disposable full-database CI stabilization remains deliberately
+  deferred; it is measured follow-up work, not a B004 deployment blocker.
