@@ -833,10 +833,26 @@ That is D3, not a D2 failure.
 - App: `ed182eb` (read-only governance UI and Render Blueprint)
 - App: `80f49a7` (bounded refusal presets)
 - App: `ed34d5e` (supported compliance review preset)
-- App: D10 progress log and README (this commit)
+- App: `1ccbc5b` (D10 closeout and public URLs)
+
+### D11 — Mon 7 Sep 2026 (in progress; brought forward from Tue 8 Sep)
+
+**Done so far**
+
+- Added a timed, approximately three-minute owner recording script covering the public
+  boundary, architecture, supported answer with full-source verification, explicit
+  refusal, compliance approval routing, restricted-data defense, and measured limitations.
+- Added preparation and post-recording checks that keep secrets, private applications,
+  local infrastructure and unapproved claims out of the recording.
+
+**Owner dependency**
+
+- Record the public browser flow, publish it as link-viewable, verify it in an incognito
+  window, and return only the Loom URL. The implementation thread will then wire the URL
+  into the README and evaluation page and perform the final B004 closeout.
 
 ## Open blockers
 
 - D11 requires the owner to record and publish the approximately three-minute walkthrough
-  after the implementation thread provides the script. Disposable full-database CI stabilization remains deliberately
+  using the committed script. Disposable full-database CI stabilization remains deliberately
   deferred; it is measured follow-up work, not a B004 deployment blocker.
