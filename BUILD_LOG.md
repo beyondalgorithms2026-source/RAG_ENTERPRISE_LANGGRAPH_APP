@@ -778,12 +778,16 @@ That is D3, not a D2 failure.
 - Both staged secret-pattern scans returned zero matches.
 - GitHub Actions passed for both implementation commits: starter run `34121372341` and
   app test run `34121561170`; the app Pages deployment also passed.
+- After the starter auto-deploy, anonymous hybrid search returned the annual-leave source
+  as `source_id=6`; its `/corpus/6/file` reader returned HTTP 200 with the reconstructed
+  933-byte Markdown policy, inline disposition, CSP, HSTS, frame denial and content-type
+  protection. This verifies the full-source-link target against the live service.
 - Live app checks, incognito/mobile smoke and final public URL are pending owner Blueprint
   application.
 
 **Hours**
 
-- ~0.9h after D9 on Mon 7 Sep. Cumulative actual: ~29.1h of the 66h plan.
+- ~1.2h after D9 on Mon 7 Sep. Cumulative actual: ~29.4h of the 66h plan.
 
 **Commits**
 
