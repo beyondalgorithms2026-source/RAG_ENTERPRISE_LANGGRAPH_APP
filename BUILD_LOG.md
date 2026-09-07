@@ -12,10 +12,11 @@ Safety tag: pre-b004 (all three repos)
 Visibility: PUBLIC as of Thu 3 Sep 2026 (approved at the D6 gate).
 Licence decision: Apache-2.0
 Cadence: 6h/day from Tue 1 Sep 2026
-Actual through D8: D1-D2 completed Tue 1 Sep (8h), D3-D5 completed Wed 2 Sep
+Actual through D9 progress: D1-D2 completed Tue 1 Sep (8h), D3-D5 completed Wed 2 Sep
 (6h total; per-plan-day split estimated below), D6 plus implementation handoff and D7
 completed Thu 3 Sep (~5h), D8's first CI item also ran Thu 3 Sep (~2.4h), and D8 resumed
-Mon 7 Sep (~5.1h). Cumulative actual is ~26.5h.
+Mon 7 Sep (~5.1h). D9's secret-free implementation and verification then continued on
+Mon 7 Sep (~1h). Cumulative actual is ~27.5h.
 B004-MIN: 6 days, 36h, baseline Sat 6 Sep
 B004 FULL: 11 days, 66h, expected Thu 10 Sep (baseline Sat 12 Sep; the original plan's
 weekday labels from D7 onward were one day late)
@@ -70,7 +71,7 @@ It is **permanently out of B004 scope and must never be made public.**
       BGE Base (768). The chosen hosted model's dimension is frozen once the corpus is
       loaded. Pin a versioned model identifier — ingest and query vectors must come from
       the identical model or retrieval degrades silently.
-- [ ] D9 Tue 8 Sep (expected) — deploy backend
+- [ ] D9 Mon 7 Sep (in progress; brought forward from Tue 8 Sep) — deploy backend
 - [ ] D10 Wed 9 Sep (expected) — deploy front end
       **DECIDED: verifiability by publication, not by visitor upload (Option 1).**
       A visitor must be able to check an answer rather than trust it. Three additions:
@@ -662,7 +663,73 @@ That is D3, not a D2 failure.
 - Starter: `f1d6d04` (approved public test-accounting correction)
 - App: D8 progress log (this commit)
 
+### D9 — Mon 7 Sep 2026 (in progress; brought forward from Tue 8 Sep)
+
+**Done so far**
+
+- Added a secret-free Render Blueprint for one Free Singapore web service, one instance
+  and one Uvicorn worker. Automatic deployment waits for GitHub checks to pass.
+- Added an explicit `APP_ENV=demo` posture. Startup refuses any non-anonymous auth mode,
+  any access strategy other than SQL document ACLs, enabled anonymous uploads, a non-HTTPS
+  front-end URL, a weak database URI, or missing hosted-provider keys.
+- Configured the hosted path for OpenAI `text-embedding-3-small` at 384 dimensions and
+  versioned `gpt-4o-mini-2024-07-18`, with a 600-output-token ceiling per generation call.
+- Configured dependency-free in-process limits of 3 answer and 10 search requests per IP
+  per minute. The provider project's owner-confirmed USD 1 monthly hard enforcement is
+  the final spend boundary; the application also keeps its USD 0.01 per-request alert.
+- Prevented the default profile seeder from copying the Render generation key into the
+  Supabase profiles table. The blank database field resolves the host environment value
+  only in process memory.
+- Added a naive-owner Render runbook naming exactly three private fields: `DATABASE_URL`,
+  `EMBEDDING_API_KEY`, and `LLM_API_KEY`. No secret value is present in source or this log.
+
+**Found / decided**
+
+- The existing staging posture deliberately rejects anonymous auth, so reusing
+  `APP_ENV=staging` would either fail startup or require pretending this public synthetic
+  demo has enterprise identity. The dedicated demo posture preserves non-local HTTPS,
+  CSRF/security-header, strong-database and provider-key checks without making that claim.
+- The existing default-profile seed path would have persisted `LLM_API_KEY` into
+  Postgres. The D9 path now leaves that field blank for environment-based deployments.
+- Provider hard-limit verification is non-destructive: the existing provider-contract
+  test now injects a simulated HTTP 429 billing-limit response and proves the client
+  returns no generated content. It does not deliberately consume the owner's USD 1 cap.
+
+**Not done / owner gate**
+
+- No Render service exists yet. The owner must apply the Blueprint and paste the three
+  private values directly into Render's masked environment-variable form. The README's
+  “Not deployed anywhere” statement remains unchanged and true.
+- Live cold-start, health, retrieval, answer/refusal, upload-rejection and rate-limit
+  measurements wait for the public Render service URL.
+
+**Broke**
+
+- The first targeted test command used `backend/.venv` while already inside `backend/`;
+  it failed with a path error before test collection. The corrected `.venv/bin/python`
+  command passed all 13 targeted tests. This was a command-path mistake, not a code failure.
+
+**Verification so far**
+
+- Targeted deployment/provider tests: 13 passed.
+- Complete offline suite: 65 executable tests passed; 34 database skip events; 0 failures.
+- Reader clarity: 21/21 passed. Repository hygiene and `git diff --check`: passed.
+- `render.yaml` parsed successfully as one service.
+- Staged secret-pattern scan: zero matches.
+- GitHub Actions run `34117573600`: green in 40s; offline tests, reader clarity and
+  repository hygiene all passed.
+
+**Hours**
+
+- ~1h so far, after D8 on Mon 7 Sep. Cumulative actual: ~27.5h of the 66h plan.
+
+**Commits**
+
+- Starter: `cd84389` (guarded Render demo deployment and owner runbook)
+- App: D9 progress log (this commit)
+
 ## Open blockers
 
-- None for D9 planning. Disposable full-database CI stabilization is deliberately
+- Owner must apply the Render Blueprint, enter the three private values, and return only
+  the public service URL. Disposable full-database CI stabilization remains deliberately
   deferred; it is measured follow-up work, not a B004 deployment blocker.
