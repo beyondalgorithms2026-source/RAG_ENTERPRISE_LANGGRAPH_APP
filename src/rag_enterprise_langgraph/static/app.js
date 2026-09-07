@@ -251,6 +251,7 @@ function initDashboard() {
     button.addEventListener("click", () => {
       document.getElementById("ask-question").value = button.dataset.question || "";
       document.getElementById("ask-require-approval").checked = button.dataset.approval === "true";
+      document.getElementById("ask-max-recovery").value = button.dataset.recovery || "3";
       form.requestSubmit();
     });
   });
@@ -258,14 +259,16 @@ function initDashboard() {
     event.preventDefault();
     const question = document.getElementById("ask-question").value.trim();
     const requireApproval = document.getElementById("ask-require-approval").checked;
+    const maxRecoverySteps = Number(document.getElementById("ask-max-recovery").value || 3);
     if (!question) return;
+    document.getElementById("ask-max-recovery").value = "3";
     stopApprovalWatch();
     output.innerHTML = '<div class="spinner">Running orchestrated workflow…</div>';
     try {
       const result = await fetchJSON("/ask-orchestrated", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question, require_approval: requireApproval }),
+        body: JSON.stringify({ question, require_approval: requireApproval, max_recovery_steps: maxRecoverySteps }),
       });
       renderRunResult(result, output);
       loadRunHistory();

@@ -60,6 +60,7 @@ def test_public_demo_is_read_only_and_hides_pending_answer(tmp_path):
     assert 'data-public-demo="true"' in page.text
     assert 'content="https://backend.example.test"' in page.text
     assert "1 · Answerable" in page.text
+    assert 'data-recovery="0"' in page.text
 
     pending = client.get("/approval/pending").json()["pending"]
     fetched = client.get(f"/approval/{record['approval_id']}").json()
