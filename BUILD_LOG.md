@@ -876,6 +876,11 @@ That is D3, not a D2 failure.
 - Complete app suite: 114/114 passed; `git diff --check` passed.
 - Starter reader clarity and repository hygiene: 21/21 passed; `git diff --check` passed.
 - Both staged secret-pattern scans returned zero matches.
+- Post-push GitHub Actions passed: starter run `34147932764` (offline tests, reader
+  clarity and repository hygiene) and app run `34147932416` (114 tests).
+- GitHub Pages deployment `34147932032` passed. A fresh public fetch verified the page
+  displays 114 tests passed, the governed-demo link and the adjacent Render Free wake-up
+  warning; the pushed starter README warning was also verified from the public branch.
 
 **Hours**
 
