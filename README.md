@@ -4,6 +4,8 @@
 
 **[→ Read the evaluation report](https://beyondalgorithms2026-source.github.io/RAG_ENTERPRISE_LANGGRAPH_APP/evaluation/)**
 
+**[→ Try the public governed demo](https://rag-enterprise-governance-demo.onrender.com/app)**
+
 ## The problem this solves
 
 Most retrieval systems answer every question. That is the problem.
@@ -56,8 +58,9 @@ question and expected answer is in `config/eval-set-northwind.json`.
 ## What this is NOT
 
 - **Not a production or client deployment.** The data layer is available as a public
-  Render Free portfolio demo over 27 synthetic documents; the governed app Blueprint is
-  ready but its public URL is pending. It has no real users or real-workload evidence.
+  Render Free portfolio demo over 27 synthetic documents, with a public governed UI at
+  [`rag-enterprise-governance-demo.onrender.com/app`](https://rag-enterprise-governance-demo.onrender.com/app).
+  It has no real users or real-workload evidence.
 - **Not benchmarked.** 25 questions on a 27-document synthetic corpus. The numbers
   describe this system on this corpus and nothing more.
 - **Not a finished product.** Agentic actions (email, Slack, calendar) are deliberately
@@ -131,10 +134,13 @@ For a full answer you also need the backend running with an ingested corpus; see
 [starter repository](https://github.com/beyondalgorithms2026-source/RAG_ENTERPRISE_STARTER)
 for the database, corpus and seed steps.
 
-The synthetic public data-layer API is available at
+The governed public UI is available at
+[`rag-enterprise-governance-demo.onrender.com/app`](https://rag-enterprise-governance-demo.onrender.com/app),
+and its synthetic data-layer API is available at
 [`rag-enterprise-starter-demo.onrender.com`](https://rag-enterprise-starter-demo.onrender.com).
-It may take about a minute to wake after inactivity on Render Free. To deploy the governed
-UI, follow [`docs/runbooks/RENDER_PUBLIC_DEMO.md`](docs/runbooks/RENDER_PUBLIC_DEMO.md).
+Either service may take about a minute to wake after inactivity on Render Free. Deployment
+details and public boundaries are in
+[`docs/runbooks/RENDER_PUBLIC_DEMO.md`](docs/runbooks/RENDER_PUBLIC_DEMO.md).
 
 Run the tests — no Docker, no database, no model required:
 
