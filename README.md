@@ -42,7 +42,7 @@ publishes the unflattering results alongside the good ones.
 | Correct refusals | **5 of 5** |
 | Overall accuracy | 17 of 25, on a 25-question set |
 | Red-team scenarios | 10 red-team scenarios: 9 defended, 0 failed, 1 labelled requires_backend by design. |
-| Automated tests | 113, all offline, run in CI on every push |
+| Automated tests | 114, all offline, run in CI on every push |
 
 Three configurations were measured and all three are published, including the one where
 enabling every retrieval enhancement changed nothing at all. We committed to publishing
@@ -55,8 +55,9 @@ question and expected answer is in `config/eval-set-northwind.json`.
 
 ## What this is NOT
 
-- **Not deployed anywhere.** This is a self-built proof of concept. It has never run in a
-  client environment, has no users, and has processed no real workload.
+- **Not a production or client deployment.** The data layer is available as a public
+  Render Free portfolio demo over 27 synthetic documents; the governed app Blueprint is
+  ready but its public URL is pending. It has no real users or real-workload evidence.
 - **Not benchmarked.** 25 questions on a 27-document synthetic corpus. The numbers
   describe this system on this corpus and nothing more.
 - **Not a finished product.** Agentic actions (email, Slack, calendar) are deliberately
@@ -129,6 +130,11 @@ rag-enterprise-agent --check-config
 For a full answer you also need the backend running with an ingested corpus; see the
 [starter repository](https://github.com/beyondalgorithms2026-source/RAG_ENTERPRISE_STARTER)
 for the database, corpus and seed steps.
+
+The synthetic public data-layer API is available at
+[`rag-enterprise-starter-demo.onrender.com`](https://rag-enterprise-starter-demo.onrender.com).
+It may take about a minute to wake after inactivity on Render Free. To deploy the governed
+UI, follow [`docs/runbooks/RENDER_PUBLIC_DEMO.md`](docs/runbooks/RENDER_PUBLIC_DEMO.md).
 
 Run the tests — no Docker, no database, no model required:
 

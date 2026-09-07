@@ -746,8 +746,53 @@ That is D3, not a D2 failure.
 - Starter: `cd84389` (guarded Render demo deployment and owner runbook)
 - App: D9 progress log (this commit)
 
+### D10 — Mon 7 Sep 2026 (in progress; brought forward from Wed 9 Sep)
+
+**Done so far**
+
+- Added a secret-free Render Blueprint for a Free Singapore app service. It installs the
+  app, checks out MCP server commit `5d814f171af142085707b6421a373fe5360c0081`, and calls
+  the existing public starter backend. No database or model-provider secret is required.
+- Added four one-click scenarios: supported answer, unsupported refusal, high-risk HR
+  routing, and a restricted-data red-team prompt.
+- Reworked each result into adjacent answer and governance panels, collapsing to one
+  column on narrow screens. The governance panel shows evidence status, review routing,
+  verbatim source passages, citations and full-source links.
+- Added a narrowly scoped starter fallback that reconstructs only `public_demo` synthetic
+  Markdown sources from their ACL-filtered stored chunks when Render does not have the
+  original generated file.
+- Added public-demo read-only controls. Visitors can run the governed workflow, but cannot
+  use direct model chat, make approval decisions, expose pending answers, run evaluation
+  or red-team jobs, or invoke the multi-request before/after endpoint.
+- Documented that the hosted run/audit/approval files are ephemeral and that visitor
+  questions must stay synthetic because the demo history is shared.
+
+**Verification so far**
+
+- App suite: 114/114 passed locally in 2.06s; JavaScript syntax and `render.yaml` parsing
+  passed; `git diff --check` passed.
+- Starter offline suite: 65 executable tests passed, 34 database skip events, 0 failures.
+  Reader clarity passed 21/21 and repository hygiene passed.
+- The source-reconstruction assertion extends an existing database-bound method, so it is
+  collected with the 296 database-dependent methods and remains explicit under offline CI.
+- Both staged secret-pattern scans returned zero matches.
+- GitHub Actions passed for both implementation commits: starter run `34121372341` and
+  app test run `34121561170`; the app Pages deployment also passed.
+- Live app checks, incognito/mobile smoke and final public URL are pending owner Blueprint
+  application.
+
+**Hours**
+
+- ~0.9h after D9 on Mon 7 Sep. Cumulative actual: ~29.1h of the 66h plan.
+
+**Commits**
+
+- Starter: `25e59d6` (serve public-demo sources from stored chunks)
+- App: `ed182eb` (read-only governance UI and Render Blueprint)
+- App: D10 progress log and README (this commit)
+
 ## Open blockers
 
-- None for D10 implementation. The owner will need to apply the app's Render Blueprint
-  after its code is pushed. Disposable full-database CI stabilization remains deliberately
+- The owner must apply the app's Render Blueprint and return its public URL for live D10
+  verification. Disposable full-database CI stabilization remains deliberately
   deferred; it is measured follow-up work, not a B004 deployment blocker.
