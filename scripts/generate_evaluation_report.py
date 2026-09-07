@@ -230,6 +230,12 @@ def render(evals: list[tuple], red_team: dict, tests: dict) -> str:
     the author's own machine. Nothing here is evidence of production behaviour.
   </div>
 
+  <div class="note">
+    <strong>Live governed demo:</strong>
+    <a href="https://rag-enterprise-governance-demo.onrender.com/app">open the public browser flow</a>.
+    Render Free may take about one minute to wake after inactivity; leave the tab open while it starts.
+  </div>
+
   <div class="headline">
     <div class="cap">Correct refusals — questions the corpus cannot answer</div>
     <div class="big">{e(refusal_line)}</div>

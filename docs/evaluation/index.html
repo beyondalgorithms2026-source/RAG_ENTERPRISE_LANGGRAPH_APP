@@ -62,13 +62,19 @@
 <main>
   <h1>Evaluation report</h1>
   <p class="sub">Governed retrieval-augmented generation — measured, not asserted.<br>
-     Generated 2026-09-03 17:50 UTC by <code>scripts/generate_evaluation_report.py</code> from run artifacts.</p>
+     Generated 2026-09-07 17:28 UTC by <code>scripts/generate_evaluation_report.py</code> from run artifacts.</p>
 
   <div class="banner">
     <strong>What this is.</strong> A self-built proof of concept. It has never been
     deployed in a client environment, has no users, and has processed no real workload.
     Every number below was produced on a synthetic corpus of 27 invented documents on
     the author's own machine. Nothing here is evidence of production behaviour.
+  </div>
+
+  <div class="note">
+    <strong>Live governed demo:</strong>
+    <a href="https://rag-enterprise-governance-demo.onrender.com/app">open the public browser flow</a>.
+    Render Free may take about one minute to wake after inactivity; leave the tab open while it starts.
   </div>
 
   <div class="headline">
@@ -230,8 +236,8 @@
   </div>
 
   <h2>Test suite</h2>
-  <p><strong>113 tests passed</strong>, 0 failed
-     — <code>113 passed in 1.84s</code></p>
+  <p><strong>114 tests passed</strong>, 0 failed
+     — <code>114 passed in 2.02s</code></p>
   <p>The suite runs entirely offline: no Docker, no database, no model. That is why it
      can run on every push in continuous integration, and why the badge on the repository
      means something.</p>

@@ -6,6 +6,8 @@
 
 **[→ Try the public governed demo](https://rag-enterprise-governance-demo.onrender.com/app)**
 
+> Render Free may take about one minute to wake after inactivity; leave the tab open while it starts.
+
 ## The problem this solves
 
 Most retrieval systems answer every question. That is the problem.

@@ -152,20 +152,27 @@ It is **permanently out of B004 scope and must never be made public.**
 
 ## Rotated credentials
 
-- [x] 3 JWTs purged from the starter's local history (D1) — 73 of 101 commits carried
-      the file; 0 occurrences remain across all refs
-- [x] Purged history force-pushed to origin (approved) — 6 branches and 82 tags
-      rewritten; verified 0 occurrences of the file across all remote refs
-- [x] 3 JWTs invalidated by nulling `DEV_LOCAL_JWT_SECRET` (D1) — see note below
+- [x] 3 JWTs purged from the starter's ordinary branch and tag history (D1) — 73 of
+      101 commits carried the file before the rewrite; `main`, retained `master`, the
+      other ordinary branches, and tags no longer expose it
+- [ ] GitHub-managed pull-request refs still retain the pre-rewrite commit and blob.
+      They cannot be removed by an ordinary branch force-push; a GitHub Support cleanup
+      request is prepared for the owner to submit. This corrects the earlier, over-broad
+      claim that zero occurrences remained across every remote ref.
+- [x] 3 JWTs invalidated by removing the old default and replacing the only known
+      JWT-enabled local secret (D1/D11 verification) — see note below
 - [x] 4 secret defaults nulled and made required (D1, commit `d0a813e`) —
       `AUTH_STATE_SIGNING_SECRET`, `DEV_LOCAL_JWT_SECRET`, `DEV_TEST_USER_PASSWORD`,
       `DEV_TEST_ADMIN_PASSWORD`
 
 Note on "rotation": the three tokens are HS256, issuer `rag-enterprise-local-dev`,
-already expired, and signed with `DEV_LOCAL_JWT_SECRET` — whose value is a default in
-this codebase, not a credential held by any external service. There is no provider
-console to rotate at. Removing the default (D1) is what invalidates them: after that,
-no instance can mint or verify a token with the old key.
+expired on 19 May 2026, and signed with the pre-D1 `DEV_LOCAL_JWT_SECRET` default. On
+D11 the current private local signing value was verified to be non-empty and different
+from that old default, without displaying either value. The owner confirmed there has
+never been another JWT-enabled deployment; the public Render service uses
+`AUTH_ENABLED=false` and `AUTH_MODE=none`. The credential is therefore contained for
+all known environments. The retained pull-request refs are still a public history-
+cleanliness issue and are not described as purged until GitHub removes them.
 
 ## Day log
 
@@ -228,10 +235,12 @@ no instance can mint or verify a token with the old key.
 
 **Done (continued)**
 
-- **Force-pushed the purged starter history** after approval. `git push --force --all`
+- **Force-pushed the purged starter ordinary history** after approval. `git push --force --all`
   also pushed `RAG_Enterprise_MCP_DEV`, a local-only branch that had never existed on the
-  remote; deleted it again to restore the prior remote branch set. Remote now carries the
-  same 6 branches as before, all rewritten, with 0 occurrences of the token file.
+  remote; deleted it again to restore the prior remote branch set. The same 6 ordinary
+  remote branches were rewritten with 0 occurrences of the token file. D11 later found
+  that GitHub-managed pull-request refs were outside that verification and retained the
+  pre-rewrite commit; see **Rotated credentials** above.
 - Checked whether receipt text had leaked into the `runs/` logs that *are* backed up on
   GitHub. It has not — the only match in the assets repo is the README prose describing
   the exclusion.
@@ -466,8 +475,8 @@ That is D3, not a D2 failure.
   → setup last. Each states the three-repo split is a deliberate architectural choice.
 - Recorded the owner's ruling that retrieval augmentation is off **by design** - part of
   the same boundary, changeable by a backend admin, not reachable by the agent layer.
-- Pre-publication safety scan of all three repos: **0 secrets, 0 API keys, 0 JWTs, no
-  tracked .env**. Removed the last 25 files containing machine paths and replaced
+- Pre-publication safety scan of all three checked-out trees and ordinary branches:
+  **0 secrets, 0 API keys, 0 JWTs, no tracked .env**. Removed the last 25 files containing machine paths and replaced
   `password123` in 7 docs and the login UI with a pointer to the env var. Remaining hits
   are test fixtures that assert on the value, plus this log describing the rotation.
 - `main` set as the default branch in all three, pointing at the B004 line. Deleted 8
@@ -844,9 +853,45 @@ That is D3, not a D2 failure.
   refusal, compliance approval routing, restricted-data defense, and measured limitations.
 - Added preparation and post-recording checks that keep secrets, private applications,
   local infrastructure and unapproved claims out of the recording.
+- Reconciled the D1 credential record against a fresh mirror clone. `main`, `master`,
+  ordinary branches and tags are clean, but GitHub-managed pull-request refs 1 and 2
+  retain pre-rewrite history. Corrected the earlier all-ref claim and prepared a
+  secret-free GitHub Support request; the owner must submit it because pull-request refs
+  are not removable through an ordinary repository push.
+- Verified credential containment without exposing values: all three historical JWTs
+  are expired and use the removed pre-D1 default; the current private local secret is
+  different; the owner confirmed no other JWT-enabled deployment existed; and the
+  public Render service has authentication disabled. No additional secret rotation is
+  required for any known environment.
+- Regenerated the public evaluation artifact from the current suite and aligned current
+  documentation to 114 passing tests. Historical day-log entries retain the counts that
+  were actually observed on those days.
+- Added the measured Render Free wake-up warning immediately beside the prominent demo
+  links in both buyer-facing READMEs and in the generated evaluation page.
+
+**Verification so far**
+
+- Evaluation generator completed from current artifacts and reported 114 tests passed;
+  the generated page contains the same count and the adjacent cold-start warning.
+- Complete app suite: 114/114 passed; `git diff --check` passed.
+- Starter reader clarity and repository hygiene: 21/21 passed; `git diff --check` passed.
+- Both staged secret-pattern scans returned zero matches.
+
+**Hours**
+
+- ~0.7h reconciliation after the walkthrough script. Cumulative actual: ~31.5h of the
+  66h plan.
+
+**Commits**
+
+- Starter: `b33b16c` (prominent Render Free cold-start warning)
+- App: D11 reconciliation and evaluation regeneration (this commit)
 
 **Owner dependency**
 
+- Submit the prepared GitHub Support request asking GitHub to remove the two retained
+  pull-request refs and cached views. This is history hygiene, not a blocker to recording
+  or to the contained credential state.
 - Record the public browser flow, publish it as link-viewable, verify it in an incognito
   window, and return only the Loom URL. The implementation thread will then wire the URL
   into the README and evaluation page and perform the final B004 closeout.
