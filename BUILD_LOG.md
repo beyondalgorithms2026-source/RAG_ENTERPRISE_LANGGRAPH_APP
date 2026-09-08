@@ -881,7 +881,7 @@ That is D3, not a D2 failure.
   fail closed. The answer POST is sent exactly once, preventing duplicate model spend.
 - Updated the dashboard progress text to tell visitors that the data layer may be
   starting, and pinned the Render app build to MCP commit
-  `d0121436bde84fcd3cb6dc911c98958be08ac4af`.
+  `986de635e93cae0c31b3f64bf0eef7bc77af9b90`.
 
 **Verification so far**
 
@@ -900,15 +900,29 @@ That is D3, not a D2 failure.
   JavaScript syntax and `git diff --check` passed. Red-team remained exactly: 10 red-team
   scenarios: 9 defended, 0 failed, 1 labelled requires_backend by design.
 
+**Broke during live acceptance**
+
+- The first deployed readiness build did not pass its cold-start acceptance test. It
+  correctly held the visitor in the new startup state for 134 seconds rather than
+  returning immediately, but then ended `tool_error`; a direct health request also
+  timed out with zero bytes. The backend eventually recovered after roughly four minutes.
+- Root cause refinement found two independent limits: the deployment still supplied the
+  earlier 120-second budget, and Python's socket `TimeoutError` could escape the MCP
+  client's structured `BackendError` path. The follow-up catches and normalizes that
+  timeout, adds a regression test, and raises only the Render deployment's readiness
+  budget to 300 seconds. The first attempt is retained in history and is not reported as
+  successful.
+
 **Hours**
 
-- ~0.7h reconciliation after the walkthrough script on Mon 7 Sep, plus ~1.0h diagnosis
-  and cold-start hardening on Tue 8 Sep. Cumulative actual: ~32.5h of the 66h plan.
+- ~0.7h reconciliation after the walkthrough script on Mon 7 Sep, plus ~1.5h diagnosis,
+  implementation and live acceptance on Tue 8 Sep. Cumulative actual: ~33.0h of the 66h plan.
 
 **Commits**
 
 - Starter: `b33b16c` (prominent Render Free cold-start warning)
 - MCP: `d012143` (bounded backend readiness gate before tool POSTs)
+- MCP: `986de63` (socket-timeout normalization found by live acceptance)
 - App: `02d9769` (D11 reconciliation and evaluation regeneration)
 - App: `a0c7bb4` (publication verification)
 - App: cold-start UI, MCP deployment pin and D11 incident record (this commit)

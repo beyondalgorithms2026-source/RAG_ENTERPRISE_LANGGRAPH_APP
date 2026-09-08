@@ -16,8 +16,9 @@ The first request can be slow because both Free Render services may be asleep. B
 retrieval or answer POST, the pinned MCP client checks the backend's read-only `/health`
 endpoint and waits through Render wake pages or transient 502/503/504 responses with
 bounded backoff. It sends the potentially paid POST only after health reports `ok`, so
-wake recovery cannot duplicate a model request. The 120-second backend timeout bounds
-that readiness wait and accommodates the measured backend cold start.
+wake recovery cannot duplicate a model request. The 300-second deployment timeout bounds
+that readiness wait; a live acceptance run on 8 September exceeded the earlier 120-second
+setting before the backend eventually recovered.
 
 ## Public-demo boundaries
 

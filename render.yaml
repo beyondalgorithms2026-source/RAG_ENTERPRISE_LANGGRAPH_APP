@@ -17,7 +17,7 @@ services:
       - key: RAG_BACKEND_BASE_URL
         value: https://rag-enterprise-starter-demo.onrender.com
       - key: RAG_BACKEND_TIMEOUT_SECONDS
-        value: "120"
+        value: "300"
       - key: RAG_AGENT_ENABLE_SYNTHESIS
         value: "false"
       - key: RAG_AGENT_PUBLIC_DEMO
