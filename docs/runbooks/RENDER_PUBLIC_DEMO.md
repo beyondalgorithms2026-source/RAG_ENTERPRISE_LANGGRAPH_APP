@@ -12,8 +12,12 @@ model-provider secret belongs in this service.
 4. Send the public service URL to the implementation thread for incognito, mobile,
    four-preset, full-source-link, and security smoke checks.
 
-The first request can be slow because both Free Render services may be asleep.
-The 120-second backend timeout accommodates the measured backend cold start.
+The first request can be slow because both Free Render services may be asleep. Before a
+retrieval or answer POST, the pinned MCP client checks the backend's read-only `/health`
+endpoint and waits through Render wake pages or transient 502/503/504 responses with
+bounded backoff. It sends the potentially paid POST only after health reports `ok`, so
+wake recovery cannot duplicate a model request. The 120-second backend timeout bounds
+that readiness wait and accommodates the measured backend cold start.
 
 ## Public-demo boundaries
 

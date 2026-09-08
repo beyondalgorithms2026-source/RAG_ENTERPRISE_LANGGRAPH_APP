@@ -30,7 +30,9 @@ def test_ui_routes_return_200(app_env):
         assert "LangGraph/MCP RAG Orchestration" in response.text
     assert client.get("/", follow_redirects=False).status_code in (302, 307)
     assert client.get("/app/static/app.css").status_code == 200
-    assert client.get("/app/static/app.js").status_code == 200
+    script = client.get("/app/static/app.js")
+    assert script.status_code == 200
+    assert "Starting the data layer if needed" in script.text
     assert client.get("/healthz").json() == {"status": "ok"}
 
 

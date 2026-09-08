@@ -263,7 +263,7 @@ function initDashboard() {
     if (!question) return;
     document.getElementById("ask-max-recovery").value = "3";
     stopApprovalWatch();
-    output.innerHTML = '<div class="spinner">Running orchestrated workflow…</div>';
+    output.innerHTML = '<div class="spinner">Starting the data layer if needed, then running the governed workflow…</div>';
     try {
       const result = await fetchJSON("/ask-orchestrated", {
         method: "POST",

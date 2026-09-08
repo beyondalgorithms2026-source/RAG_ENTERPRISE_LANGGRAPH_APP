@@ -844,7 +844,7 @@ That is D3, not a D2 failure.
 - App: `ed34d5e` (supported compliance review preset)
 - App: `1ccbc5b` (D10 closeout and public URLs)
 
-### D11 — Mon 7 Sep 2026 (in progress; brought forward from Tue 8 Sep)
+### D11 — Mon 7 Sep and Tue 8 Sep 2026 (in progress; brought forward from Tue 8 Sep)
 
 **Done so far**
 
@@ -868,6 +868,20 @@ That is D3, not a D2 failure.
   were actually observed on those days.
 - Added the measured Render Free wake-up warning immediately beside the prominent demo
   links in both buyer-facing READMEs and in the generated evaluation page.
+- Diagnosed a real first-request failure reported by the owner. The governance UI was
+  healthy, but the sleeping data service returned Render's HTML `SERVICE WAKING UP` page
+  where the MCP client expected JSON. The run failed closed as `tool_error` with no
+  citations or invented answer. Once awake, backend health, generation-free retrieval
+  and the full governed answer all passed; this ruled out the database, corpus,
+  embeddings, provider key and UI as causes.
+- Added a readiness gate at the existing MCP-to-backend boundary. Before a retrieval or
+  answer POST, it polls the read-only backend health endpoint with exponential backoff,
+  accepting only JSON `status=ok`; known Render wake HTML and transient 502/503/504
+  states retry within the existing 120-second budget. Unexpected HTML and non-ok JSON
+  fail closed. The answer POST is sent exactly once, preventing duplicate model spend.
+- Updated the dashboard progress text to tell visitors that the data layer may be
+  starting, and pinned the Render app build to MCP commit
+  `d0121436bde84fcd3cb6dc911c98958be08ac4af`.
 
 **Verification so far**
 
@@ -881,16 +895,23 @@ That is D3, not a D2 failure.
 - GitHub Pages deployment `34147932032` passed. A fresh public fetch verified the page
   displays 114 tests passed, the governed-demo link and the adjacent Render Free wake-up
   warning; the pushed starter README warning was also verified from the public branch.
+- Cold-start fix local verification: MCP 8/8 passed, including wake HTML, transient 503,
+  unexpected HTML, configured deadline and single-POST assertions; app 114/114 passed;
+  JavaScript syntax and `git diff --check` passed. Red-team remained exactly: 10 red-team
+  scenarios: 9 defended, 0 failed, 1 labelled requires_backend by design.
 
 **Hours**
 
-- ~0.7h reconciliation after the walkthrough script. Cumulative actual: ~31.5h of the
-  66h plan.
+- ~0.7h reconciliation after the walkthrough script on Mon 7 Sep, plus ~1.0h diagnosis
+  and cold-start hardening on Tue 8 Sep. Cumulative actual: ~32.5h of the 66h plan.
 
 **Commits**
 
 - Starter: `b33b16c` (prominent Render Free cold-start warning)
-- App: D11 reconciliation and evaluation regeneration (this commit)
+- MCP: `d012143` (bounded backend readiness gate before tool POSTs)
+- App: `02d9769` (D11 reconciliation and evaluation regeneration)
+- App: `a0c7bb4` (publication verification)
+- App: cold-start UI, MCP deployment pin and D11 incident record (this commit)
 
 **Owner dependency**
 
