@@ -71,7 +71,9 @@ def test_cli_list_and_approve_flow(tmp_path, capsys):
     assert _handle_standalone(missing_reviewer, settings) == 2
     capsys.readouterr()
 
-    approve = parser.parse_args(["--approve", record["approval_id"], "--reviewer", "Alice", "--comment", "fine"])
+    approve = parser.parse_args(
+        ["--approve", record["approval_id"], "--reviewer", "Alice", "--comment", "fine"]
+    )
     assert _handle_standalone(approve, settings) == 0
     decided = json.loads(capsys.readouterr().out)
     assert decided["status"] == "approved"

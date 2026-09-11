@@ -12,7 +12,15 @@ def test_red_team_findings_file_parses_with_all_checks_registered():
     findings = load_findings()
     assert len(findings) == 10
     for finding in findings:
-        for key in ("finding_id", "scenario", "category", "expected_defense", "check", "check_type", "linked_test"):
+        for key in (
+            "finding_id",
+            "scenario",
+            "category",
+            "expected_defense",
+            "check",
+            "check_type",
+            "linked_test",
+        ):
             assert finding.get(key), f"{finding.get('finding_id')} missing {key}"
         assert finding["check"] in CHECKS
 
@@ -24,7 +32,9 @@ def test_red_team_run_produces_honest_statuses():
     assert report["overall_status"] == "pass"
     by_id = {finding["finding_id"]: finding for finding in report["findings"]}
     assert by_id["RT-06"]["status"] == "requires_backend"
-    deterministic = [finding for finding in report["findings"] if finding["check_type"] == "deterministic"]
+    deterministic = [
+        finding for finding in report["findings"] if finding["check_type"] == "deterministic"
+    ]
     assert all(finding["status"] == "defended" for finding in deterministic)
     assert all(finding["actual_result"] for finding in report["findings"])
 
@@ -32,7 +42,10 @@ def test_red_team_run_produces_honest_statuses():
 def test_red_team_markdown_rendering():
     report = run_red_team()
     markdown = render_red_team_markdown(report)
-    assert "| # | Scenario | Expected Defense | Actual Result | Status | Linked Test/Source |" in markdown
+    assert (
+        "| # | Scenario | Expected Defense | Actual Result | Status | Linked Test/Source |"
+        in markdown
+    )
     assert "RT-01" in markdown
     assert "requires_backend" in markdown
     assert "not simulated" in markdown

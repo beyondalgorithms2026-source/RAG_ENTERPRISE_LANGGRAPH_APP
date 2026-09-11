@@ -12,7 +12,6 @@ from pydantic import BaseModel
 
 from rag_enterprise_langgraph.audit import AuditLog, scrub_text
 
-
 DEFAULT_APPROVALS_PATH = "runs/approvals.jsonl"
 
 APPROVAL_NOT_REQUIRED = "approval_not_required"
@@ -105,13 +104,18 @@ def _question_risk_categories(question: str) -> list[str]:
 
 def assess_risk(question: str, result: dict[str, Any] | None = None) -> list[str]:
     """Return the reasons this run is considered high-risk. Empty means low-risk."""
-    reasons = [f"high_risk_category:{category}" for category in _question_risk_categories(question)]
+    reasons = [
+        f"high_risk_category:{category}" for category in _question_risk_categories(question)
+    ]
     result = result or {}
     grounding_status = str(result.get("grounding_status") or "")
     if grounding_status in {"needs_review", "partial"}:
         reasons.append(f"grounding_status:{grounding_status}")
     validation_summary = result.get("validation_summary")
-    if isinstance(validation_summary, dict) and validation_summary.get("review_recommended") is True:
+    if (
+        isinstance(validation_summary, dict)
+        and validation_summary.get("review_recommended") is True
+    ):
         reasons.append("review_recommended")
     return reasons
 
@@ -218,7 +222,11 @@ class ApprovalStore:
         return self._records().get(approval_id)
 
     def all(self) -> list[dict[str, Any]]:
-        return sorted(self._records().values(), key=lambda item: str(item.get("requested_at") or ""), reverse=True)
+        return sorted(
+            self._records().values(),
+            key=lambda item: str(item.get("requested_at") or ""),
+            reverse=True,
+        )
 
     def pending(self) -> list[dict[str, Any]]:
         return [record for record in self.all() if record.get("status") == PENDING_APPROVAL]
@@ -226,7 +234,9 @@ class ApprovalStore:
     def by_run_id(self, run_id: str) -> dict[str, Any] | None:
         return next((record for record in self.all() if record.get("run_id") == run_id), None)
 
-    def _decide(self, approval_id: str, status: str, reviewer: str, comment: str | None) -> dict[str, Any]:
+    def _decide(
+        self, approval_id: str, status: str, reviewer: str, comment: str | None
+    ) -> dict[str, Any]:
         record = self.get(approval_id)
         if record is None:
             raise KeyError(f"approval_id not found: {approval_id}")
@@ -244,10 +254,14 @@ class ApprovalStore:
         self._append(updated)
         return updated
 
-    def approve(self, approval_id: str, *, reviewer: str, comment: str | None = None) -> dict[str, Any]:
+    def approve(
+        self, approval_id: str, *, reviewer: str, comment: str | None = None
+    ) -> dict[str, Any]:
         return self._decide(approval_id, APPROVED, reviewer, comment)
 
-    def reject(self, approval_id: str, *, reviewer: str, comment: str | None = None) -> dict[str, Any]:
+    def reject(
+        self, approval_id: str, *, reviewer: str, comment: str | None = None
+    ) -> dict[str, Any]:
         return self._decide(approval_id, REJECTED, reviewer, comment)
 
 
@@ -265,7 +279,9 @@ class ApprovalDecisionBody(BaseModel):
     comment: str | None = None
 
 
-def _record_audit_decision(audit_log: AuditLog | None, record: dict[str, Any], event_type: str) -> None:
+def _record_audit_decision(
+    audit_log: AuditLog | None, record: dict[str, Any], event_type: str
+) -> None:
     if audit_log is None:
         return
     audit_log.append(
@@ -293,7 +309,9 @@ def build_approval_router(
     @router.post("/request")
     async def request_approval(body: ApprovalRequestBody):
         if read_only:
-            raise HTTPException(status_code=403, detail="Approval mutations are disabled in the public demo.")
+            raise HTTPException(
+                status_code=403, detail="Approval mutations are disabled in the public demo."
+            )
         record = store.create(
             question=body.question,
             answer=body.answer,
@@ -308,7 +326,10 @@ def build_approval_router(
                 run_id=record.get("run_id"),
                 actor="api",
                 summary=f"Approval requested: {record['approval_id']}",
-                payload={"approval_id": record["approval_id"], "risk_reasons": record["risk_reasons"]},
+                payload={
+                    "approval_id": record["approval_id"],
+                    "risk_reasons": record["risk_reasons"],
+                },
             )
         return record
 
@@ -334,26 +355,30 @@ def build_approval_router(
     @router.post("/{approval_id}/approve")
     async def approve(approval_id: str, body: ApprovalDecisionBody):
         if read_only:
-            raise HTTPException(status_code=403, detail="Approval mutations are disabled in the public demo.")
+            raise HTTPException(
+                status_code=403, detail="Approval mutations are disabled in the public demo."
+            )
         try:
             record = store.approve(approval_id, reviewer=body.reviewer, comment=body.comment)
         except KeyError:
-            raise HTTPException(status_code=404, detail="approval_id not found")
+            raise HTTPException(status_code=404, detail="approval_id not found") from None
         except ValueError as exc:
-            raise HTTPException(status_code=409, detail=str(exc))
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
         _record_audit_decision(audit_log, record, "approval_approved")
         return record
 
     @router.post("/{approval_id}/reject")
     async def reject(approval_id: str, body: ApprovalDecisionBody):
         if read_only:
-            raise HTTPException(status_code=403, detail="Approval mutations are disabled in the public demo.")
+            raise HTTPException(
+                status_code=403, detail="Approval mutations are disabled in the public demo."
+            )
         try:
             record = store.reject(approval_id, reviewer=body.reviewer, comment=body.comment)
         except KeyError:
-            raise HTTPException(status_code=404, detail="approval_id not found")
+            raise HTTPException(status_code=404, detail="approval_id not found") from None
         except ValueError as exc:
-            raise HTTPException(status_code=409, detail=str(exc))
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
         _record_audit_decision(audit_log, record, "approval_rejected")
         return record
 

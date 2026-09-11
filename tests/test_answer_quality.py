@@ -57,7 +57,10 @@ def test_unsupported_list_items_are_not_verified_just_because_citation_exists():
     review = review_answer(question=question, answer=answer, evidence=evidence)
 
     assert review.status == "weak"
-    assert review.reason in {"list_items_not_supported_by_citations", "citation_snippet_appears_cut_off"}
+    assert review.reason in {
+        "list_items_not_supported_by_citations",
+        "citation_snippet_appears_cut_off",
+    }
     assert review.review_recommended is True
 
 
@@ -65,7 +68,11 @@ def test_material_cost_answer_without_percentage_is_weak():
     review = review_answer(
         question="What is the cost of rocket travel based on the materials?",
         answer="The vehicle used aerospace aluminum, titanium, copper, and carbon fiber, costing about $8 million.",
-        evidence=[{"snippet": "Aerospace-grade aluminum, titanium, copper, and carbon fiber were discussed."}],
+        evidence=[
+            {
+                "snippet": "Aerospace-grade aluminum, titanium, copper, and carbon fiber were discussed."
+            }
+        ],
     )
 
     assert review.status == "weak"
@@ -76,7 +83,11 @@ def test_material_cost_percentage_supported_by_evidence_is_verified():
     review = review_answer(
         question="What is the cost of rocket travel based on the materials?",
         answer="The material cost was approximately 2% of the rocket cost.",
-        evidence=[{"snippet": "The raw aerospace material cost was only about 2% of the total rocket cost."}],
+        evidence=[
+            {
+                "snippet": "The raw aerospace material cost was only about 2% of the total rocket cost."
+            }
+        ],
     )
 
     assert review.status == "verified"

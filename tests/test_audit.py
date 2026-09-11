@@ -16,7 +16,17 @@ def test_audit_event_has_required_fields_and_null_first_previous_hash(tmp_path):
         summary="Run started",
         payload={"question_preview": "What is X?"},
     )
-    for key in ("event_id", "run_id", "timestamp", "event_type", "actor", "summary", "payload", "previous_hash", "event_hash"):
+    for key in (
+        "event_id",
+        "run_id",
+        "timestamp",
+        "event_type",
+        "actor",
+        "summary",
+        "payload",
+        "previous_hash",
+        "event_hash",
+    ):
         assert key in event
     assert event["previous_hash"] is None
     assert event["event_hash"]
@@ -25,11 +35,15 @@ def test_audit_event_has_required_fields_and_null_first_previous_hash(tmp_path):
 def test_audit_hash_chain_survives_process_restart(tmp_path):
     path = tmp_path / "audit.jsonl"
     first_log = AuditLog(path)
-    first = first_log.append(event_type="run_started", run_id="run-1", actor="orchestrator", summary="start")
+    first = first_log.append(
+        event_type="run_started", run_id="run-1", actor="orchestrator", summary="start"
+    )
 
     # Simulate a restart by creating a fresh instance over the same file.
     second_log = AuditLog(path)
-    second = second_log.append(event_type="run_completed", run_id="run-1", actor="orchestrator", summary="done")
+    second = second_log.append(
+        event_type="run_completed", run_id="run-1", actor="orchestrator", summary="done"
+    )
 
     assert second["previous_hash"] == first["event_hash"]
     verification = second_log.verify_chain()
@@ -60,7 +74,7 @@ def test_audit_sanitization_removes_secrets_paths_and_tracebacks(tmp_path):
         event_type="tool_call_failed",
         run_id="run-1",
         actor="orchestrator",
-        summary='failed with Authorization: Bearer abc123secret at /Users/example/private/file.py',
+        summary="failed with Authorization: Bearer abc123secret at /Users/example/private/file.py",
         payload={
             "password": "hunter2",
             "api_key": "sk-live-123",
@@ -90,9 +104,27 @@ def test_scrub_text_and_sanitize_for_audit_helpers():
 
 def test_audit_runs_grouping_and_export(tmp_path):
     audit = AuditLog(tmp_path / "audit.jsonl")
-    audit.append(event_type="run_started", run_id="run-a", actor="orchestrator", summary="start", payload={"question_preview": "Q-A?"})
-    audit.append(event_type="run_completed", run_id="run-a", actor="orchestrator", summary="done", payload={"grounding_status": "verified", "approval_status": "approval_not_required"})
-    audit.append(event_type="run_started", run_id="run-b", actor="orchestrator", summary="start", payload={"question_preview": "Q-B?"})
+    audit.append(
+        event_type="run_started",
+        run_id="run-a",
+        actor="orchestrator",
+        summary="start",
+        payload={"question_preview": "Q-A?"},
+    )
+    audit.append(
+        event_type="run_completed",
+        run_id="run-a",
+        actor="orchestrator",
+        summary="done",
+        payload={"grounding_status": "verified", "approval_status": "approval_not_required"},
+    )
+    audit.append(
+        event_type="run_started",
+        run_id="run-b",
+        actor="orchestrator",
+        summary="start",
+        payload={"question_preview": "Q-B?"},
+    )
 
     runs = audit.runs()
     assert [run["run_id"] for run in runs] == ["run-b", "run-a"]
@@ -110,8 +142,12 @@ def test_orchestrator_emits_run_id_and_audit_events(tmp_path):
     audit = AuditLog(tmp_path / "audit.jsonl")
     orchestrator = EnterpriseRagOrchestrator(quiet_mcp=False, audit_log=audit)
 
-    async def stub_call_tool(name, arguments):  # noqa: ANN001, ARG001
-        content = {"answer": "Not found in provided sources.", "citations": []} if name == "ask_grounded" else {"results": []}
+    async def stub_call_tool(name, arguments):
+        content = (
+            {"answer": "Not found in provided sources.", "citations": []}
+            if name == "ask_grounded"
+            else {"results": []}
+        )
         return content, {"tool_name": name, "tool_call_id": None, "content": content}
 
     orchestrator._call_tool = stub_call_tool  # type: ignore[method-assign]
@@ -135,7 +171,7 @@ def test_orchestrator_emits_run_id_and_audit_events(tmp_path):
 def test_orchestrator_run_without_audit_still_has_run_id():
     orchestrator = EnterpriseRagOrchestrator(quiet_mcp=False)
 
-    async def fail_tool_call(name, arguments):  # noqa: ANN001, ARG001
+    async def fail_tool_call(name, arguments):
         raise OSError("backend unavailable")
 
     orchestrator._call_tool = fail_tool_call  # type: ignore[method-assign]

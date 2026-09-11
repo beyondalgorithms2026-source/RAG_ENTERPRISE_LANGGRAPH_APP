@@ -7,7 +7,6 @@ from rag_enterprise_langgraph.config import Settings
 from rag_enterprise_langgraph.orchestrator import EnterpriseRagOrchestrator
 from rag_enterprise_langgraph.synthesis import synthesize_and_verify, verify_against_evidence
 
-
 ROCKET_CHUNK = (
     "if you calculate the cost of goods sold for aerospace-grade aluminum alloys, plus some titanium, "
     "copper, and carbon fiber on the open commodities market, it's about 2% of what rockets cost. "
@@ -23,7 +22,7 @@ class _StubModel:
     def __init__(self, text: str):
         self.text = text
 
-    async def ainvoke(self, messages):  # noqa: ANN001
+    async def ainvoke(self, messages):
         class _Msg:
             pass
 
@@ -33,15 +32,32 @@ class _StubModel:
 
 
 def test_verify_rejects_invented_number_entity_and_refusal():
-    assert verify_against_evidence("The hard materials cost about 2% of what a rocket costs.", ROCKET_EVIDENCE)["verified"] is True
-    assert verify_against_evidence("The materials cost about 5% of a rocket.", ROCKET_EVIDENCE)["verified"] is False
-    assert verify_against_evidence("According to NASA, it is 2% of rocket cost.", ROCKET_EVIDENCE)["verified"] is False
+    assert (
+        verify_against_evidence(
+            "The hard materials cost about 2% of what a rocket costs.", ROCKET_EVIDENCE
+        )["verified"]
+        is True
+    )
+    assert (
+        verify_against_evidence("The materials cost about 5% of a rocket.", ROCKET_EVIDENCE)[
+            "verified"
+        ]
+        is False
+    )
+    assert (
+        verify_against_evidence("According to NASA, it is 2% of rocket cost.", ROCKET_EVIDENCE)[
+            "verified"
+        ]
+        is False
+    )
     assert verify_against_evidence("NOT_ANSWERABLE", ROCKET_EVIDENCE)["verified"] is False
     assert verify_against_evidence("", ROCKET_EVIDENCE)["verified"] is False
 
 
 def test_verify_rejects_generic_answer_with_low_overlap():
-    result = verify_against_evidence("It depends entirely on unrelated market conditions elsewhere.", ROCKET_EVIDENCE)
+    result = verify_against_evidence(
+        "It depends entirely on unrelated market conditions elsewhere.", ROCKET_EVIDENCE
+    )
     assert result["verified"] is False
 
 
@@ -49,7 +65,12 @@ def test_synthesize_verified_for_faithful_model_output():
     profile = classify_question(ROCKET_Q)
     faithful = "The hard materials of a rocket — aluminum, titanium, copper, and carbon fiber — cost about 2% of what a rocket costs."
     result = asyncio.run(
-        synthesize_and_verify(question=ROCKET_Q, evidence=ROCKET_EVIDENCE, question_profile=profile, model=_StubModel(faithful))
+        synthesize_and_verify(
+            question=ROCKET_Q,
+            evidence=ROCKET_EVIDENCE,
+            question_profile=profile,
+            model=_StubModel(faithful),
+        )
     )
     assert result["verified"] is True
     assert result["answer"] == faithful
@@ -70,11 +91,16 @@ def test_synthesize_rejected_for_hallucinated_model_output():
 
 def test_synthesize_falls_back_when_model_errors():
     class _BoomModel:
-        async def ainvoke(self, messages):  # noqa: ANN001
+        async def ainvoke(self, messages):
             raise RuntimeError("no api key")
 
     result = asyncio.run(
-        synthesize_and_verify(question=ROCKET_Q, evidence=ROCKET_EVIDENCE, question_profile=classify_question(ROCKET_Q), model=_BoomModel())
+        synthesize_and_verify(
+            question=ROCKET_Q,
+            evidence=ROCKET_EVIDENCE,
+            question_profile=classify_question(ROCKET_Q),
+            model=_BoomModel(),
+        )
     )
     assert result["verified"] is False
     assert result["reason"].startswith("model_error")
@@ -85,12 +111,28 @@ def _rocket_orchestrator(*, enable_synthesis: bool, model=None) -> EnterpriseRag
     orchestrator = EnterpriseRagOrchestrator(settings=settings, quiet_mcp=False)
     orchestrator.synthesis_model = model
 
-    async def fake(name, arguments):  # noqa: ANN001, ARG001
+    async def fake(name, arguments):
         if name == "ask_grounded":
-            return {"answer": "Not found in provided sources.", "citations": []}, {"tool_name": name, "content": {}}
+            return {"answer": "Not found in provided sources.", "citations": []}, {
+                "tool_name": name,
+                "content": {},
+            }
         if name == "search_documents":
-            return {"results": [{"source_id": 9, "source_part_id": 12, "file_name": "spacex.txt", "snippet": ROCKET_CHUNK}]}, {"tool_name": name, "content": {}}
-        return {"matched": True, "excerpt": ROCKET_CHUNK, "result": {"source_id": 9, "source_part_id": 12, "file_name": "spacex.txt"}}, {"tool_name": name, "content": {}}
+            return {
+                "results": [
+                    {
+                        "source_id": 9,
+                        "source_part_id": 12,
+                        "file_name": "spacex.txt",
+                        "snippet": ROCKET_CHUNK,
+                    }
+                ]
+            }, {"tool_name": name, "content": {}}
+        return {
+            "matched": True,
+            "excerpt": ROCKET_CHUNK,
+            "result": {"source_id": 9, "source_part_id": 12, "file_name": "spacex.txt"},
+        }, {"tool_name": name, "content": {}}
 
     orchestrator._call_tool = fake  # type: ignore[method-assign]
     return orchestrator
@@ -104,14 +146,18 @@ def test_tier1_deterministic_picks_core_fact_not_caveat():
     assert "2%" in result.answer
     assert "aerospace-grade aluminum" in result.answer
     # Verbatim proof is attached and synthesis stayed off.
-    assert result.source_evidence and "aerospace-grade aluminum" in result.source_evidence[0]["quote"]
+    assert (
+        result.source_evidence and "aerospace-grade aluminum" in result.source_evidence[0]["quote"]
+    )
     assert result.synthesis_verified is False
     assert result.synthesized_answer is None
 
 
 def test_tier2_synthesis_replaces_answer_and_keeps_verbatim_proof():
     faithful = "The hard materials of a rocket — aluminum, titanium, copper, and carbon fiber — cost about 2% of what a rocket costs."
-    result = asyncio.run(_rocket_orchestrator(enable_synthesis=True, model=_StubModel(faithful)).run(ROCKET_Q))
+    result = asyncio.run(
+        _rocket_orchestrator(enable_synthesis=True, model=_StubModel(faithful)).run(ROCKET_Q)
+    )
     assert result.synthesis_verified is True
     assert result.answer == faithful
     assert result.verbatim_answer and "aerospace-grade aluminum" in result.verbatim_answer
@@ -120,7 +166,10 @@ def test_tier2_synthesis_replaces_answer_and_keeps_verbatim_proof():
 
 def test_tier2_hallucination_falls_back_to_verbatim():
     result = asyncio.run(
-        _rocket_orchestrator(enable_synthesis=True, model=_StubModel("Materials are 5% of cost, per NASA's John Smith.")).run(ROCKET_Q)
+        _rocket_orchestrator(
+            enable_synthesis=True,
+            model=_StubModel("Materials are 5% of cost, per NASA's John Smith."),
+        ).run(ROCKET_Q)
     )
     assert result.synthesis_verified is False
     # Falls back to the extractive verbatim answer, never the unverified synthesis.

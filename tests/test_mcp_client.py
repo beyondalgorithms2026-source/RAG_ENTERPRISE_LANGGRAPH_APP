@@ -21,4 +21,3 @@ def test_build_mcp_client_registers_single_server(tmp_path):
     settings = Settings(mcp_server_name="rag-enterprise-mcp", mcp_server_repo=tmp_path)
     client = build_mcp_client(settings)
     assert list(client.connections.keys()) == ["rag-enterprise-mcp"]
-

@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -112,8 +113,16 @@ def load_rules(path: str | Path | None = None) -> list[OrchestrationRule]:
             OrchestrationRule(
                 id=str(item.get("id") or "custom_rule"),
                 question_terms=[str(value) for value in item.get("question_terms", [])],
-                required_any=[[str(value) for value in group] for group in item.get("required_any", []) if isinstance(group, list)],
-                    aliases={str(key): [str(value) for value in values] for key, values in (item.get("aliases") or {}).items() if isinstance(values, list)},
+                required_any=[
+                    [str(value) for value in group]
+                    for group in item.get("required_any", [])
+                    if isinstance(group, list)
+                ],
+                aliases={
+                    str(key): [str(value) for value in values]
+                    for key, values in (item.get("aliases") or {}).items()
+                    if isinstance(values, list)
+                },
             )
         )
     return rules
@@ -131,7 +140,9 @@ def matching_rule(question: str, rules: Sequence[OrchestrationRule]) -> Orchestr
     return sorted(matches, key=lambda item: item[0], reverse=True)[0][1]
 
 
-def expected_terms_from_answer(expected_answer: str, rule: OrchestrationRule | None = None) -> list[str]:
+def expected_terms_from_answer(
+    expected_answer: str, rule: OrchestrationRule | None = None
+) -> list[str]:
     """Derive the terms an answer must contain, from the expected answer itself.
 
     A matching rule may supply aliases (so "5%" also matches "0.05"), but it can
@@ -142,11 +153,20 @@ def expected_terms_from_answer(expected_answer: str, rule: OrchestrationRule | N
         terms.extend(_numeric_aliases(percent))
     for decimal in re.findall(r"\b0\.\d+\b", expected_answer):
         terms.extend(_numeric_aliases(decimal))
-    for phrase in re.findall(r"\b[A-Z][A-Za-z0-9]+(?:\s+[A-Z][A-Za-z0-9]+){0,4}\b", expected_answer):
+    for phrase in re.findall(
+        r"\b[A-Z][A-Za-z0-9]+(?:\s+[A-Z][A-Za-z0-9]+){0,4}\b", expected_answer
+    ):
         if len(phrase) >= 3:
             terms.append(phrase)
     for token in re.findall(r"[A-Za-z0-9][A-Za-z0-9._%-]*", expected_answer):
-        if len(token) >= 4 and token.lower() not in {"that", "with", "from", "this", "were", "would"}:
+        if len(token) >= 4 and token.lower() not in {
+            "that",
+            "with",
+            "from",
+            "this",
+            "were",
+            "would",
+        }:
             terms.append(token)
     return _expand_aliases(terms, rule)
 
@@ -157,7 +177,14 @@ def _snippet_text(evidence: Sequence[dict[str, Any]]) -> str:
 
 def _is_cut_off(text: str) -> bool:
     stripped = text.strip()
-    return stripped.endswith("...") or stripped.endswith("…") or bool(re.search(r"\b[a-zA-Z]{2,}$", stripped)) and not stripped.endswith((".", "?", "!", '"', "'"))
+    return (
+        stripped.endswith("...")
+        or stripped.endswith("…")
+        or (
+            bool(re.search(r"\b[a-zA-Z]{2,}$", stripped))
+            and not stripped.endswith((".", "?", "!", '"', "'"))
+        )
+    )
 
 
 def validate_evidence(
@@ -175,7 +202,9 @@ def validate_evidence(
 
     rule = matching_rule(question, rules)
     expected_terms = expected_terms_from_answer(expected_answer or "", rule)
-    anchor_hits = [anchor for anchor in anchors if len(anchor) >= 4 and _normalize_text(anchor) in normalized]
+    anchor_hits = [
+        anchor for anchor in anchors if len(anchor) >= 4 and _normalize_text(anchor) in normalized
+    ]
     meaningful_anchor_count = len([anchor for anchor in anchors if len(anchor) >= 4])
     anchor_score = min(1.0, len(anchor_hits) / max(1, min(meaningful_anchor_count, 4)))
 
@@ -197,8 +226,14 @@ def validate_evidence(
 
     answer_type_score = 0.0
     lowered_question = _normalize_text(question)
-    if "percentage" in lowered_question or "percent" in lowered_question or "%" in lowered_question:
-        answer_type_score = 1.0 if re.search(r"\b\d+(?:\.\d+)?\s*%|\b0\.\d+\b", normalized) else 0.0
+    if (
+        "percentage" in lowered_question
+        or "percent" in lowered_question
+        or "%" in lowered_question
+    ):
+        answer_type_score = (
+            1.0 if re.search(r"\b\d+(?:\.\d+)?\s*%|\b0\.\d+\b", normalized) else 0.0
+        )
     elif "when" in lowered_question:
         answer_type_score = 1.0 if re.search(r"\b\d{4}\b", normalized) else 0.0
     elif "where" in lowered_question:
@@ -238,7 +273,14 @@ def validate_evidence(
     )
 
 
-def evaluate_expected_answer(*, answer: str, evidence: Sequence[dict[str, Any]], expected_answer: str, question: str, rules: Sequence[OrchestrationRule]) -> dict[str, Any]:
+def evaluate_expected_answer(
+    *,
+    answer: str,
+    evidence: Sequence[dict[str, Any]],
+    expected_answer: str,
+    question: str,
+    rules: Sequence[OrchestrationRule],
+) -> dict[str, Any]:
     rule = matching_rule(question, rules)
     combined = " ".join([answer, _snippet_text(evidence)])
     terms = expected_terms_from_answer(expected_answer, rule)

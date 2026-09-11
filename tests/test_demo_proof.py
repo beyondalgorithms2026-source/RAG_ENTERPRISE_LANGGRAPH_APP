@@ -87,7 +87,7 @@ class _FakeOrchestrator:
     async def check_configuration(self):
         return await _FakeAgent().check_configuration()
 
-    async def run(  # noqa: ARG002
+    async def run(
         self,
         question: str,
         *,
@@ -200,7 +200,7 @@ def test_redaction_removes_raw_prompts_and_tracebacks_even_with_debug_enabled():
                 "answer_generation_path": "not_found",
                 "system_prompt": "secret prompt",
                 "user_prompt": "raw source prompt",
-                "traceback": "Traceback File \"/Users/example/private.py\"",
+                "traceback": 'Traceback File "/Users/example/private.py"',
                 "retrieval_trace": {"score_diagnostics": [{"chunk_id": 1}]},
             },
             "raw": "raw backend payload",
@@ -255,7 +255,7 @@ def test_demo_proof_handles_backend_or_mcp_errors():
 
 
 def test_demo_proof_endpoint_returns_expected_shape(monkeypatch):
-    async def fake_build_demo_proof(  # noqa: ANN001, ARG001
+    async def fake_build_demo_proof(
         *,
         orchestrator,
         questions,
@@ -292,7 +292,10 @@ def test_demo_proof_endpoint_returns_expected_shape(monkeypatch):
 
 
 def test_overall_status_marks_mixed_runs_partial():
-    assert overall_status([{"grounding_status": "grounded"}, {"grounding_status": "backend_timeout"}]) == "partial"
+    assert (
+        overall_status([{"grounding_status": "grounded"}, {"grounding_status": "backend_timeout"}])
+        == "partial"
+    )
     assert overall_status([{"grounding_status": "backend_auth_failed"}]) == "error"
     assert overall_status([{"grounding_status": "needs_review"}]) == "partial"
     assert overall_status([{"grounding_status": "recovered"}]) == "ok"

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Any, Sequence
-
+from typing import Any
 
 QUESTION_TYPES = (
     "exact_numeric",
@@ -140,11 +140,17 @@ def _percentages(text: str) -> list[str]:
 
 def _item_count(question: str) -> int | None:
     lowered = _normalize(question)
-    digit = re.search(r"\b(\d+)\s+(?:\w+\s+){0,3}(?:things|items|reasons|steps|ways|factors|points|examples)\b", lowered)
+    digit = re.search(
+        r"\b(\d+)\s+(?:\w+\s+){0,3}(?:things|items|reasons|steps|ways|factors|points|examples)\b",
+        lowered,
+    )
     if digit:
         return int(digit.group(1))
     for word, number in _NUMBER_WORDS.items():
-        if re.search(rf"\b{word}\s+(?:\w+\s+){{0,3}}(?:things|items|reasons|steps|ways|factors|points|examples)\b", lowered):
+        if re.search(
+            rf"\b{word}\s+(?:\w+\s+){{0,3}}(?:things|items|reasons|steps|ways|factors|points|examples)\b",
+            lowered,
+        ):
             return number
     return None
 
@@ -153,13 +159,28 @@ def classify_question(question: str) -> QuestionProfile:
     lowered = _normalize(question)
     types: list[str] = []
     count = _item_count(question)
-    requires_numeric = any(marker in lowered for marker in ("how much", "how many", "cost", "revenue", "price", "amount"))
+    requires_numeric = any(
+        marker in lowered
+        for marker in ("how much", "how many", "cost", "revenue", "price", "amount")
+    )
     material_cost_share = "cost" in lowered and "material" in lowered
-    requires_percentage = any(marker in lowered for marker in ("percentage", "percent", "ratio", "%", "rent to sales")) or material_cost_share
-    requires_date = any(marker in lowered for marker in ("when", "date", "year", "formed", "founded"))
-    requires_location = lowered.startswith("where") or " based in" in lowered or " located" in lowered
+    requires_percentage = (
+        any(
+            marker in lowered
+            for marker in ("percentage", "percent", "ratio", "%", "rent to sales")
+        )
+        or material_cost_share
+    )
+    requires_date = any(
+        marker in lowered for marker in ("when", "date", "year", "formed", "founded")
+    )
+    requires_location = (
+        lowered.startswith("where") or " based in" in lowered or " located" in lowered
+    )
     requires_named_entity = lowered.startswith("who") or "which" in lowered
-    requires_exact_quote = any(marker in lowered for marker in ("quote", "exact", "final words", "wording"))
+    requires_exact_quote = any(
+        marker in lowered for marker in ("quote", "exact", "final words", "wording")
+    )
 
     if requires_numeric:
         types.append("exact_numeric")
@@ -175,7 +196,10 @@ def classify_question(question: str) -> QuestionProfile:
         types.append("list_with_count")
     if any(marker in lowered for marker in ("what is", "define", "definition")) and not count:
         types.append("definition")
-    if any(marker in lowered for marker in ("compare", "different", "unique from", "versus", " vs ", "similar")):
+    if any(
+        marker in lowered
+        for marker in ("compare", "different", "unique from", "versus", " vs ", "similar")
+    ):
         types.append("comparison")
     if lowered.startswith("why") or "reason" in lowered:
         types.append("cause_or_reason")
@@ -183,7 +207,10 @@ def classify_question(question: str) -> QuestionProfile:
         types.append("process_or_steps")
     if "summarize" in lowered or "summary" in lowered:
         types.append("summary")
-    if any(marker in lowered for marker in ("policy", "allowed", "forbidden", "compliance", "approval")):
+    if any(
+        marker in lowered
+        for marker in ("policy", "allowed", "forbidden", "compliance", "approval")
+    ):
         types.append("policy_or_compliance")
     if re.match(r"^(does|do|did|is|are|can|should|was|were)\b", lowered):
         types.append("yes_no")
@@ -202,9 +229,16 @@ def classify_question(question: str) -> QuestionProfile:
         requires_exact_quote=requires_exact_quote,
         requires_cited_support_per_item=bool(count),
     )
-    risk = "high" if any(item in types for item in ("policy_or_compliance", "quote_or_exact_wording")) else "medium" if any(
-        item in types for item in ("list_with_count", "percentage_or_ratio", "exact_numeric", "comparison")
-    ) else "low"
+    risk = (
+        "high"
+        if any(item in types for item in ("policy_or_compliance", "quote_or_exact_wording"))
+        else "medium"
+        if any(
+            item in types
+            for item in ("list_with_count", "percentage_or_ratio", "exact_numeric", "comparison")
+        )
+        else "low"
+    )
     return QuestionProfile(question_types=types, expected_answer_shape=shape, answer_risk=risk)
 
 
@@ -212,7 +246,9 @@ def extract_answer_items(answer: str) -> list[str]:
     text = str(answer or "").strip()
     if not text:
         return []
-    numbered = re.findall(r"(?:^|\n|\s)(?:\d+[\).\:-]\s+)(.*?)(?=(?:\n|\s)\d+[\).\:-]\s+|$)", text, flags=re.DOTALL)
+    numbered = re.findall(
+        r"(?:^|\n|\s)(?:\d+[\).\:-]\s+)(.*?)(?=(?:\n|\s)\d+[\).\:-]\s+|$)", text, flags=re.DOTALL
+    )
     bullets = re.findall(r"(?:^|\n)\s*[-*]\s+(.*?)(?=\n\s*[-*]\s+|$)", text, flags=re.DOTALL)
     items = numbered or bullets
     if not items:
@@ -249,7 +285,11 @@ def _word_set(text: str) -> set[str]:
         "with",
         "would",
     }
-    return {token for token in re.findall(r"[a-z0-9][a-z0-9%-]*", _normalize(text)) if len(token) >= 4 and token not in stop}
+    return {
+        token
+        for token in re.findall(r"[a-z0-9][a-z0-9%-]*", _normalize(text))
+        if len(token) >= 4 and token not in stop
+    }
 
 
 def _support_for_item(item: str, evidence_text: str) -> AnswerItemSupport:
@@ -270,10 +310,20 @@ def _looks_cut_off(text: str) -> bool:
         return False
     if normalized.endswith(("...", "…")):
         return True
-    if re.search(r"\b(number|point|reason|thing)\s+(one|two|three|1|2|3)[,:\-]?\s", normalized, re.IGNORECASE):
-        if not re.search(r"\b(number|point|reason|thing)\s+(two|three|four|2|3|4)[,:\-]?\s", normalized, re.IGNORECASE):
+    if re.search(
+        r"\b(number|point|reason|thing)\s+(one|two|three|1|2|3)[,:\-]?\s",
+        normalized,
+        re.IGNORECASE,
+    ):
+        if not re.search(
+            r"\b(number|point|reason|thing)\s+(two|three|four|2|3|4)[,:\-]?\s",
+            normalized,
+            re.IGNORECASE,
+        ):
             return True
-    return bool(re.search(r"\b[a-zA-Z]{2,}$", normalized)) and not normalized.endswith((".", "?", "!", '"', "'"))
+    return bool(re.search(r"\b[a-zA-Z]{2,}$", normalized)) and not normalized.endswith(
+        (".", "?", "!", '"', "'")
+    )
 
 
 def review_answer(
@@ -287,24 +337,73 @@ def review_answer(
     shape = profile.expected_answer_shape
     evidence_text = _answer_text(evidence)
     answer_values = _percentages(answer) if shape.requires_percentage else _numbers(answer)
-    citation_values = _percentages(evidence_text) if shape.requires_percentage else _numbers(evidence_text)
+    citation_values = (
+        _percentages(evidence_text) if shape.requires_percentage else _numbers(evidence_text)
+    )
     needs_neighbor = _looks_cut_off(evidence_text)
     unsupported: list[AnswerItemSupport] = []
     supported: list[AnswerItemSupport] = []
 
     if shape.requires_percentage and not answer_values:
-        return AnswerReview("weak", "missing_percentage_answer", profile, "missing", True, answer_values=answer_values, citation_values=citation_values, needs_neighbor_expansion=needs_neighbor)
-    if shape.requires_percentage and answer_values and not any(value in citation_values for value in answer_values):
-        return AnswerReview("weak", "percentage_not_supported_by_citations", profile, "partial", True, answer_values=answer_values, citation_values=citation_values, needs_neighbor_expansion=needs_neighbor)
+        return AnswerReview(
+            "weak",
+            "missing_percentage_answer",
+            profile,
+            "missing",
+            True,
+            answer_values=answer_values,
+            citation_values=citation_values,
+            needs_neighbor_expansion=needs_neighbor,
+        )
+    if (
+        shape.requires_percentage
+        and answer_values
+        and not any(value in citation_values for value in answer_values)
+    ):
+        return AnswerReview(
+            "weak",
+            "percentage_not_supported_by_citations",
+            profile,
+            "partial",
+            True,
+            answer_values=answer_values,
+            citation_values=citation_values,
+            needs_neighbor_expansion=needs_neighbor,
+        )
     if shape.requires_numeric and not answer_values:
-        return AnswerReview("weak", "missing_numeric_answer", profile, "missing", True, answer_values=answer_values, citation_values=citation_values, needs_neighbor_expansion=needs_neighbor)
+        return AnswerReview(
+            "weak",
+            "missing_numeric_answer",
+            profile,
+            "missing",
+            True,
+            answer_values=answer_values,
+            citation_values=citation_values,
+            needs_neighbor_expansion=needs_neighbor,
+        )
     if shape.requires_date and not re.search(r"\b\d{4}\b", answer):
-        return AnswerReview("weak", "missing_date_answer", profile, "missing", True, needs_neighbor_expansion=needs_neighbor)
+        return AnswerReview(
+            "weak",
+            "missing_date_answer",
+            profile,
+            "missing",
+            True,
+            needs_neighbor_expansion=needs_neighbor,
+        )
 
     if shape.item_count:
         items = extract_answer_items(answer)
         if len(items) < shape.item_count:
-            return AnswerReview("weak", "missing_requested_list_items", profile, "partial", True, supported_items=len(items), required_items=shape.item_count, needs_neighbor_expansion=needs_neighbor)
+            return AnswerReview(
+                "weak",
+                "missing_requested_list_items",
+                profile,
+                "partial",
+                True,
+                supported_items=len(items),
+                required_items=shape.item_count,
+                needs_neighbor_expansion=needs_neighbor,
+            )
         for item in items[: shape.item_count]:
             item_support = _support_for_item(item, evidence_text)
             if item_support.supported:
@@ -337,8 +436,26 @@ def review_answer(
         )
 
     if needs_neighbor and profile.answer_risk != "low":
-        return AnswerReview("weak", "citation_snippet_appears_cut_off", profile, "partial", True, answer_values=answer_values, citation_values=citation_values, needs_neighbor_expansion=True)
-    return AnswerReview("verified", "answer_shape_and_citations_supported", profile, "complete", profile.answer_risk == "high", answer_values=answer_values, citation_values=citation_values, needs_neighbor_expansion=needs_neighbor)
+        return AnswerReview(
+            "weak",
+            "citation_snippet_appears_cut_off",
+            profile,
+            "partial",
+            True,
+            answer_values=answer_values,
+            citation_values=citation_values,
+            needs_neighbor_expansion=True,
+        )
+    return AnswerReview(
+        "verified",
+        "answer_shape_and_citations_supported",
+        profile,
+        "complete",
+        profile.answer_risk == "high",
+        answer_values=answer_values,
+        citation_values=citation_values,
+        needs_neighbor_expansion=needs_neighbor,
+    )
 
 
 def review_guidance(status: str) -> str:

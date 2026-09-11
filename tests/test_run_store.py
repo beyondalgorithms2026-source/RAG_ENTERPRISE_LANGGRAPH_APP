@@ -6,7 +6,6 @@ from rag_enterprise_langgraph.approval import ApprovalStore
 from rag_enterprise_langgraph.orchestrator import EnterpriseRagOrchestrator
 from rag_enterprise_langgraph.run_store import RunStore, public_view
 
-
 SAMPLE_RESULT = {
     "run_id": "run-1",
     "question": "What is the policy?",
@@ -49,7 +48,12 @@ def test_run_store_save_get_list_drops_raw_payloads(tmp_path):
 
 def test_run_store_keeps_real_answer_when_result_is_withheld(tmp_path):
     store = RunStore(tmp_path / "run-results")
-    withheld = {**SAMPLE_RESULT, "answer": "Answer withheld pending human approval (approval_id=x).", "approval_status": "pending_approval", "approval_id": "ap-1"}
+    withheld = {
+        **SAMPLE_RESULT,
+        "answer": "Answer withheld pending human approval (approval_id=x).",
+        "approval_status": "pending_approval",
+        "approval_id": "ap-1",
+    }
     store.save(withheld, real_answer="The real final answer.")
     assert store.get("run-1")["answer"] == "The real final answer."
 
@@ -62,19 +66,42 @@ def test_public_view_release_policy():
     assert "withheld pending human approval" in pending["answer"]
     assert "The real final answer" not in pending["answer"]
 
-    rejected = public_view(record, {"status": "rejected", "reviewer": "Bob", "comment": "wrong source", "decided_at": "2026-07-13T10:00:00+00:00"})
+    rejected = public_view(
+        record,
+        {
+            "status": "rejected",
+            "reviewer": "Bob",
+            "comment": "wrong source",
+            "decided_at": "2026-07-13T10:00:00+00:00",
+        },
+    )
     assert rejected["answer_released"] is False
     assert "rejected by Bob" in rejected["answer"]
     assert "The real final answer" not in rejected["answer"]
 
-    approved = public_view(record, {"status": "approved", "reviewer": "Alice", "comment": "ok", "decided_at": "2026-07-13T10:00:00+00:00"})
+    approved = public_view(
+        record,
+        {
+            "status": "approved",
+            "reviewer": "Alice",
+            "comment": "ok",
+            "decided_at": "2026-07-13T10:00:00+00:00",
+        },
+    )
     assert approved["answer_released"] is True
     assert approved["answer"] == "The real final answer."
     assert approved["approved_by"] == "Alice"
     assert approved["approval_comment"] == "ok"
 
     # Source-evidence proof reveals the answer content, so it is withheld until approved.
-    gated = {**SAMPLE_RESULT, "approval_status": "pending_approval", "approval_id": "ap-1", "source_evidence": [{"file_name": "doc.md", "quote": "secret source text"}], "verbatim_answer": "The real final answer.", "synthesized_answer": "A synthesized answer."}
+    gated = {
+        **SAMPLE_RESULT,
+        "approval_status": "pending_approval",
+        "approval_id": "ap-1",
+        "source_evidence": [{"file_name": "doc.md", "quote": "secret source text"}],
+        "verbatim_answer": "The real final answer.",
+        "synthesized_answer": "A synthesized answer.",
+    }
     pending_gated = public_view(gated, {"status": "pending_approval"})
     assert pending_gated["source_evidence"] == []
     assert pending_gated["verbatim_answer"] is None
@@ -82,7 +109,10 @@ def test_public_view_release_policy():
     assert "secret source text" not in str(pending_gated)
 
     approved_gated = public_view(gated, {"status": "approved", "reviewer": "Alice"})
-    assert approved_gated["source_evidence"] and approved_gated["source_evidence"][0]["quote"] == "secret source text"
+    assert (
+        approved_gated["source_evidence"]
+        and approved_gated["source_evidence"][0]["quote"] == "secret source text"
+    )
 
     ungated = public_view({**SAMPLE_RESULT})
     assert ungated["answer_released"] is True
@@ -97,15 +127,23 @@ def test_public_view_release_policy():
 def test_orchestrator_persists_full_result_with_real_answer(tmp_path):
     run_store = RunStore(tmp_path / "run-results")
     approval_store = ApprovalStore(tmp_path / "approvals.jsonl")
-    orchestrator = EnterpriseRagOrchestrator(quiet_mcp=False, run_store=run_store, approval_store=approval_store)
+    orchestrator = EnterpriseRagOrchestrator(
+        quiet_mcp=False, run_store=run_store, approval_store=approval_store
+    )
 
-    async def stub_call_tool(name, arguments):  # noqa: ANN001, ARG001
-        content = {"answer": "Not found in provided sources.", "citations": []} if name == "ask_grounded" else {"results": []}
+    async def stub_call_tool(name, arguments):
+        content = (
+            {"answer": "Not found in provided sources.", "citations": []}
+            if name == "ask_grounded"
+            else {"results": []}
+        )
         return content, {"tool_name": name, "tool_call_id": None, "content": content}
 
     orchestrator._call_tool = stub_call_tool  # type: ignore[method-assign]
 
-    result = asyncio.run(orchestrator.run("What is the employee termination policy?", require_approval=True))
+    result = asyncio.run(
+        orchestrator.run("What is the employee termination policy?", require_approval=True)
+    )
 
     assert result.approval_status == "pending_approval"
     assert "withheld pending human approval" in result.answer

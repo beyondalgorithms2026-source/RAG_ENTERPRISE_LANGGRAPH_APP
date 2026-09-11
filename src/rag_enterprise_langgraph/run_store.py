@@ -10,7 +10,6 @@ from fastapi import APIRouter, HTTPException
 from rag_enterprise_langgraph.approval import APPROVED, PENDING_APPROVAL, REJECTED
 from rag_enterprise_langgraph.audit import sanitize_for_audit
 
-
 DEFAULT_RUN_RESULTS_DIR = "runs/run-results"
 
 # Fields persisted per run so a past run can be re-rendered exactly like a fresh one.
@@ -104,7 +103,9 @@ class RunStore:
         return records
 
 
-def public_view(record: dict[str, Any], approval_record: dict[str, Any] | None = None) -> dict[str, Any]:
+def public_view(
+    record: dict[str, Any], approval_record: dict[str, Any] | None = None
+) -> dict[str, Any]:
     """Apply the answer-release policy to a stored run result.
 
     Approved (or never gated) runs return the real answer; pending and rejected
@@ -112,7 +113,11 @@ def public_view(record: dict[str, Any], approval_record: dict[str, Any] | None =
     visible — only the answer text is gated, matching the live-run behavior.
     """
     view = dict(record)
-    status = (approval_record or {}).get("status") or record.get("approval_status") or "approval_not_required"
+    status = (
+        (approval_record or {}).get("status")
+        or record.get("approval_status")
+        or "approval_not_required"
+    )
     view["approval_status"] = status
 
     def _withhold_source() -> None:
@@ -135,7 +140,9 @@ def public_view(record: dict[str, Any], approval_record: dict[str, Any] | None =
     elif status == REJECTED:
         reviewer = (approval_record or {}).get("reviewer") or "a reviewer"
         comment = (approval_record or {}).get("comment")
-        view["answer"] = f"Answer not released: rejected by {reviewer}." + (f" Comment: {comment}" if comment else "")
+        view["answer"] = f"Answer not released: rejected by {reviewer}." + (
+            f" Comment: {comment}" if comment else ""
+        )
         view["answer_released"] = False
         view["decided_by"] = (approval_record or {}).get("reviewer")
         view["decided_at"] = (approval_record or {}).get("decided_at")

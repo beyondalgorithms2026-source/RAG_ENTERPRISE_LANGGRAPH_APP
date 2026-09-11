@@ -60,7 +60,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
         @app.middleware("http")
         async def protect_operator_actions(request: Request, call_next):
-            blocked = (request.method == "POST" and request.url.path in blocked_public_posts) or request.url.path == "/demo-proof"
+            blocked = (
+                request.method == "POST" and request.url.path in blocked_public_posts
+            ) or request.url.path == "/demo-proof"
             if blocked:
                 return JSONResponse(
                     status_code=403,
@@ -152,7 +154,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             approval_mode=request.approval_mode,
         )
 
-    app.include_router(build_approval_router(approval_store, audit_log, read_only=runtime_settings.public_demo))
+    app.include_router(
+        build_approval_router(approval_store, audit_log, read_only=runtime_settings.public_demo)
+    )
     app.include_router(build_audit_router(audit_log, approval_store))
     app.include_router(build_runs_router(run_store, approval_store))
     app.include_router(build_eval_router(eval_store, runtime_settings))

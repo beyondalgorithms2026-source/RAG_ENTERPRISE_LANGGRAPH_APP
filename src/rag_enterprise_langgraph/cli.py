@@ -27,20 +27,59 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run the enterprise LangGraph agent.")
     parser.add_argument("question", nargs="?", help="User question to send to the agent.")
     parser.add_argument("--json", action="store_true", help="Print the full JSON result.")
-    parser.add_argument("--check-config", action="store_true", help="Print redacted runtime diagnostics and loaded MCP tool names.")
-    parser.add_argument("--demo-proof", action="store_true", help="Run the editable portfolio demo proof flow.")
-    parser.add_argument("--output", help="Write demo proof Markdown to this path, for example demo-proof.md.")
-    parser.add_argument("--eval-xlsx", help="Run the Acquired-style eval questions from an .xlsx workbook.")
+    parser.add_argument(
+        "--check-config",
+        action="store_true",
+        help="Print redacted runtime diagnostics and loaded MCP tool names.",
+    )
+    parser.add_argument(
+        "--demo-proof", action="store_true", help="Run the editable portfolio demo proof flow."
+    )
+    parser.add_argument(
+        "--output", help="Write demo proof Markdown to this path, for example demo-proof.md."
+    )
+    parser.add_argument(
+        "--eval-xlsx", help="Run the Acquired-style eval questions from an .xlsx workbook."
+    )
     parser.add_argument("--eval-output", help="Write eval Markdown report to this path.")
     parser.add_argument("--eval-json", help="Write eval JSON report to this path.")
-    parser.add_argument("--journal", help="Append safe orchestration decisions to a JSONL journal.")
+    parser.add_argument(
+        "--journal", help="Append safe orchestration decisions to a JSONL journal."
+    )
     parser.add_argument("--rules", help="Path to editable orchestration rules JSON.")
-    parser.add_argument("--include-debug", action="store_true", help="Include sanitized debug payloads in demo-proof JSON/Markdown.")
-    parser.add_argument("--max-recovery-steps", type=int, default=3, help="Maximum demo-proof recovery steps after the first grounded call.")
-    parser.add_argument("--max-attempts", type=int, default=None, help="Maximum answer/recovery attempts for orchestrated validation.")
-    parser.add_argument("--validation-mode", choices=["strict", "balanced", "fast"], default="balanced", help="Answer validation depth for orchestrated proof runs.")
-    parser.add_argument("--show-decision-trail", action="store_true", help="Show the safe decision trail in demo proof output.")
-    parser.add_argument("--hide-review-note", action="store_true", help="Hide enterprise review guidance in demo proof output.")
+    parser.add_argument(
+        "--include-debug",
+        action="store_true",
+        help="Include sanitized debug payloads in demo-proof JSON/Markdown.",
+    )
+    parser.add_argument(
+        "--max-recovery-steps",
+        type=int,
+        default=3,
+        help="Maximum demo-proof recovery steps after the first grounded call.",
+    )
+    parser.add_argument(
+        "--max-attempts",
+        type=int,
+        default=None,
+        help="Maximum answer/recovery attempts for orchestrated validation.",
+    )
+    parser.add_argument(
+        "--validation-mode",
+        choices=["strict", "balanced", "fast"],
+        default="balanced",
+        help="Answer validation depth for orchestrated proof runs.",
+    )
+    parser.add_argument(
+        "--show-decision-trail",
+        action="store_true",
+        help="Show the safe decision trail in demo proof output.",
+    )
+    parser.add_argument(
+        "--hide-review-note",
+        action="store_true",
+        help="Hide enterprise review guidance in demo proof output.",
+    )
     parser.add_argument(
         "--question",
         dest="demo_questions",
@@ -48,37 +87,81 @@ def build_parser() -> argparse.ArgumentParser:
         default=[],
         help="Add a demo-proof question. Repeat this flag for multiple questions.",
     )
-    parser.add_argument("--questions-file", help="Read demo-proof questions from a newline-delimited text file.")
+    parser.add_argument(
+        "--questions-file", help="Read demo-proof questions from a newline-delimited text file."
+    )
 
     approval = parser.add_argument_group("human approval gate")
-    approval.add_argument("--require-approval", action="store_true", help="Hold high-risk answers at pending_approval until a reviewer decides.")
+    approval.add_argument(
+        "--require-approval",
+        action="store_true",
+        help="Hold high-risk answers at pending_approval until a reviewer decides.",
+    )
     approval.add_argument(
         "--approval-risk-mode",
         choices=["off", "high-risk-only", "always"],
         default="off",
         help="When to require approval: off, high-risk-only, or always.",
     )
-    approval.add_argument("--approvals-file", default=None, help="Path to the JSONL approval store (default: runs/approvals.jsonl).")
-    approval.add_argument("--list-approvals", action="store_true", help="List pending approval requests and exit.")
-    approval.add_argument("--approve", metavar="APPROVAL_ID", help="Approve a pending approval request and exit.")
-    approval.add_argument("--reject", metavar="APPROVAL_ID", help="Reject a pending approval request and exit.")
+    approval.add_argument(
+        "--approvals-file",
+        default=None,
+        help="Path to the JSONL approval store (default: runs/approvals.jsonl).",
+    )
+    approval.add_argument(
+        "--list-approvals", action="store_true", help="List pending approval requests and exit."
+    )
+    approval.add_argument(
+        "--approve", metavar="APPROVAL_ID", help="Approve a pending approval request and exit."
+    )
+    approval.add_argument(
+        "--reject", metavar="APPROVAL_ID", help="Reject a pending approval request and exit."
+    )
     approval.add_argument("--reviewer", help="Reviewer name for --approve/--reject.")
     approval.add_argument("--comment", help="Reviewer comment for --approve/--reject.")
 
     audit = parser.add_argument_group("audit log")
-    audit.add_argument("--audit-log", default=None, help="Path to the hash-chained JSONL audit log (default: runs/audit-log.jsonl).")
-    audit.add_argument("--show-audit", metavar="RUN_ID", help="Print the audit events for a run and exit.")
-    audit.add_argument("--export-audit", metavar="RUN_ID", help="Print the full audit export (with chain verification) for a run and exit.")
+    audit.add_argument(
+        "--audit-log",
+        default=None,
+        help="Path to the hash-chained JSONL audit log (default: runs/audit-log.jsonl).",
+    )
+    audit.add_argument(
+        "--show-audit", metavar="RUN_ID", help="Print the audit events for a run and exit."
+    )
+    audit.add_argument(
+        "--export-audit",
+        metavar="RUN_ID",
+        help="Print the full audit export (with chain verification) for a run and exit.",
+    )
 
     evals = parser.add_argument_group("eval dashboard")
-    evals.add_argument("--save-eval-run", action="store_true", help="Persist the eval run summary for the eval dashboard.")
-    evals.add_argument("--eval-runs", action="store_true", help="List saved eval run summaries and exit.")
-    evals.add_argument("--show-eval-run", metavar="EVAL_RUN_ID", help="Print one saved eval run summary and exit.")
+    evals.add_argument(
+        "--save-eval-run",
+        action="store_true",
+        help="Persist the eval run summary for the eval dashboard.",
+    )
+    evals.add_argument(
+        "--eval-runs", action="store_true", help="List saved eval run summaries and exit."
+    )
+    evals.add_argument(
+        "--show-eval-run", metavar="EVAL_RUN_ID", help="Print one saved eval run summary and exit."
+    )
 
     red_team = parser.add_argument_group("red team")
-    red_team.add_argument("--red-team", action="store_true", help="Run the deterministic red-team checks and print the findings table.")
-    red_team.add_argument("--red-team-output", metavar="PATH", help="Write the red-team Markdown report to this path.")
-    red_team.add_argument("--red-team-json", metavar="PATH", help="Write the red-team JSON report to this path.")
+    red_team.add_argument(
+        "--red-team",
+        action="store_true",
+        help="Run the deterministic red-team checks and print the findings table.",
+    )
+    red_team.add_argument(
+        "--red-team-output",
+        metavar="PATH",
+        help="Write the red-team Markdown report to this path.",
+    )
+    red_team.add_argument(
+        "--red-team-json", metavar="PATH", help="Write the red-team JSON report to this path."
+    )
     return parser
 
 
@@ -118,7 +201,11 @@ def _handle_standalone(args: argparse.Namespace, settings: Settings) -> int | No
             run_id=record.get("run_id"),
             actor=f"reviewer:{record.get('reviewer')}",
             summary=f"Approval {approval_id} {record.get('status')} by {record.get('reviewer')}",
-            payload={"approval_id": approval_id, "status": record.get("status"), "comment": record.get("comment")},
+            payload={
+                "approval_id": approval_id,
+                "status": record.get("status"),
+                "comment": record.get("comment"),
+            },
         )
         _print_json(record)
         return 0
@@ -200,7 +287,9 @@ async def _run(args: argparse.Namespace) -> int:
             journal_path=args.journal,
             max_recovery_steps=args.max_recovery_steps,
         )
-        written = write_eval_outputs(report, markdown_path=args.eval_output, json_path=args.eval_json)
+        written = write_eval_outputs(
+            report, markdown_path=args.eval_output, json_path=args.eval_json
+        )
         saved_summary = None
         if args.save_eval_run:
             saved_summary = build_eval_run_summary(report, settings=settings)
@@ -280,7 +369,9 @@ async def _run(args: argparse.Namespace) -> int:
         if args.json:
             _print_json(run)
         else:
-            print(f"Status: {run.get('grounding_status')} | Approval: {run.get('approval_status')}")
+            print(
+                f"Status: {run.get('grounding_status')} | Approval: {run.get('approval_status')}"
+            )
             if run.get("approval_id"):
                 print(f"Approval ID: {run.get('approval_id')}")
             print(f"Run ID: {run.get('run_id')}")

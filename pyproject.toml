@@ -43,3 +43,30 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 rag_enterprise_langgraph = ["static/*"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 99
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
+ignore = [
+  "E501",   # line length — formatter handles what it can; remaining are strings/URLs
+  "B008",   # function call in default — intentional FastAPI Query() pattern
+  "RUF001", # ambiguous unicode — intentional curly quotes in user-facing strings
+  "SIM102", # nested if — sometimes clearer than flattened condition
+  "SIM103", # return condition directly — sometimes clearer with explicit if/return
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+ignore_missing_imports = true

@@ -4,7 +4,12 @@ import asyncio
 
 from langchain_core.tools import tool
 
-from rag_enterprise_langgraph.tool_guard import normalize_tool_arguments, reset_current_question, set_current_question, wrap_mcp_tool
+from rag_enterprise_langgraph.tool_guard import (
+    normalize_tool_arguments,
+    reset_current_question,
+    set_current_question,
+    wrap_mcp_tool,
+)
 
 
 def test_normalize_search_documents_clamps_invalid_k_and_cleans_empty_values():

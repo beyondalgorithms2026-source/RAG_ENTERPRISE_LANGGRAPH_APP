@@ -106,14 +106,28 @@ def test_by_run_id_finds_record(tmp_path):
 
 
 def test_assess_risk_flags_high_risk_categories_and_statuses():
-    assert any(r.startswith("high_risk_category:hr") for r in assess_risk("What is the employee termination policy?"))
-    assert any(r.startswith("high_risk_category:legal") for r in assess_risk("Summarize the lawsuit exposure."))
-    assert any(r.startswith("high_risk_category:medical") for r in assess_risk("What is the diagnosis protocol?"))
+    assert any(
+        r.startswith("high_risk_category:hr")
+        for r in assess_risk("What is the employee termination policy?")
+    )
+    assert any(
+        r.startswith("high_risk_category:legal")
+        for r in assess_risk("Summarize the lawsuit exposure.")
+    )
+    assert any(
+        r.startswith("high_risk_category:medical")
+        for r in assess_risk("What is the diagnosis protocol?")
+    )
     assert assess_risk("What color is the sky in the story?") == []
-    assert "grounding_status:needs_review" in assess_risk("What color is the sky?", {"grounding_status": "needs_review"})
-    assert "grounding_status:partial" in assess_risk("What color is the sky?", {"grounding_status": "partial"})
+    assert "grounding_status:needs_review" in assess_risk(
+        "What color is the sky?", {"grounding_status": "needs_review"}
+    )
+    assert "grounding_status:partial" in assess_risk(
+        "What color is the sky?", {"grounding_status": "partial"}
+    )
     assert "review_recommended" in assess_risk(
-        "What color is the sky?", {"grounding_status": "verified", "validation_summary": {"review_recommended": True}}
+        "What color is the sky?",
+        {"grounding_status": "verified", "validation_summary": {"review_recommended": True}},
     )
 
 
@@ -127,7 +141,7 @@ def test_approval_required_modes():
 def _stub_orchestrator() -> EnterpriseRagOrchestrator:
     orchestrator = EnterpriseRagOrchestrator(quiet_mcp=False)
 
-    async def stub_call_tool(name, arguments):  # noqa: ANN001, ARG001
+    async def stub_call_tool(name, arguments):
         if name == "ask_grounded":
             content = {"answer": "Not found in provided sources.", "citations": []}
         else:

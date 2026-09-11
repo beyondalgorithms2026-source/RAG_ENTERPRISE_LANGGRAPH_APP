@@ -6,8 +6,9 @@ from typing import Any
 
 from langchain_core.tools import BaseTool, StructuredTool
 
-
-_current_question: contextvars.ContextVar[str] = contextvars.ContextVar("rag_agent_current_question", default="")
+_current_question: contextvars.ContextVar[str] = contextvars.ContextVar(
+    "rag_agent_current_question", default=""
+)
 
 
 def set_current_question(question: str):
@@ -28,7 +29,9 @@ def _optional_int(value: Any, default: int, minimum: int, maximum: int) -> int:
     return parsed
 
 
-def normalize_tool_arguments(tool_name: str, arguments: dict[str, Any], fallback_question: str = "") -> dict[str, Any]:
+def normalize_tool_arguments(
+    tool_name: str, arguments: dict[str, Any], fallback_question: str = ""
+) -> dict[str, Any]:
     normalized = {key: value for key, value in dict(arguments).items() if value is not None}
 
     if not str(normalized.get("question") or "").strip() and fallback_question:

@@ -1,11 +1,11 @@
 from __future__ import annotations
 
+from collections.abc import Iterable, Sequence
 from pathlib import Path
-from typing import Any, Iterable, Sequence
+from typing import Any
 
 from rag_enterprise_langgraph.agent import AgentRunResult, RagEnterpriseAgent
 from rag_enterprise_langgraph.orchestrator import EnterpriseRagOrchestrator, overall_status
-
 
 REQUIRED_MCP_TOOLS = ("ask_grounded", "search_documents", "get_document_excerpt")
 
@@ -54,7 +54,9 @@ def _redacted_key(key: str) -> bool:
         "enabled",
         "configured",
     )
-    return any(word in lowered for word in secret_words) and not any(flag in lowered for flag in present_flags)
+    return any(word in lowered for word in secret_words) and not any(
+        flag in lowered for flag in present_flags
+    )
 
 
 def _sanitize_text(value: str) -> str:
@@ -69,7 +71,15 @@ def redact_for_sharing(value: Any, *, include_debug: bool = False) -> Any:
         redacted: dict[str, Any] = {}
         for key, item in value.items():
             key_text = str(key)
-            if key_text in {"traceback", "raw", "system_prompt", "user_prompt", "prompt", "raw_prompt", "messages"}:
+            if key_text in {
+                "traceback",
+                "raw",
+                "system_prompt",
+                "user_prompt",
+                "prompt",
+                "raw_prompt",
+                "messages",
+            }:
                 continue
             if not include_debug and key_text in {"debug_info"}:
                 continue
@@ -128,12 +138,18 @@ def _first_content_value(tool_outputs: list[dict[str, Any]], key: str) -> Any:
 
 def _citations_in_output(output: dict[str, Any]) -> list[dict[str, Any]]:
     citations = _content_dict(output).get("citations")
-    return [item for item in citations if isinstance(item, dict)] if isinstance(citations, list) else []
+    return (
+        [item for item in citations if isinstance(item, dict)]
+        if isinstance(citations, list)
+        else []
+    )
 
 
 def _results_in_output(output: dict[str, Any]) -> list[dict[str, Any]]:
     results = _content_dict(output).get("results")
-    return [item for item in results if isinstance(item, dict)] if isinstance(results, list) else []
+    return (
+        [item for item in results if isinstance(item, dict)] if isinstance(results, list) else []
+    )
 
 
 def _answer_status(result: AgentRunResult, citation_count: int) -> str:
@@ -168,7 +184,9 @@ def summarize_result(result: AgentRunResult) -> dict[str, Any]:
                 "step": index,
                 "tool_name": output.get("tool_name"),
                 "purpose": "agent_tool_call",
-                "result_status": "tool_error" if _content_dict(output).get("is_error") else "completed",
+                "result_status": "tool_error"
+                if _content_dict(output).get("is_error")
+                else "completed",
                 "citation_count": len(_citations_in_output(output)),
                 "result_count": len(_results_in_output(output)),
             }
@@ -230,7 +248,9 @@ async def build_demo_proof(
         diagnostics = {}
         check_error = str(exc)
 
-    tool_names = [str(item) for item in diagnostics.get("mcp_tool_names", [])] if diagnostics else []
+    tool_names = (
+        [str(item) for item in diagnostics.get("mcp_tool_names", [])] if diagnostics else []
+    )
     approval_kwargs: dict[str, Any] = (
         {"require_approval": require_approval, "approval_mode": approval_mode}
         if require_approval or approval_mode != "off"
@@ -336,9 +356,13 @@ def render_text_report(proof: dict[str, Any]) -> str:
                     f"{step.get('purpose')} -> {step.get('result_status')}{reason}"
                 )
         if run.get("run_id"):
-            lines.append(f"   Run ID: {run.get('run_id')} | Audit events: {run.get('audit_event_count', 0)}")
+            lines.append(
+                f"   Run ID: {run.get('run_id')} | Audit events: {run.get('audit_event_count', 0)}"
+            )
         if run.get("approval_status") and run.get("approval_status") != "approval_not_required":
-            approval_id = f" | Approval ID: {run.get('approval_id')}" if run.get("approval_id") else ""
+            approval_id = (
+                f" | Approval ID: {run.get('approval_id')}" if run.get("approval_id") else ""
+            )
             lines.append(f"   Approval: {run.get('approval_status')}{approval_id}")
         if run.get("latency_ms") is not None:
             lines.append(f"   Latency: {run.get('latency_ms')} ms")
@@ -358,7 +382,9 @@ def render_text_report(proof: dict[str, Any]) -> str:
         if decision_trail:
             lines.append("   Decision Trail:")
             for step in decision_trail:
-                lines.append(f"   - {step.get('step')}. {step.get('label')}: {step.get('summary')}")
+                lines.append(
+                    f"   - {step.get('step')}. {step.get('label')}: {step.get('summary')}"
+                )
         if run.get("review_guidance"):
             lines.append(f"   Review guidance: {run.get('review_guidance')}")
         if run.get("error"):
@@ -403,7 +429,15 @@ def render_markdown_report(proof: dict[str, Any]) -> str:
     for tool_name in discovered:
         lines.append(f"| `{tool_name}` | discovered |")
 
-    lines.extend(["", "## Demo Run Summary", "", "| # | Question | Status | Tools | Citations | Evidence | Chunks | Mode | Latency |", "| --- | --- | --- | --- | ---: | ---: | ---: | --- | ---: |"])
+    lines.extend(
+        [
+            "",
+            "## Demo Run Summary",
+            "",
+            "| # | Question | Status | Tools | Citations | Evidence | Chunks | Mode | Latency |",
+            "| --- | --- | --- | --- | ---: | ---: | ---: | --- | ---: |",
+        ]
+    )
     for index, run in enumerate(proof.get("runs", []), start=1):
         tools = ", ".join(f"`{tool}`" for tool in run.get("tools_used") or []) or "-"
         lines.append(
@@ -468,7 +502,9 @@ def render_markdown_report(proof: dict[str, Any]) -> str:
         if decision_trail:
             lines.extend(["", "**Decision Trail**", ""])
             for step in decision_trail:
-                lines.append(f"- {step.get('step')}. **{_table_value(step.get('label'))}:** {_table_value(step.get('summary'))}")
+                lines.append(
+                    f"- {step.get('step')}. **{_table_value(step.get('label'))}:** {_table_value(step.get('summary'))}"
+                )
         if run.get("review_guidance"):
             lines.extend(["", f"**Review guidance:** {run.get('review_guidance')}"])
         if run.get("review_note"):
@@ -489,10 +525,17 @@ def render_markdown_report(proof: dict[str, Any]) -> str:
             lines.append("- No citations or excerpt-backed evidence returned.")
         for evidence in evidence_items:
             file_name = evidence.get("file_name") or evidence.get("source_id") or "source"
-            citation_id = evidence.get("citation_id") or evidence.get("chunk_id") or evidence.get("evidence_type") or "evidence"
+            citation_id = (
+                evidence.get("citation_id")
+                or evidence.get("chunk_id")
+                or evidence.get("evidence_type")
+                or "evidence"
+            )
             locator = evidence.get("locator") or evidence.get("heading") or ""
             snippet = _truncate(evidence.get("snippet"), 240)
-            lines.append(f"- `{citation_id}` {file_name} {f'({locator})' if locator else ''}: {snippet}")
+            lines.append(
+                f"- `{citation_id}` {file_name} {f'({locator})' if locator else ''}: {snippet}"
+            )
         if run.get("error"):
             lines.extend(["", "**Error**", "", f"`{run['error']}`"])
         lines.append("")
@@ -507,12 +550,12 @@ def render_markdown_report(proof: dict[str, Any]) -> str:
             "",
             "```mermaid",
             "flowchart LR",
-            "    U[\"User / API Client\"] --> LG[\"LangGraph Agent<br/>Tool orchestration only\"]",
-            "    LG -->|stdio MCP| MCP[\"RAG Enterprise MCP Server<br/>ask_grounded<br/>search_documents<br/>get_document_excerpt\"]",
-            "    MCP -->|HTTP + auth cookie/token| BE[\"Enterprise RAG Backend<br/>FastAPI\"]",
-            "    BE --> AUTH[\"Auth + ACL Layer\"]",
-            "    BE --> RET[\"Retrieval + Citations + Governance\"]",
-            "    RET --> DB[\"Postgres + pgvector\"]",
+            '    U["User / API Client"] --> LG["LangGraph Agent<br/>Tool orchestration only"]',
+            '    LG -->|stdio MCP| MCP["RAG Enterprise MCP Server<br/>ask_grounded<br/>search_documents<br/>get_document_excerpt"]',
+            '    MCP -->|HTTP + auth cookie/token| BE["Enterprise RAG Backend<br/>FastAPI"]',
+            '    BE --> AUTH["Auth + ACL Layer"]',
+            '    BE --> RET["Retrieval + Citations + Governance"]',
+            '    RET --> DB["Postgres + pgvector"]',
             "    BE -->|grounded answer + citations| MCP",
             "    MCP -->|structured tool output| LG",
             "    LG -->|final answer + visible proof| U",

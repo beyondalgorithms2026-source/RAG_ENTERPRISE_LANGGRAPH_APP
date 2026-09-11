@@ -4,8 +4,9 @@ import json
 import re
 import time
 import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Any, Sequence
+from typing import Any
 
 from langchain_core.tools import BaseTool
 
@@ -25,12 +26,16 @@ from rag_enterprise_langgraph.approval import (
 )
 from rag_enterprise_langgraph.audit import AuditLog
 from rag_enterprise_langgraph.config import Settings
-from rag_enterprise_langgraph.evidence import EvidenceVerdict, load_rules, matching_rule, validate_evidence
+from rag_enterprise_langgraph.evidence import (
+    EvidenceVerdict,
+    load_rules,
+    matching_rule,
+    validate_evidence,
+)
 from rag_enterprise_langgraph.journal import write_journal_entry
 from rag_enterprise_langgraph.mcp_client import load_mcp_tools, suppress_mcp_stdio_stderr
 from rag_enterprise_langgraph.synthesis import synthesize_and_verify
 from rag_enterprise_langgraph.tool_guard import reset_current_question, set_current_question
-
 
 GROUNDING_SUCCESS_STATUSES = {"verified", "grounded", "recovered", "not_found"}
 REVIEW_STATUSES = {"partial", "needs_review"}
@@ -203,7 +208,11 @@ def _unwrap_mcp_text_blocks(value: Any) -> Any:
         block = value[0]
         if block.get("type") == "text" and isinstance(block.get("text"), str):
             return _safe_json_parse(block["text"])
-    if isinstance(value, dict) and value.get("type") == "text" and isinstance(value.get("text"), str):
+    if (
+        isinstance(value, dict)
+        and value.get("type") == "text"
+        and isinstance(value.get("text"), str)
+    ):
         return _safe_json_parse(value["text"])
     return value
 
@@ -220,7 +229,11 @@ def _short_error_text(value: Any) -> str | None:
     if isinstance(parsed, dict):
         nested_error = _safe_json_parse(parsed.get("error"))
         if isinstance(nested_error, dict):
-            message = nested_error.get("message") or nested_error.get("detail") or nested_error.get("error")
+            message = (
+                nested_error.get("message")
+                or nested_error.get("detail")
+                or nested_error.get("error")
+            )
             status_code = nested_error.get("status_code")
             if message:
                 suffix = f" (status_code={status_code})" if status_code else ""
@@ -228,7 +241,9 @@ def _short_error_text(value: Any) -> str | None:
         message = parsed.get("message") or parsed.get("detail")
         if message:
             return str(message).strip()[:360]
-    text = json.dumps(value, sort_keys=True) if isinstance(value, (dict, list)) else str(value or "")
+    text = (
+        json.dumps(value, sort_keys=True) if isinstance(value, (dict, list)) else str(value or "")
+    )
     if not text.strip():
         return None
     text = re.sub(r'"traceback"\s*:\s*".*?(?=",\s*"|\}\s*$)', '"traceback": "[redacted]"', text)
@@ -264,9 +279,15 @@ def classify_transport_failure(value: Any) -> str | None:
     if isinstance(status_code, int) and status_code >= 400 and status_code != 404:
         return "tool_error"
     if parsed.get("is_error") is True or parsed.get("exception_type") or "jsonrpc" in parsed:
-        return _classify_error_text(nested_error if nested_error is not None else parsed.get("error") or message)
-    if "error" in parsed and not any(key in parsed for key in ("answer", "citations", "results", "matched")):
-        return _classify_error_text(nested_error if nested_error is not None else parsed.get("error"))
+        return _classify_error_text(
+            nested_error if nested_error is not None else parsed.get("error") or message
+        )
+    if "error" in parsed and not any(
+        key in parsed for key in ("answer", "citations", "results", "matched")
+    ):
+        return _classify_error_text(
+            nested_error if nested_error is not None else parsed.get("error")
+        )
     if message and not any(key in parsed for key in ("answer", "citations", "results", "matched")):
         return _classify_error_text(message)
     return None
@@ -283,12 +304,18 @@ def _is_not_found(answer: Any) -> bool:
 
 def _citations(content: dict[str, Any]) -> list[dict[str, Any]]:
     citations = content.get("citations")
-    return [item for item in citations if isinstance(item, dict)] if isinstance(citations, list) else []
+    return (
+        [item for item in citations if isinstance(item, dict)]
+        if isinstance(citations, list)
+        else []
+    )
 
 
 def _results(content: dict[str, Any]) -> list[dict[str, Any]]:
     results = content.get("results")
-    return [item for item in results if isinstance(item, dict)] if isinstance(results, list) else []
+    return (
+        [item for item in results if isinstance(item, dict)] if isinstance(results, list) else []
+    )
 
 
 def _debug_info(content: dict[str, Any]) -> dict[str, Any]:
@@ -305,7 +332,11 @@ def _retrieval_trace(content: dict[str, Any]) -> dict[str, Any]:
 def _score_diagnostics(content: dict[str, Any]) -> list[dict[str, Any]]:
     trace = _retrieval_trace(content)
     diagnostics = trace.get("score_diagnostics")
-    return [item for item in diagnostics if isinstance(item, dict)] if isinstance(diagnostics, list) else []
+    return (
+        [item for item in diagnostics if isinstance(item, dict)]
+        if isinstance(diagnostics, list)
+        else []
+    )
 
 
 def _has_candidate_evidence(content: dict[str, Any]) -> bool:
@@ -315,7 +346,9 @@ def _has_candidate_evidence(content: dict[str, Any]) -> bool:
         return True
     trace = _retrieval_trace(content)
     candidate_counts = trace.get("candidate_counts")
-    if isinstance(candidate_counts, dict) and any(int(value or 0) > 0 for value in candidate_counts.values()):
+    if isinstance(candidate_counts, dict) and any(
+        int(value or 0) > 0 for value in candidate_counts.values()
+    ):
         return True
     for key in ("vector_candidates", "keyword_candidates", "supplemental_keyword_candidates"):
         if int(trace.get(key) or 0) > 0:
@@ -326,7 +359,9 @@ def _has_candidate_evidence(content: dict[str, Any]) -> bool:
 def _answer_generation_path(content: dict[str, Any]) -> str:
     debug = _debug_info(content)
     trace = _retrieval_trace(content)
-    return str(debug.get("answer_generation_path") or trace.get("answer_generation_path") or "").strip()
+    return str(
+        debug.get("answer_generation_path") or trace.get("answer_generation_path") or ""
+    ).strip()
 
 
 def _fallback_reason(content: dict[str, Any]) -> str:
@@ -353,7 +388,17 @@ def _answer_is_generic_or_weak(answer: str) -> bool:
 
 def _question_requires_exact_value(question: str) -> bool:
     lowered = question.lower()
-    markers = ("when", "who", "percentage", "percent", "how much", "how many", "which", "what seminar", "where")
+    markers = (
+        "when",
+        "who",
+        "percentage",
+        "percent",
+        "how much",
+        "how many",
+        "which",
+        "what seminar",
+        "where",
+    )
     return any(marker in lowered for marker in markers)
 
 
@@ -362,14 +407,24 @@ def _answer_misses_requested_field(question: str, answer: str) -> bool:
     lowered_answer = answer.lower()
     if "percentage" in lowered_question or "percent" in lowered_question:
         return "%" not in answer and "percent" not in lowered_answer
-    if "when" in lowered_question and not re.search(r"\b(?:\d{4}|\d{1,2}[/-]\d{1,2}|january|february|march|april|may|june|july|august|september|october|november|december)\b", lowered_answer):
+    if "when" in lowered_question and not re.search(
+        r"\b(?:\d{4}|\d{1,2}[/-]\d{1,2}|january|february|march|april|may|june|july|august|september|october|november|december)\b",
+        lowered_answer,
+    ):
         return True
-    if "what seminar" in lowered_question and "seminar" not in lowered_answer and "training" not in lowered_answer and "conference" not in lowered_answer:
+    if (
+        "what seminar" in lowered_question
+        and "seminar" not in lowered_answer
+        and "training" not in lowered_answer
+        and "conference" not in lowered_answer
+    ):
         return True
     return False
 
 
-def _citation_snippets_have_anchor(citations: Sequence[dict[str, Any]], anchors: Sequence[str]) -> bool:
+def _citation_snippets_have_anchor(
+    citations: Sequence[dict[str, Any]], anchors: Sequence[str]
+) -> bool:
     meaningful = [anchor.lower() for anchor in anchors if len(anchor) >= 4]
     if not meaningful:
         return True
@@ -377,7 +432,9 @@ def _citation_snippets_have_anchor(citations: Sequence[dict[str, Any]], anchors:
     return any(anchor in snippet_text for anchor in meaningful)
 
 
-def classify_answer_quality(content: dict[str, Any], *, question: str = "", anchors: Sequence[str] = ()) -> AnswerQuality:
+def classify_answer_quality(
+    content: dict[str, Any], *, question: str = "", anchors: Sequence[str] = ()
+) -> AnswerQuality:
     transport_failure = classify_transport_failure(content)
     if transport_failure:
         return AnswerQuality(transport_failure, needs_recovery=False, reason=transport_failure)
@@ -390,20 +447,32 @@ def classify_answer_quality(content: dict[str, Any], *, question: str = "", anch
 
     if _is_not_found(answer):
         reason = "not_found_with_candidate_evidence" if candidate_evidence else "not_found"
-        return AnswerQuality("candidate_evidence_present" if candidate_evidence else "not_found", True, reason)
+        return AnswerQuality(
+            "candidate_evidence_present" if candidate_evidence else "not_found", True, reason
+        )
     if not answer:
         return AnswerQuality("weak_answer", True, "missing_answer")
     if not citations:
-        reason = "candidate_evidence_without_citations" if candidate_evidence else "answer_without_citations"
-        return AnswerQuality("candidate_evidence_present" if candidate_evidence else "not_grounded", True, reason)
+        reason = (
+            "candidate_evidence_without_citations"
+            if candidate_evidence
+            else "answer_without_citations"
+        )
+        return AnswerQuality(
+            "candidate_evidence_present" if candidate_evidence else "not_grounded", True, reason
+        )
     if _answer_is_generic_or_weak(answer):
         return AnswerQuality("weak_answer", True, "generic_or_weak_answer")
-    if _question_requires_exact_value(question) and _answer_misses_requested_field(question, answer):
+    if _question_requires_exact_value(question) and _answer_misses_requested_field(
+        question, answer
+    ):
         return AnswerQuality("weak_answer", True, "missing_requested_exact_field")
     if not _citation_snippets_have_anchor(citations, anchors):
         return AnswerQuality("weak_answer", True, "citations_do_not_show_anchor_terms")
     if generation_path in {"repair", "evidence_repair"} or fallback:
-        return AnswerQuality("weak_answer", True, f"backend_generation_path:{generation_path or 'fallback'}")
+        return AnswerQuality(
+            "weak_answer", True, f"backend_generation_path:{generation_path or 'fallback'}"
+        )
     return AnswerQuality("grounded", False, "citations_present")
 
 
@@ -425,7 +494,9 @@ def _evidence_from_citations(citations: Sequence[dict[str, Any]]) -> list[dict[s
     return evidence
 
 
-def _evidence_from_results(results: Sequence[dict[str, Any]], *, limit: int = 3) -> list[dict[str, Any]]:
+def _evidence_from_results(
+    results: Sequence[dict[str, Any]], *, limit: int = 3
+) -> list[dict[str, Any]]:
     evidence: list[dict[str, Any]] = []
     for result in list(results)[:limit]:
         evidence.append(
@@ -437,7 +508,9 @@ def _evidence_from_results(results: Sequence[dict[str, Any]], *, limit: int = 3)
                 "heading": result.get("heading"),
                 "locator": result.get("locator"),
                 "snippet": result.get("snippet"),
-                "score": result.get("score") or result.get("combined_score") or result.get("rank_score"),
+                "score": result.get("score")
+                or result.get("combined_score")
+                or result.get("rank_score"),
                 "evidence_type": "search_result",
             }
         )
@@ -445,7 +518,14 @@ def _evidence_from_results(results: Sequence[dict[str, Any]], *, limit: int = 3)
 
 
 def _backend_score(result: dict[str, Any]) -> float:
-    for key in ("rerank_score", "score", "combined_score", "rank_score", "keyword_score", "vector_score"):
+    for key in (
+        "rerank_score",
+        "score",
+        "combined_score",
+        "rank_score",
+        "keyword_score",
+        "vector_score",
+    ):
         value = result.get(key)
         if isinstance(value, (int, float)):
             return float(value)
@@ -458,11 +538,17 @@ def _candidate_from_result(result: dict[str, Any]) -> dict[str, Any]:
 
 def _candidate_rank(verdict: EvidenceVerdict, result: dict[str, Any]) -> float:
     backend_score = max(-1.0, min(1.0, _backend_score(result)))
-    source_bonus = 0.05 if result.get("source_part_id") is not None or result.get("chunk_id") is not None else 0.0
+    source_bonus = (
+        0.05
+        if result.get("source_part_id") is not None or result.get("chunk_id") is not None
+        else 0.0
+    )
     return verdict.score + (backend_score * 0.05) + source_bonus
 
 
-def _rejected_evidence_summary(evidence: dict[str, Any], verdict: EvidenceVerdict) -> dict[str, Any]:
+def _rejected_evidence_summary(
+    evidence: dict[str, Any], verdict: EvidenceVerdict
+) -> dict[str, Any]:
     return {
         "source_id": evidence.get("source_id"),
         "source_part_id": evidence.get("source_part_id"),
@@ -588,7 +674,9 @@ def _wants_percentage(question: str, shape=None) -> bool:
 
 
 def _wants_numeric(question: str, shape=None) -> bool:
-    if shape is not None and (getattr(shape, "requires_numeric", False) or getattr(shape, "requires_percentage", False)):
+    if shape is not None and (
+        getattr(shape, "requires_numeric", False) or getattr(shape, "requires_percentage", False)
+    ):
         return True
     return _wants_percentage(question, shape)
 
@@ -637,14 +725,19 @@ def _focused_evidence_text(
         if "what seminar" in lowered_question and "seminar" in lowered_sentence:
             score += 5
             relevance += 5
-        if "where" in lowered_question and any(place in lowered_sentence for place in ("texas", "van horn", "west texas", "poughkeepsie")):
+        if "where" in lowered_question and any(
+            place in lowered_sentence
+            for place in ("texas", "van horn", "west texas", "poughkeepsie")
+        ):
             score += 4
             relevance += 4
         # Answer-shape boosts apply ONLY to on-topic sentences.
         if relevance > 0:
             if wants_percentage and re.search(r"\b\d+(?:\.\d+)?\s*%|\b0\.\d+\b", sentence):
                 score += 5
-            if wants_numeric and re.search(r"\b\d+(?:\.\d+)?\s*(?:percent|%)|\b\d[\d,]*(?:\.\d+)?\b", sentence):
+            if wants_numeric and re.search(
+                r"\b\d+(?:\.\d+)?\s*(?:percent|%)|\b\d[\d,]*(?:\.\d+)?\b", sentence
+            ):
                 score += 2
             if wants_date and re.search(r"\b\d{4}\b", sentence):
                 score += 4
@@ -681,7 +774,9 @@ def _focused_evidence_text(
 def _short_answer_from_focus(question: str, focused: str, shape=None) -> str | None:
     lowered_question = question.lower()
     if "what seminar" in lowered_question:
-        match = re.search(r"\b(?:in|to)\s+(a\s+seminar\s+at\s+IBM[^.?!]*)(?:[.?!]|$)", focused, re.IGNORECASE)
+        match = re.search(
+            r"\b(?:in|to)\s+(a\s+seminar\s+at\s+IBM[^.?!]*)(?:[.?!]|$)", focused, re.IGNORECASE
+        )
         if match:
             return match.group(1).strip()
     if _wants_percentage(question, shape):
@@ -689,7 +784,11 @@ def _short_answer_from_focus(question: str, focused: str, shape=None) -> str | N
         match = re.search(r"\b\d+(?:\.\d+)?\s*%|\b0\.\d+\b", focused)
         if match:
             return match.group(0).strip()
-        written = re.search(r"\b(\d+(?:\.\d+)?|one|two|three|four|five|six|seven|eight|nine|ten)\s+percent\b", focused, re.IGNORECASE)
+        written = re.search(
+            r"\b(\d+(?:\.\d+)?|one|two|three|four|five|six|seven|eight|nine|ten)\s+percent\b",
+            focused,
+            re.IGNORECASE,
+        )
         if written:
             return written.group(0).strip()
     if _wants_date(question, shape):
@@ -712,7 +811,9 @@ def _answer_from_evidence(
     top = evidence[0]
     source = top.get("file_name") or f"source_id={top.get('source_id')}"
     shape = question_profile.expected_answer_shape if question_profile is not None else None
-    focused = _focused_evidence_text(question=question, evidence=evidence, anchors=anchors, rules=rules, shape=shape)
+    focused = _focused_evidence_text(
+        question=question, evidence=evidence, anchors=anchors, rules=rules, shape=shape
+    )
     if not focused:
         return f"Recovered supporting evidence from {source}, but no safe snippet was available to quote."
     short_answer = _short_answer_from_focus(question, focused, shape)
@@ -733,7 +834,9 @@ def _answer_for_human_review(
     # review_guidance field — not baked into the answer text.
     if not evidence:
         return "No sufficiently relevant evidence was found in the indexed sources."
-    return _answer_from_evidence(question, evidence, anchors=anchors, rules=rules, question_profile=question_profile)
+    return _answer_from_evidence(
+        question, evidence, anchors=anchors, rules=rules, question_profile=question_profile
+    )
 
 
 def _source_evidence_spans(evidence: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -749,7 +852,12 @@ def _source_evidence_spans(evidence: Sequence[dict[str, Any]]) -> list[dict[str,
             continue
         spans.append(
             {
-                "file_name": item.get("file_name") or (f"source_id={item.get('source_id')}" if item.get("source_id") is not None else "source"),
+                "file_name": item.get("file_name")
+                or (
+                    f"source_id={item.get('source_id')}"
+                    if item.get("source_id") is not None
+                    else "source"
+                ),
                 "locator": item.get("locator") or item.get("heading"),
                 "source_id": item.get("source_id"),
                 "source_part_id": item.get("source_part_id"),
@@ -764,7 +872,9 @@ def _decision_step(step: int, label: str, summary: str) -> dict[str, Any]:
     return {"step": step, "label": label, "summary": summary, "safe": True}
 
 
-def _validation_summary(status: str, review: AnswerReview | None, *, evidence_support: str | None = None) -> dict[str, Any]:
+def _validation_summary(
+    status: str, review: AnswerReview | None, *, evidence_support: str | None = None
+) -> dict[str, Any]:
     if review:
         profile = review.question_profile
         return {
@@ -802,12 +912,17 @@ def _attempt_record(
     }
 
 
-def _phrase_for_recovery(question: str, review: AnswerReview | None, anchors: Sequence[str]) -> str | None:
+def _phrase_for_recovery(
+    question: str, review: AnswerReview | None, anchors: Sequence[str]
+) -> str | None:
     lowered = question.lower()
     quoted = re.findall(r'"([^"]{3,100})"', question)
     if quoted:
         return quoted[0]
-    list_match = re.search(r"\b(?:three|3|two|2|four|4)\s+(?:very\s+)?(?:interrelated\s+)?(?:things|items|reasons|factors|points)\b", lowered)
+    list_match = re.search(
+        r"\b(?:three|3|two|2|four|4)\s+(?:very\s+)?(?:interrelated\s+)?(?:things|items|reasons|factors|points)\b",
+        lowered,
+    )
     if list_match:
         return list_match.group(0)
     if review and "percentage_or_ratio" in review.question_profile.question_types:
@@ -895,7 +1010,9 @@ class EnterpriseRagOrchestrator:
             "mcp_tool_names": list(tools.keys()),
         }
 
-    async def _call_tool(self, name: str, arguments: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
+    async def _call_tool(
+        self, name: str, arguments: dict[str, Any]
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
         tools = await self._get_tools()
         if name not in tools:
             content = {"is_error": True, "error": f"Tool not available: {name}"}
@@ -932,7 +1049,13 @@ class EnterpriseRagOrchestrator:
             status = "evidence_found" if content.get("matched") else "not_found"
             recovery_reason = "raw_excerpt_lookup"
 
-        top_result = results[0] if results else content.get("result") if isinstance(content.get("result"), dict) else {}
+        top_result = (
+            results[0]
+            if results
+            else content.get("result")
+            if isinstance(content.get("result"), dict)
+            else {}
+        )
         return OrchestrationStep(
             step=index,
             tool_name=tool_name,
@@ -990,7 +1113,11 @@ class EnterpriseRagOrchestrator:
     ) -> dict[str, Any]:
         """Build the verbatim answer, its source-evidence proof, and (optionally) a verified synthesis."""
         verbatim = _answer_from_evidence(
-            question, evidence, anchors=anchors, rules=self.rules, question_profile=question_profile
+            question,
+            evidence,
+            anchors=anchors,
+            rules=self.rules,
+            question_profile=question_profile,
         )
         source_evidence = _source_evidence_spans(evidence)
         synthesized: str | None = None
@@ -1134,7 +1261,12 @@ class EnterpriseRagOrchestrator:
                 emit(
                     "recovery_planned",
                     "Recovery planned after first-pass answer was not accepted",
-                    {"reason": next((item.get("reason") for item in result.attempts if item.get("reason")), None)},
+                    {
+                        "reason": next(
+                            (item.get("reason") for item in result.attempts if item.get("reason")),
+                            None,
+                        )
+                    },
                 )
                 emit(
                     "recovery_attempted",
@@ -1221,7 +1353,8 @@ class EnterpriseRagOrchestrator:
                 result.tool_outputs = []
                 result.rejected_evidence = []
                 result.attempts = [
-                    {**attempt, "answer_preview": "[withheld pending approval]"} for attempt in result.attempts
+                    {**attempt, "answer_preview": "[withheld pending approval]"}
+                    for attempt in result.attempts
                 ]
             return result
 
@@ -1286,7 +1419,18 @@ class EnterpriseRagOrchestrator:
             )
             initial_failure = classify_transport_failure(initial)
             if initial_failure:
-                return finish(self._failure_result(question, initial_failure, timeline, tools_used, tool_outputs, initial, decision_trail=decision_trail, attempts=attempts))
+                return finish(
+                    self._failure_result(
+                        question,
+                        initial_failure,
+                        timeline,
+                        tools_used,
+                        tool_outputs,
+                        initial,
+                        decision_trail=decision_trail,
+                        attempts=attempts,
+                    )
+                )
 
             initial_quality = classify_answer_quality(initial, question=question, anchors=anchors)
             if initial_quality.status == "grounded":
@@ -1323,23 +1467,25 @@ class EnterpriseRagOrchestrator:
                         )
                     )
                     status = "verified"
-                    return finish(self._success_result(
-                        question=question,
-                        answer=str(initial.get("answer") or ""),
-                        status=status,
-                        citations=initial_citations,
-                        evidence=evidence,
-                        timeline=timeline,
-                        tools_used=tools_used,
-                        tool_outputs=tool_outputs,
-                        content=initial,
-                        evidence_verdict=None,
-                        validation_summary=_validation_summary(status, initial_review),
-                        decision_trail=decision_trail,
-                        attempts=attempts,
-                        review_guidance_text=review_guidance(status),
-                        review_note_text=review_note(),
-                    ))
+                    return finish(
+                        self._success_result(
+                            question=question,
+                            answer=str(initial.get("answer") or ""),
+                            status=status,
+                            citations=initial_citations,
+                            evidence=evidence,
+                            timeline=timeline,
+                            tools_used=tools_used,
+                            tool_outputs=tool_outputs,
+                            content=initial,
+                            evidence_verdict=None,
+                            validation_summary=_validation_summary(status, initial_review),
+                            decision_trail=decision_trail,
+                            attempts=attempts,
+                            review_guidance_text=review_guidance(status),
+                            review_note_text=review_note(),
+                        )
+                    )
                 recovery_attempted = True
             else:
                 attempts.append(
@@ -1362,17 +1508,25 @@ class EnterpriseRagOrchestrator:
                     )
                 )
 
-            recovery_attempted = initial_quality.needs_recovery or bool(initial_quality.status == "grounded" and initial_review and initial_review.status != "verified")
+            recovery_attempted = initial_quality.needs_recovery or bool(
+                initial_quality.status == "grounded"
+                and initial_review
+                and initial_review.status != "verified"
+            )
             if max_recovery_steps >= 1:
                 recovery_attempted = True
                 recovery_q = _recovery_question(question, initial_review, anchors)
-                recovery_phrase = _phrase_for_recovery(question, initial_review, anchors) or phrase_bias
+                recovery_phrase = (
+                    _phrase_for_recovery(question, initial_review, anchors) or phrase_bias
+                )
                 keyword_args: dict[str, Any] = {
                     "question": recovery_q,
                     "k_chunks": 3,
                     "mode": "keyword",
                     "anchor_terms": anchors,
-                    "expand_neighbors": bool(initial_review and initial_review.needs_neighbor_expansion),
+                    "expand_neighbors": bool(
+                        initial_review and initial_review.needs_neighbor_expansion
+                    ),
                     "force_rare_keyword_scan": False,
                 }
                 if recovery_phrase:
@@ -1380,8 +1534,21 @@ class EnterpriseRagOrchestrator:
                 keyword_ask = await call("ask_grounded", "keyword_grounded_recovery", keyword_args)
                 keyword_failure = classify_transport_failure(keyword_ask)
                 if keyword_failure:
-                    return finish(self._failure_result(question, keyword_failure, timeline, tools_used, tool_outputs, keyword_ask, decision_trail=decision_trail, attempts=attempts))
-                keyword_quality = classify_answer_quality(keyword_ask, question=question, anchors=anchors)
+                    return finish(
+                        self._failure_result(
+                            question,
+                            keyword_failure,
+                            timeline,
+                            tools_used,
+                            tool_outputs,
+                            keyword_ask,
+                            decision_trail=decision_trail,
+                            attempts=attempts,
+                        )
+                    )
+                keyword_quality = classify_answer_quality(
+                    keyword_ask, question=question, anchors=anchors
+                )
                 if keyword_quality.status == "grounded":
                     keyword_citations = _citations(keyword_ask)
                     evidence = _evidence_from_citations(keyword_citations)
@@ -1416,24 +1583,26 @@ class EnterpriseRagOrchestrator:
                                 "Recovered answer passed citation-support checks.",
                             )
                         )
-                        return finish(self._success_result(
-                            question=question,
-                            answer=str(keyword_ask.get("answer") or ""),
-                            status=status,
-                            citations=keyword_citations,
-                            evidence=evidence,
-                            timeline=timeline,
-                            tools_used=tools_used,
-                            tool_outputs=tool_outputs,
-                            content=keyword_ask,
-                            recovery_attempted=recovery_attempted,
-                            recovery_successful=True,
-                            validation_summary=_validation_summary(status, keyword_review),
-                            decision_trail=decision_trail,
-                            attempts=attempts,
-                            review_guidance_text=review_guidance(status),
-                            review_note_text=review_note(),
-                        ))
+                        return finish(
+                            self._success_result(
+                                question=question,
+                                answer=str(keyword_ask.get("answer") or ""),
+                                status=status,
+                                citations=keyword_citations,
+                                evidence=evidence,
+                                timeline=timeline,
+                                tools_used=tools_used,
+                                tool_outputs=tool_outputs,
+                                content=keyword_ask,
+                                recovery_attempted=recovery_attempted,
+                                recovery_successful=True,
+                                validation_summary=_validation_summary(status, keyword_review),
+                                decision_trail=decision_trail,
+                                attempts=attempts,
+                                review_guidance_text=review_guidance(status),
+                                review_note_text=review_note(),
+                            )
+                        )
                 else:
                     attempts.append(
                         _attempt_record(
@@ -1450,13 +1619,17 @@ class EnterpriseRagOrchestrator:
             if max_recovery_steps >= 2:
                 recovery_attempted = True
                 recovery_q = _recovery_question(question, initial_review, anchors)
-                recovery_phrase = _phrase_for_recovery(question, initial_review, anchors) or phrase_bias
+                recovery_phrase = (
+                    _phrase_for_recovery(question, initial_review, anchors) or phrase_bias
+                )
                 search_args: dict[str, Any] = {
                     "question": recovery_q,
                     "k": 8,
                     "mode": "keyword",
                     "anchor_terms": anchors,
-                    "expand_neighbors": bool(initial_review and initial_review.needs_neighbor_expansion),
+                    "expand_neighbors": bool(
+                        initial_review and initial_review.needs_neighbor_expansion
+                    ),
                     "force_rare_keyword_scan": False,
                     "debug": False,
                 }
@@ -1469,10 +1642,23 @@ class EnterpriseRagOrchestrator:
                         f"Searching with keyword mode for {recovery_phrase or 'question anchors'}.",
                     )
                 )
-                search_content = await call("search_documents", "keyword_evidence_search", search_args)
+                search_content = await call(
+                    "search_documents", "keyword_evidence_search", search_args
+                )
                 search_failure = classify_transport_failure(search_content)
                 if search_failure:
-                    return finish(self._failure_result(question, search_failure, timeline, tools_used, tool_outputs, search_content, decision_trail=decision_trail, attempts=attempts))
+                    return finish(
+                        self._failure_result(
+                            question,
+                            search_failure,
+                            timeline,
+                            tools_used,
+                            tool_outputs,
+                            search_content,
+                            decision_trail=decision_trail,
+                            attempts=attempts,
+                        )
+                    )
                 search_results = _results(search_content)
 
             excerpt_evidence: list[dict[str, Any]] = []
@@ -1488,12 +1674,13 @@ class EnterpriseRagOrchestrator:
                 )
                 rejected_evidence.extend(rejected)
 
-            if (
-                max_recovery_steps >= 3
-                and (not selected_verdict or selected_verdict.status != "supports")
+            if max_recovery_steps >= 3 and (
+                not selected_verdict or selected_verdict.status != "supports"
             ):
                 recovery_q = _recovery_question(question, initial_review, anchors)
-                recovery_phrase = _phrase_for_recovery(question, initial_review, anchors) or phrase_bias
+                recovery_phrase = (
+                    _phrase_for_recovery(question, initial_review, anchors) or phrase_bias
+                )
                 broad_args: dict[str, Any] = {
                     "question": recovery_q,
                     "k": 8,
@@ -1505,10 +1692,23 @@ class EnterpriseRagOrchestrator:
                 }
                 if recovery_phrase:
                     broad_args["exact_phrase_bias"] = recovery_phrase
-                broad_content = await call("search_documents", "neighbor_keyword_evidence_search", broad_args)
+                broad_content = await call(
+                    "search_documents", "neighbor_keyword_evidence_search", broad_args
+                )
                 broad_failure = classify_transport_failure(broad_content)
                 if broad_failure:
-                    return finish(self._failure_result(question, broad_failure, timeline, tools_used, tool_outputs, broad_content, decision_trail=decision_trail, attempts=attempts))
+                    return finish(
+                        self._failure_result(
+                            question,
+                            broad_failure,
+                            timeline,
+                            tools_used,
+                            tool_outputs,
+                            broad_content,
+                            decision_trail=decision_trail,
+                            attempts=attempts,
+                        )
+                    )
                 broad_results = _results(broad_content)
                 broad_evidence, broad_verdict, broad_rejected = _select_evidence_candidate(
                     question=question,
@@ -1528,7 +1728,8 @@ class EnterpriseRagOrchestrator:
             if max_recovery_steps >= 3 and selected_evidence and selected_verdict:
                 recovery_attempted = True
                 should_fetch_excerpt = selected_evidence.get("source_part_id") is not None or (
-                    selected_verdict.status == "supports" and selected_evidence.get("source_id") is not None
+                    selected_verdict.status == "supports"
+                    and selected_evidence.get("source_id") is not None
                 )
                 if should_fetch_excerpt:
                     excerpt_args: dict[str, Any] = {
@@ -1540,20 +1741,37 @@ class EnterpriseRagOrchestrator:
                         excerpt_args["source_part_id"] = selected_evidence.get("source_part_id")
                     elif selected_evidence.get("source_id") is not None:
                         excerpt_args["source_id"] = selected_evidence.get("source_id")
-                    excerpt_content = await call("get_document_excerpt", "raw_excerpt_lookup", excerpt_args)
+                    excerpt_content = await call(
+                        "get_document_excerpt", "raw_excerpt_lookup", excerpt_args
+                    )
                     excerpt_failure = classify_transport_failure(excerpt_content)
                     if excerpt_failure:
-                        return finish(self._failure_result(question, excerpt_failure, timeline, tools_used, tool_outputs, excerpt_content, decision_trail=decision_trail, attempts=attempts))
+                        return finish(
+                            self._failure_result(
+                                question,
+                                excerpt_failure,
+                                timeline,
+                                tools_used,
+                                tool_outputs,
+                                excerpt_content,
+                                decision_trail=decision_trail,
+                                attempts=attempts,
+                            )
+                        )
                     excerpt_evidence = _evidence_from_excerpt(excerpt_content)
 
             evidence = excerpt_evidence or ([selected_evidence] if selected_evidence else [])
-            final_verdict = validate_evidence(
-                question=question,
-                evidence=evidence,
-                anchors=anchors,
-                rules=self.rules,
-                expected_answer=expected_answer,
-            ) if evidence else None
+            final_verdict = (
+                validate_evidence(
+                    question=question,
+                    evidence=evidence,
+                    anchors=anchors,
+                    rules=self.rules,
+                    expected_answer=expected_answer,
+                )
+                if evidence
+                else None
+            )
             if (
                 evidence
                 and excerpt_evidence
@@ -1563,12 +1781,17 @@ class EnterpriseRagOrchestrator:
                 and selected_verdict
                 and selected_verdict.status == "supports"
             ):
-                rejected_evidence.append(_rejected_evidence_summary(excerpt_evidence[0], final_verdict))
+                rejected_evidence.append(
+                    _rejected_evidence_summary(excerpt_evidence[0], final_verdict)
+                )
                 evidence = [selected_evidence]
                 final_verdict = selected_verdict
             if evidence and final_verdict and final_verdict.status == "supports":
                 composed = await self._compose_answer(
-                    question=question, evidence=evidence, anchors=anchors, question_profile=question_profile
+                    question=question,
+                    evidence=evidence,
+                    anchors=anchors,
+                    question_profile=question_profile,
                 )
                 recovered_review = review_answer(
                     question=question,
@@ -1580,7 +1803,9 @@ class EnterpriseRagOrchestrator:
                     _attempt_record(
                         attempt=len(attempts) + 1,
                         tool="retrieval_evidence",
-                        status="verified" if recovered_review.status == "verified" else final_verdict.status,
+                        status="verified"
+                        if recovered_review.status == "verified"
+                        else final_verdict.status,
                         answer=composed["verbatim"],
                         review=recovered_review,
                     )
@@ -1601,30 +1826,34 @@ class EnterpriseRagOrchestrator:
                         )
                     )
                 status = "recovered" if recovered_review.status == "verified" else "partial"
-                return finish(self._success_result(
-                    question=question,
-                    answer=composed["display"],
-                    status=status,
-                    citations=[],
-                    evidence=evidence,
-                    timeline=timeline,
-                    tools_used=tools_used,
-                    tool_outputs=tool_outputs,
-                    content=search_content or {},
-                    recovery_attempted=recovery_attempted,
-                    recovery_successful=status == "recovered",
-                    evidence_verdict=final_verdict.to_dict(),
-                    rejected_evidence=rejected_evidence,
-                    validation_summary=_validation_summary(status, recovered_review, evidence_support=final_verdict.status),
-                    decision_trail=decision_trail,
-                    attempts=attempts,
-                    review_guidance_text=review_guidance(status),
-                    review_note_text=review_note(),
-                    source_evidence=composed["source_evidence"],
-                    synthesized_answer=composed["synthesized"],
-                    verbatim_answer=composed["verbatim"],
-                    synthesis_verified=composed["verified"],
-                ))
+                return finish(
+                    self._success_result(
+                        question=question,
+                        answer=composed["display"],
+                        status=status,
+                        citations=[],
+                        evidence=evidence,
+                        timeline=timeline,
+                        tools_used=tools_used,
+                        tool_outputs=tool_outputs,
+                        content=search_content or {},
+                        recovery_attempted=recovery_attempted,
+                        recovery_successful=status == "recovered",
+                        evidence_verdict=final_verdict.to_dict(),
+                        rejected_evidence=rejected_evidence,
+                        validation_summary=_validation_summary(
+                            status, recovered_review, evidence_support=final_verdict.status
+                        ),
+                        decision_trail=decision_trail,
+                        attempts=attempts,
+                        review_guidance_text=review_guidance(status),
+                        review_note_text=review_note(),
+                        source_evidence=composed["source_evidence"],
+                        synthesized_answer=composed["synthesized"],
+                        verbatim_answer=composed["verbatim"],
+                        synthesis_verified=composed["verified"],
+                    )
+                )
             if evidence and final_verdict:
                 rejected_evidence.append(_rejected_evidence_summary(evidence[0], final_verdict))
 
@@ -1634,7 +1863,9 @@ class EnterpriseRagOrchestrator:
                 and _is_not_found(initial.get("answer"))
                 else "not_grounded"
             )
-            failure_reason = None if final_status == "not_found" else "answer_without_citations_or_evidence"
+            failure_reason = (
+                None if final_status == "not_found" else "answer_without_citations_or_evidence"
+            )
             if rejected_evidence:
                 final_status = "needs_review"
                 failure_reason = "human_review_required"
@@ -1647,7 +1878,8 @@ class EnterpriseRagOrchestrator:
                         "source_part_id": first_rejected.get("source_part_id"),
                         "chunk_id": first_rejected.get("chunk_id"),
                         "file_name": first_rejected.get("file_name"),
-                        "snippet": first_rejected.get("snippet") or first_rejected.get("snippet_preview"),
+                        "snippet": first_rejected.get("snippet")
+                        or first_rejected.get("snippet_preview"),
                         "evidence_type": first_rejected.get("evidence_type") or "review_candidate",
                     }
                 ]
@@ -1660,7 +1892,10 @@ class EnterpriseRagOrchestrator:
             }
             if final_status == "needs_review":
                 composed_review = await self._compose_answer(
-                    question=question, evidence=review_evidence, anchors=anchors, question_profile=question_profile
+                    question=question,
+                    evidence=review_evidence,
+                    anchors=anchors,
+                    question_profile=question_profile,
                 )
             final_answer = composed_review["display"]
             if final_status == "needs_review" and composed_review["verified"]:
@@ -1678,32 +1913,40 @@ class EnterpriseRagOrchestrator:
                     f"{final_status}: {failure_reason or 'no adequate evidence found'}",
                 )
             )
-            return finish(OrchestratedRunResult(
-                question=question,
-                answer=final_answer,
-                grounding_status=final_status,
-                tools_used=_dedupe(tools_used),
-                execution_timeline=[step.to_dict() for step in timeline],
-                evidence=review_evidence if final_status == "needs_review" else [],
-                tool_outputs=tool_outputs,
-                evidence_count=len(review_evidence) if final_status == "needs_review" else 0,
-                recovery_attempted=recovery_attempted,
-                recovery_successful=False,
-                portfolio_safe=final_status in {"not_found", "needs_review"},
-                failure_reason=failure_reason,
-                error=None if final_status == "needs_review" else failure_reason,
-                evidence_verdict=final_verdict.to_dict() if final_verdict else None,
-                rejected_evidence=rejected_evidence,
-                validation_summary=_validation_summary(final_status, initial_review, evidence_support=final_verdict.status if final_verdict else "missing"),
-                decision_trail=decision_trail,
-                attempts=attempts,
-                review_guidance=review_guidance(final_status),
-                review_note=review_note(),
-                source_evidence=composed_review["source_evidence"] if final_status == "needs_review" else [],
-                synthesized_answer=composed_review["synthesized"],
-                verbatim_answer=composed_review["verbatim"],
-                synthesis_verified=composed_review["verified"],
-            ))
+            return finish(
+                OrchestratedRunResult(
+                    question=question,
+                    answer=final_answer,
+                    grounding_status=final_status,
+                    tools_used=_dedupe(tools_used),
+                    execution_timeline=[step.to_dict() for step in timeline],
+                    evidence=review_evidence if final_status == "needs_review" else [],
+                    tool_outputs=tool_outputs,
+                    evidence_count=len(review_evidence) if final_status == "needs_review" else 0,
+                    recovery_attempted=recovery_attempted,
+                    recovery_successful=False,
+                    portfolio_safe=final_status in {"not_found", "needs_review"},
+                    failure_reason=failure_reason,
+                    error=None if final_status == "needs_review" else failure_reason,
+                    evidence_verdict=final_verdict.to_dict() if final_verdict else None,
+                    rejected_evidence=rejected_evidence,
+                    validation_summary=_validation_summary(
+                        final_status,
+                        initial_review,
+                        evidence_support=final_verdict.status if final_verdict else "missing",
+                    ),
+                    decision_trail=decision_trail,
+                    attempts=attempts,
+                    review_guidance=review_guidance(final_status),
+                    review_note=review_note(),
+                    source_evidence=composed_review["source_evidence"]
+                    if final_status == "needs_review"
+                    else [],
+                    synthesized_answer=composed_review["synthesized"],
+                    verbatim_answer=composed_review["verbatim"],
+                    synthesis_verified=composed_review["verified"],
+                )
+            )
         finally:
             reset_current_question(token)
 
@@ -1882,7 +2125,10 @@ def overall_status(runs: Sequence[dict[str, Any]]) -> str:
     if not statuses:
         return "error"
     if any(status in FAILURE_STATUSES for status in statuses):
-        if any(status in GROUNDING_SUCCESS_STATUSES or status in REVIEW_STATUSES for status in statuses):
+        if any(
+            status in GROUNDING_SUCCESS_STATUSES or status in REVIEW_STATUSES
+            for status in statuses
+        ):
             return "partial"
         return "error"
     if any(status in REVIEW_STATUSES for status in statuses):

@@ -4,14 +4,14 @@ import asyncio
 import json
 import re
 import zipfile
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 from xml.etree import ElementTree as ET
 
 from rag_enterprise_langgraph.evidence import evaluate_expected_answer, load_rules
 from rag_enterprise_langgraph.orchestrator import EnterpriseRagOrchestrator
-
 
 NS = {"main": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
 
@@ -113,7 +113,9 @@ def read_eval_xlsx(path: str | Path) -> list[EvalCase]:
     headers = [str(value).strip() for value in rows[0]]
     cases: list[EvalCase] = []
     for row in rows[1:]:
-        record = {headers[index]: row[index] if index < len(row) else "" for index in range(len(headers))}
+        record = {
+            headers[index]: row[index] if index < len(row) else "" for index in range(len(headers))
+        }
         question = str(record.get("question") or "").strip()
         expected = str(record.get("human_answer") or "").strip()
         if not question or not expected:
@@ -135,7 +137,9 @@ def read_eval_xlsx(path: str | Path) -> list[EvalCase]:
 REFUSAL_STATUSES = {"not_grounded", "not_found", "needs_review", "no_answer", "error"}
 
 
-def _eval_status(run: dict[str, Any], expected_eval: dict[str, Any], case: EvalCase | None = None) -> str:
+def _eval_status(
+    run: dict[str, Any], expected_eval: dict[str, Any], case: EvalCase | None = None
+) -> str:
     grounding = run.get("grounding_status")
 
     if case is not None and case.expect_refusal:
@@ -143,7 +147,10 @@ def _eval_status(run: dict[str, Any], expected_eval: dict[str, Any], case: EvalC
         # confident grounded answer is the failure.
         return "pass" if grounding in REFUSAL_STATUSES else "fail"
 
-    if grounding in {"verified", "grounded", "recovered"} and expected_eval.get("status") == "pass":
+    if (
+        grounding in {"verified", "grounded", "recovered"}
+        and expected_eval.get("status") == "pass"
+    ):
         return "pass"
     if grounding in {"partial", "needs_review"}:
         return "manual_review"
@@ -160,7 +167,10 @@ async def run_eval(
 ) -> dict[str, Any]:
     rules = load_rules(rules_path)
     cases = read_eval_cases(xlsx_path)
-    runtime_orchestrator = orchestrator or EnterpriseRagOrchestrator(rules_path=str(rules_path) if rules_path else None, journal_path=str(journal_path) if journal_path else None)
+    runtime_orchestrator = orchestrator or EnterpriseRagOrchestrator(
+        rules_path=str(rules_path) if rules_path else None,
+        journal_path=str(journal_path) if journal_path else None,
+    )
     rows: list[dict[str, Any]] = []
     for case in cases:
         result = await runtime_orchestrator.run(
@@ -237,7 +247,9 @@ def render_eval_markdown(report: dict[str, Any]) -> str:
             _table_text(row.get("generated_answer"), 220),
             _table_text(row.get("grounding_status")),
             tools,
-            _table_text(verdict.get("reason") or row.get("failure_reason") or row.get("error") or "-"),
+            _table_text(
+                verdict.get("reason") or row.get("failure_reason") or row.get("error") or "-"
+            ),
         ]
         lines.append("| " + " | ".join(values) + " |")
     return "\n".join(lines).rstrip() + "\n"
@@ -250,7 +262,12 @@ def _table_text(value: Any, limit: int = 140) -> str:
     return text
 
 
-def write_eval_outputs(report: dict[str, Any], *, markdown_path: str | Path | None = None, json_path: str | Path | None = None) -> dict[str, str]:
+def write_eval_outputs(
+    report: dict[str, Any],
+    *,
+    markdown_path: str | Path | None = None,
+    json_path: str | Path | None = None,
+) -> dict[str, str]:
     written: dict[str, str] = {}
     if markdown_path:
         path = Path(markdown_path)

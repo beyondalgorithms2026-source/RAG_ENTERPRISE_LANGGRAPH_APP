@@ -11,7 +11,6 @@ from pydantic import BaseModel
 
 from rag_enterprise_langgraph.config import Settings
 
-
 DEFAULT_EVAL_RUNS_DIR = "runs/eval-runs"
 
 GROUNDED_STATUSES = {"verified", "grounded", "recovered"}
@@ -43,8 +42,12 @@ def compute_metrics(report: dict[str, Any], *, settings: Settings | None = None)
     rows = report.get("rows") or []
     total = int(report.get("total") or len(rows))
     passed = int(report.get("passed") or 0)
-    grounded_rows = sum(1 for row in rows if str(row.get("grounding_status") or "") in GROUNDED_STATUSES)
-    latencies = [row.get("latency_ms") for row in rows if isinstance(row.get("latency_ms"), (int, float))]
+    grounded_rows = sum(
+        1 for row in rows if str(row.get("grounding_status") or "") in GROUNDED_STATUSES
+    )
+    latencies = [
+        row.get("latency_ms") for row in rows if isinstance(row.get("latency_ms"), (int, float))
+    ]
     return {
         "total": total,
         "passed": passed,
@@ -63,7 +66,10 @@ def build_eval_run_summary(
     settings: Settings | None = None,
     eval_run_id: str | None = None,
 ) -> dict[str, Any]:
-    run_id = eval_run_id or f"eval-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:8]}"
+    run_id = (
+        eval_run_id
+        or f"eval-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:8]}"
+    )
     slim_rows = [
         {
             "question": " ".join(str(row.get("question") or "").split())[:200],
@@ -141,7 +147,9 @@ def build_eval_router(store: EvalStore, settings: Settings) -> APIRouter:
         project_root = Path.cwd().resolve()
         xlsx = Path(body.xlsx_path).resolve()
         if project_root != xlsx and project_root not in xlsx.parents:
-            raise HTTPException(status_code=400, detail="xlsx_path must be inside the project directory")
+            raise HTTPException(
+                status_code=400, detail="xlsx_path must be inside the project directory"
+            )
         if not xlsx.exists():
             raise HTTPException(status_code=404, detail="xlsx file not found")
         report = await run_eval(
@@ -162,7 +170,10 @@ def build_eval_router(store: EvalStore, settings: Settings) -> APIRouter:
     async def latest_eval_run():
         latest = store.latest()
         if latest is None:
-            return {"eval_run": None, "message": "No saved eval runs yet. Run an eval with --save-eval-run or POST /eval/run."}
+            return {
+                "eval_run": None,
+                "message": "No saved eval runs yet. Run an eval with --save-eval-run or POST /eval/run.",
+            }
         return {"eval_run": latest}
 
     @router.get("/runs/{eval_run_id}")

@@ -5,7 +5,6 @@ from langchain.chat_models import init_chat_model
 
 from rag_enterprise_langgraph.config import Settings
 
-
 SYSTEM_PROMPT = """
 You are an enterprise RAG assistant.
 

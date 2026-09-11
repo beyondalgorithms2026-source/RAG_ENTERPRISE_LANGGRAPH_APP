@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 
+from rag_enterprise_langgraph.evidence import evaluate_expected_answer, validate_evidence
 from rag_enterprise_langgraph.orchestrator import (
     EnterpriseRagOrchestrator,
     OrchestrationStep,
@@ -14,13 +15,15 @@ from rag_enterprise_langgraph.orchestrator import (
     exact_phrase_bias,
     extract_anchor_terms,
 )
-from rag_enterprise_langgraph.evidence import evaluate_expected_answer, validate_evidence
 
 
 def test_classify_failure_detects_backend_auth_and_timeout():
     assert classify_failure({"error": "HTTP Error 401: Unauthorized"}) == "backend_auth_failed"
     assert classify_failure({"message": "timed out"}) == "backend_timeout"
-    assert classify_failure({"message": "timed out", "traceback": "HTTP/1.1 401 Unauthorized"}) == "backend_timeout"
+    assert (
+        classify_failure({"message": "timed out", "traceback": "HTTP/1.1 401 Unauthorized"})
+        == "backend_timeout"
+    )
     assert classify_failure({"is_error": True, "error": "tool failed"}) == "tool_error"
 
 
@@ -35,7 +38,9 @@ def test_normal_not_found_debug_timeout_is_not_transport_failure():
         },
     }
 
-    quality = classify_answer_quality(payload, question="What seminar did Sam Walton attend?", anchors=["Walton", "seminar"])
+    quality = classify_answer_quality(
+        payload, question="What seminar did Sam Walton attend?", anchors=["Walton", "seminar"]
+    )
 
     assert classify_transport_failure(payload) is None
     assert quality.status == "candidate_evidence_present"
@@ -56,7 +61,7 @@ def test_anchor_terms_and_phrase_bias_extract_distinctive_query_terms():
 def test_orchestrator_returns_structured_tool_error_when_tool_call_raises():
     orchestrator = EnterpriseRagOrchestrator(quiet_mcp=False)
 
-    async def fail_tool_call(name, arguments):  # noqa: ANN001, ARG001
+    async def fail_tool_call(name, arguments):
         raise OSError("backend unavailable")
 
     orchestrator._call_tool = fail_tool_call  # type: ignore[method-assign]
@@ -93,7 +98,7 @@ def test_orchestrator_unwraps_mcp_text_blocks_before_classification():
     orchestrator = EnterpriseRagOrchestrator(quiet_mcp=False)
     calls: list[str] = []
 
-    async def fake_tool_call(name, arguments):  # noqa: ANN001, ARG001
+    async def fake_tool_call(name, arguments):
         calls.append(name)
         if name == "ask_grounded":
             raw = [
@@ -106,13 +111,13 @@ def test_orchestrator_unwraps_mcp_text_blocks_before_classification():
         return {
             "results": [
                 {
-                        "source_id": 3,
-                        "source_part_id": 655,
-                        "file_name": "annual-leave-policy.md",
-                        "snippet": "Full-time employees receive 26 days of annual leave per calendar year, in addition to public holidays.",
-                    }
-                ]
-            }, {"tool_name": name, "tool_call_id": None, "content": {}}
+                    "source_id": 3,
+                    "source_part_id": 655,
+                    "file_name": "annual-leave-policy.md",
+                    "snippet": "Full-time employees receive 26 days of annual leave per calendar year, in addition to public holidays.",
+                }
+            ]
+        }, {"tool_name": name, "tool_call_id": None, "content": {}}
 
     orchestrator._call_tool = fake_tool_call  # type: ignore[method-assign]
 
@@ -132,7 +137,7 @@ def test_orchestrator_unwraps_mcp_text_blocks_before_classification():
 def test_orchestrator_returns_not_grounded_for_answer_without_evidence():
     orchestrator = EnterpriseRagOrchestrator(quiet_mcp=False)
 
-    async def fake_tool_call(name, arguments):  # noqa: ANN001, ARG001
+    async def fake_tool_call(name, arguments):
         if name == "ask_grounded":
             return {"answer": "This appears to be true.", "citations": []}, {
                 "tool_name": name,
@@ -141,7 +146,11 @@ def test_orchestrator_returns_not_grounded_for_answer_without_evidence():
             }
         if name == "search_documents":
             return {"results": []}, {"tool_name": name, "tool_call_id": None, "content": {}}
-        return {"matched": False, "excerpt": None, "result": None}, {"tool_name": name, "tool_call_id": None, "content": {}}
+        return {"matched": False, "excerpt": None, "result": None}, {
+            "tool_name": name,
+            "tool_call_id": None,
+            "content": {},
+        }
 
     orchestrator._call_tool = fake_tool_call  # type: ignore[method-assign]
 
@@ -204,13 +213,17 @@ def test_orchestrator_does_not_recover_from_irrelevant_excerpt():
     orchestrator = EnterpriseRagOrchestrator(quiet_mcp=False)
     calls: list[str] = []
 
-    async def fake_tool_call(name, arguments):  # noqa: ANN001, ARG001
+    async def fake_tool_call(name, arguments):
         calls.append(name)
         if name == "ask_grounded":
             return {
                 "answer": "Not found in provided sources.",
                 "citations": [],
-                "debug_info": {"retrieval_trace": {"score_diagnostics": [{"chunk_id": 15317, "keyword_score": 1.0}]}},
+                "debug_info": {
+                    "retrieval_trace": {
+                        "score_diagnostics": [{"chunk_id": 15317, "keyword_score": 1.0}]
+                    }
+                },
             }, {"tool_name": name, "tool_call_id": None, "content": {}}
         if name == "search_documents":
             return {
@@ -231,7 +244,9 @@ def test_orchestrator_does_not_recover_from_irrelevant_excerpt():
 
     orchestrator._call_tool = fake_tool_call  # type: ignore[method-assign]
 
-    result = asyncio.run(orchestrator.run("What seminar did Sam Walton enroll himself in in Poughkeepsie New York?"))
+    result = asyncio.run(
+        orchestrator.run("What seminar did Sam Walton enroll himself in in Poughkeepsie New York?")
+    )
 
     assert result.grounding_status == "needs_review"
     assert result.error is None
@@ -331,8 +346,8 @@ def test_focused_evidence_window_completes_fragment_sentences():
 
 
 def test_focused_evidence_ignores_off_topic_percentage():
-    from rag_enterprise_langgraph.orchestrator import _focused_evidence_text
     from rag_enterprise_langgraph.answer_quality import classify_question
+    from rag_enterprise_langgraph.orchestrator import _focused_evidence_text
 
     rules = EnterpriseRagOrchestrator(quiet_mcp=False).rules
     # Snippet has the relevant "2% hard materials" caveat AND an unrelated "55%"
@@ -347,7 +362,9 @@ def test_focused_evidence_ignores_off_topic_percentage():
         evidence=[{"snippet": snippet}],
         anchors=["cost", "rocket", "materials"],
         rules=rules,
-        shape=classify_question("What is the cost of rocket travel based on the materials?").expected_answer_shape,
+        shape=classify_question(
+            "What is the cost of rocket travel based on the materials?"
+        ).expected_answer_shape,
     )
     assert "2%" in focused
     assert "55%" not in focused
@@ -362,12 +379,23 @@ def test_needs_review_answer_uses_full_snippet_not_preview_truncation():
         "preview cap before anything relevant appears. Deep in the chunk, " + long_tail + "."
     )
 
-    async def fake_tool_call(name, arguments):  # noqa: ANN001, ARG001
+    async def fake_tool_call(name, arguments):
         if name == "ask_grounded":
-            return {"answer": "Not found in provided sources.", "citations": []}, {"tool_name": name, "tool_call_id": None, "content": {}}
+            return {"answer": "Not found in provided sources.", "citations": []}, {
+                "tool_name": name,
+                "tool_call_id": None,
+                "content": {},
+            }
         if name == "search_documents":
             return {
-                "results": [{"source_id": 9, "source_part_id": 12, "file_name": "spacex.txt", "snippet": weak_snippet}]
+                "results": [
+                    {
+                        "source_id": 9,
+                        "source_part_id": 12,
+                        "file_name": "spacex.txt",
+                        "snippet": weak_snippet,
+                    }
+                ]
             }, {"tool_name": name, "tool_call_id": None, "content": {}}
         return {
             "matched": True,
@@ -377,7 +405,9 @@ def test_needs_review_answer_uses_full_snippet_not_preview_truncation():
 
     orchestrator._call_tool = fake_tool_call  # type: ignore[method-assign]
 
-    result = asyncio.run(orchestrator.run("What is the cost of rocket travel based on the materials?"))
+    result = asyncio.run(
+        orchestrator.run("What is the cost of rocket travel based on the materials?")
+    )
 
     assert result.grounding_status == "needs_review"
     # The review evidence keeps the full snippet — content beyond the old

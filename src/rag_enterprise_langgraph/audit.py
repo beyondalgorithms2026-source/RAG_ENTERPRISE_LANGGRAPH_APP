@@ -12,7 +12,6 @@ from fastapi import APIRouter, HTTPException
 
 from rag_enterprise_langgraph.journal import sanitize_for_journal
 
-
 DEFAULT_AUDIT_LOG_PATH = "runs/audit-log.jsonl"
 
 EVENT_TYPES = (
@@ -41,7 +40,9 @@ def scrub_text(value: str) -> str:
     cleaned = _BEARER_PATTERN.sub("bearer=[redacted]", value)
     cleaned = _SECRET_VALUE_PATTERN.sub(lambda match: f"{match.group(1)}=[redacted]", cleaned)
     cleaned = re.sub(r'File "[^"]+"', 'File "[path-redacted]"', cleaned)
-    cleaned = re.sub(r"Traceback \(most recent call last\)[\s\S]*", "[traceback-redacted]", cleaned)
+    cleaned = re.sub(
+        r"Traceback \(most recent call last\)[\s\S]*", "[traceback-redacted]", cleaned
+    )
     return re.sub(r"/Users/[^\s\"']+", "[path-redacted]", cleaned)
 
 
@@ -106,14 +107,18 @@ class AuditLog:
             "payload": sanitize_for_audit(payload or {}),
             "previous_hash": self._tail_hash,
         }
-        body["event_hash"] = _event_hash({key: value for key, value in body.items() if key != "event_hash"})
+        body["event_hash"] = _event_hash(
+            {key: value for key, value in body.items() if key != "event_hash"}
+        )
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.path.open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(body, sort_keys=True) + "\n")
         self._tail_hash = body["event_hash"]
         return body
 
-    def events(self, *, run_id: str | None = None, limit: int | None = None) -> list[dict[str, Any]]:
+    def events(
+        self, *, run_id: str | None = None, limit: int | None = None
+    ) -> list[dict[str, Any]]:
         if not self.path.exists():
             return []
         events: list[dict[str, Any]] = []
@@ -172,7 +177,9 @@ class AuditLog:
         previous_hash: str | None = None
         checked = 0
         for index, event in enumerate(self.events()):
-            expected = _event_hash({key: value for key, value in event.items() if key != "event_hash"})
+            expected = _event_hash(
+                {key: value for key, value in event.items() if key != "event_hash"}
+            )
             if event.get("event_hash") != expected or event.get("previous_hash") != previous_hash:
                 return {"valid": False, "checked": checked, "first_invalid_index": index}
             previous_hash = event.get("event_hash")
@@ -205,7 +212,9 @@ def build_audit_router(audit_log: AuditLog, approval_store=None) -> APIRouter:
         payload = {
             "run_id": run_id,
             "event_count": len(events),
-            "run_summary": next((run for run in audit_log.runs() if run["run_id"] == run_id), None),
+            "run_summary": next(
+                (run for run in audit_log.runs() if run["run_id"] == run_id), None
+            ),
             "events": events,
         }
         if approval_store is not None:

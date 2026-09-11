@@ -4,7 +4,12 @@ import asyncio
 import zipfile
 from pathlib import Path
 
-from rag_enterprise_langgraph.eval_runner import read_eval_xlsx, render_eval_markdown, run_eval, write_eval_outputs
+from rag_enterprise_langgraph.eval_runner import (
+    read_eval_xlsx,
+    render_eval_markdown,
+    run_eval,
+    write_eval_outputs,
+)
 from rag_enterprise_langgraph.orchestrator import OrchestratedRunResult
 
 
@@ -16,8 +21,18 @@ def _xlsx_cell(cell: str, value: str) -> str:
 def _write_eval_xlsx(path: Path) -> None:
     rows = [
         ["question", "human_answer", "file_name", "post_url"],
-        ["Which was one of the first free email services?", "Juno was one of the first free email services.", "amazoncom", "https://example.com"],
-        ["What Percentage of Rent to Sales did Sam Waltons first Ben Franklin cost", "0.05", "walmart", "https://example.com/walmart"],
+        [
+            "Which was one of the first free email services?",
+            "Juno was one of the first free email services.",
+            "amazoncom",
+            "https://example.com",
+        ],
+        [
+            "What Percentage of Rent to Sales did Sam Waltons first Ben Franklin cost",
+            "0.05",
+            "walmart",
+            "https://example.com/walmart",
+        ],
     ]
     row_xml: list[str] = []
     for row_index, row in enumerate(rows, start=1):
@@ -29,7 +44,7 @@ def _write_eval_xlsx(path: Path) -> None:
     worksheet = (
         '<?xml version="1.0" encoding="UTF-8"?>'
         '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
-        f'<sheetData>{"".join(row_xml)}</sheetData>'
+        f"<sheetData>{''.join(row_xml)}</sheetData>"
         "</worksheet>"
     )
     with zipfile.ZipFile(path, "w") as archive:
@@ -37,7 +52,14 @@ def _write_eval_xlsx(path: Path) -> None:
 
 
 class _EvalOrchestrator:
-    async def run(self, question: str, *, max_recovery_steps: int = 3, expected_answer: str | None = None, journal_path: str | None = None):  # noqa: ARG002
+    async def run(
+        self,
+        question: str,
+        *,
+        max_recovery_steps: int = 3,
+        expected_answer: str | None = None,
+        journal_path: str | None = None,
+    ):
         if "free email" in question:
             return OrchestratedRunResult(
                 question=question,

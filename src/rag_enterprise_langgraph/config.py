@@ -4,9 +4,9 @@ import os
 import sys
 from pathlib import Path
 
+from dotenv import dotenv_values
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from dotenv import dotenv_values
 
 
 class ConfigError(RuntimeError):
@@ -159,7 +159,9 @@ class Settings(BaseSettings):
                 env[key] = value
         existing_pythonpath = os.environ.get("PYTHONPATH", "").strip()
         repo_src = str(Path(self.resolved_mcp_server_repo()) / "src")
-        env["PYTHONPATH"] = repo_src if not existing_pythonpath else f"{repo_src}{os.pathsep}{existing_pythonpath}"
+        env["PYTHONPATH"] = (
+            repo_src if not existing_pythonpath else f"{repo_src}{os.pathsep}{existing_pythonpath}"
+        )
         env["MCP_SERVER_NAME"] = self.mcp_server_name
         env["MCP_SERVER_VERSION"] = self.mcp_server_version
         return env
@@ -181,7 +183,13 @@ class Settings(BaseSettings):
             "mcp_server_module": self.mcp_server_module,
             "backend_base_url": self.backend_env_value("RAG_BACKEND_BASE_URL"),
             "backend_timeout_seconds": self.backend_env_value("RAG_BACKEND_TIMEOUT_SECONDS"),
-            "backend_bearer_token_present": bool(self.backend_env_value("RAG_BACKEND_BEARER_TOKEN")),
-            "backend_dev_login_email_present": bool(self.backend_env_value("RAG_BACKEND_DEV_LOGIN_EMAIL")),
-            "backend_dev_login_password_present": bool(self.backend_env_value("RAG_BACKEND_DEV_LOGIN_PASSWORD")),
+            "backend_bearer_token_present": bool(
+                self.backend_env_value("RAG_BACKEND_BEARER_TOKEN")
+            ),
+            "backend_dev_login_email_present": bool(
+                self.backend_env_value("RAG_BACKEND_DEV_LOGIN_EMAIL")
+            ),
+            "backend_dev_login_password_present": bool(
+                self.backend_env_value("RAG_BACKEND_DEV_LOGIN_PASSWORD")
+            ),
         }

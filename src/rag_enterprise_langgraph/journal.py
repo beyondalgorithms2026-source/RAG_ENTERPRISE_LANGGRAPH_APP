@@ -6,7 +6,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-
 SENSITIVE_KEYS = {
     "debug_info",
     "traceback",
@@ -30,7 +29,10 @@ def sanitize_for_journal(value: Any) -> Any:
         for key, item in value.items():
             key_text = str(key)
             lowered = key_text.lower()
-            if lowered in SENSITIVE_KEYS or any(secret in lowered for secret in ("password", "token", "secret", "api_key", "authorization", "cookie")):
+            if lowered in SENSITIVE_KEYS or any(
+                secret in lowered
+                for secret in ("password", "token", "secret", "api_key", "authorization", "cookie")
+            ):
                 continue
             output[key_text] = sanitize_for_journal(item)
         return output

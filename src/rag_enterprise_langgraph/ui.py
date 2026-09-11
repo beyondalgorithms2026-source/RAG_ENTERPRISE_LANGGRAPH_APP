@@ -8,7 +8,6 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
 from rag_enterprise_langgraph.config import Settings
 
-
 STATIC_DIR = Path(__file__).parent / "static"
 
 NAV_ITEMS = (
@@ -23,7 +22,11 @@ NAV_ITEMS = (
 
 def _shell(*, title: str, page: str, active: str, lede: str, body: str, settings: Settings) -> str:
     nav = "".join(
-        f'<a href="{href}"{" class=\"active\"" if href == active else ""}>{label}</a>'
+        '<a href="{href}"{cls}>{label}</a>'.format(
+            href=href,
+            cls=' class="active"' if href == active else "",
+            label=label,
+        )
         for href, label in NAV_ITEMS
     )
     return f"""<!DOCTYPE html>
@@ -60,11 +63,16 @@ def build_ui_router(settings: Settings | None = None) -> APIRouter:
 
     @router.get("/app/static/app.css", include_in_schema=False)
     async def app_css():
-        return Response((STATIC_DIR / "app.css").read_text(encoding="utf-8"), media_type="text/css")
+        return Response(
+            (STATIC_DIR / "app.css").read_text(encoding="utf-8"), media_type="text/css"
+        )
 
     @router.get("/app/static/app.js", include_in_schema=False)
     async def app_js():
-        return Response((STATIC_DIR / "app.js").read_text(encoding="utf-8"), media_type="application/javascript")
+        return Response(
+            (STATIC_DIR / "app.js").read_text(encoding="utf-8"),
+            media_type="application/javascript",
+        )
 
     @router.get("/app", response_class=HTMLResponse)
     async def dashboard_page():

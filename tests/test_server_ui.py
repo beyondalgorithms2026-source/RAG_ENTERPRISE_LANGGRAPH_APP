@@ -24,7 +24,14 @@ def app_env(tmp_path):
 
 def test_ui_routes_return_200(app_env):
     client, _ = app_env
-    for path in ("/app", "/app/audit", "/app/approvals", "/app/evals", "/app/red-team", "/app/demo"):
+    for path in (
+        "/app",
+        "/app/audit",
+        "/app/approvals",
+        "/app/evals",
+        "/app/red-team",
+        "/app/demo",
+    ):
         response = client.get(path)
         assert response.status_code == 200, path
         assert "LangGraph/MCP RAG Orchestration" in response.text
@@ -70,8 +77,15 @@ def test_public_demo_is_read_only_and_hides_pending_answer(tmp_path):
     assert "answer_preview" not in pending[0]
     assert "Withheld answer text" not in str(fetched)
 
-    assert client.post("/approval/request", json={"question": "Q", "answer": "A"}).status_code == 403
-    assert client.post(f"/approval/{record['approval_id']}/approve", json={"reviewer": "visitor"}).status_code == 403
+    assert (
+        client.post("/approval/request", json={"question": "Q", "answer": "A"}).status_code == 403
+    )
+    assert (
+        client.post(
+            f"/approval/{record['approval_id']}/approve", json={"reviewer": "visitor"}
+        ).status_code
+        == 403
+    )
     assert client.post("/eval/run", json={"xlsx_path": "config/eval-set.xlsx"}).status_code == 403
     assert client.post("/red-team/run").status_code == 403
     assert client.post("/ask", json={"question": "Q"}).status_code == 403
@@ -83,7 +97,12 @@ def test_approval_api_round_trip_writes_audit_events(app_env):
 
     created = client.post(
         "/approval/request",
-        json={"question": "What is the severance policy?", "answer": "Answer text.", "run_id": "run-x", "risk_reasons": ["high_risk_category:hr"]},
+        json={
+            "question": "What is the severance policy?",
+            "answer": "Answer text.",
+            "run_id": "run-x",
+            "risk_reasons": ["high_risk_category:hr"],
+        },
     ).json()
     approval_id = created["approval_id"]
     assert created["status"] == "pending_approval"
@@ -94,7 +113,9 @@ def test_approval_api_round_trip_writes_audit_events(app_env):
     missing_reviewer = client.post(f"/approval/{approval_id}/approve", json={"reviewer": ""})
     assert missing_reviewer.status_code == 409
 
-    approved = client.post(f"/approval/{approval_id}/approve", json={"reviewer": "Alice", "comment": "ok"})
+    approved = client.post(
+        f"/approval/{approval_id}/approve", json={"reviewer": "Alice", "comment": "ok"}
+    )
     assert approved.status_code == 200
     assert approved.json()["status"] == "approved"
 
@@ -117,14 +138,28 @@ def test_approval_list_endpoint_releases_answers_only_when_approved(app_env):
     client, _ = app_env
     approved = client.post(
         "/approval/request",
-        json={"question": "Approved Q?", "answer": "Released answer text.", "run_id": "run-approved"},
+        json={
+            "question": "Approved Q?",
+            "answer": "Released answer text.",
+            "run_id": "run-approved",
+        },
     ).json()
     rejected = client.post(
         "/approval/request",
-        json={"question": "Rejected Q?", "answer": "Hidden answer text.", "run_id": "run-rejected"},
+        json={
+            "question": "Rejected Q?",
+            "answer": "Hidden answer text.",
+            "run_id": "run-rejected",
+        },
     ).json()
-    client.post(f"/approval/{approved['approval_id']}/approve", json={"reviewer": "Alice", "comment": "good"})
-    client.post(f"/approval/{rejected['approval_id']}/reject", json={"reviewer": "Bob", "comment": "bad source"})
+    client.post(
+        f"/approval/{approved['approval_id']}/approve",
+        json={"reviewer": "Alice", "comment": "good"},
+    )
+    client.post(
+        f"/approval/{rejected['approval_id']}/reject",
+        json={"reviewer": "Bob", "comment": "bad source"},
+    )
 
     all_records = client.get("/approval").json()["approvals"]
     assert len(all_records) == 2
@@ -144,7 +179,12 @@ def test_audit_run_detail_includes_released_approval(app_env):
     client, _ = app_env
     approved = client.post(
         "/approval/request",
-        json={"question": "Approved Q?", "answer": "Released via audit.", "run_id": "run-aud-1", "grounding_status": "needs_review"},
+        json={
+            "question": "Approved Q?",
+            "answer": "Released via audit.",
+            "run_id": "run-aud-1",
+            "grounding_status": "needs_review",
+        },
     ).json()
     rejected = client.post(
         "/approval/request",
@@ -167,8 +207,20 @@ def test_audit_run_detail_includes_released_approval(app_env):
 def test_audit_api_endpoints(app_env):
     client, settings = app_env
     audit = AuditLog(settings.audit_log_path)
-    audit.append(event_type="run_started", run_id="run-1", actor="orchestrator", summary="start", payload={"question_preview": "Q?"})
-    audit.append(event_type="run_completed", run_id="run-1", actor="orchestrator", summary="done", payload={"grounding_status": "verified"})
+    audit.append(
+        event_type="run_started",
+        run_id="run-1",
+        actor="orchestrator",
+        summary="start",
+        payload={"question_preview": "Q?"},
+    )
+    audit.append(
+        event_type="run_completed",
+        run_id="run-1",
+        actor="orchestrator",
+        summary="done",
+        payload={"grounding_status": "verified"},
+    )
 
     runs = client.get("/audit/runs").json()["runs"]
     assert runs[0]["run_id"] == "run-1"
@@ -198,7 +250,14 @@ def test_eval_api_endpoints(app_env):
         "failed": 0,
         "manual_review": 0,
         "status": "pass",
-        "rows": [{"question": "Q?", "eval_status": "pass", "grounding_status": "verified", "latency_ms": 50}],
+        "rows": [
+            {
+                "question": "Q?",
+                "eval_status": "pass",
+                "grounding_status": "verified",
+                "latency_ms": 50,
+            }
+        ],
     }
     summary = build_eval_run_summary(report, settings=settings)
     EvalStore(settings.eval_runs_dir).save(summary)
@@ -242,7 +301,9 @@ def test_runs_api_applies_release_policy(app_env):
             "citation_count": 0,
             "evidence_count": 1,
             "decision_trail": [{"step": 1, "label": "Finalized", "summary": "needs_review"}],
-            "execution_timeline": [{"step": 1, "tool_name": "ask_grounded", "result_status": "grounded"}],
+            "execution_timeline": [
+                {"step": 1, "tool_name": "ask_grounded", "result_status": "grounded"}
+            ],
             "approval_status": "pending_approval",
             "approval_id": created["approval_id"],
         }
@@ -257,7 +318,9 @@ def test_runs_api_applies_release_policy(app_env):
     assert listing[0]["run_id"] == "run-gated"
     assert listing[0]["approval_status"] == "pending_approval"
 
-    client.post(f"/approval/{created['approval_id']}/approve", json={"reviewer": "Alice", "comment": "ok"})
+    client.post(
+        f"/approval/{created['approval_id']}/approve", json={"reviewer": "Alice", "comment": "ok"}
+    )
 
     released_view = client.get("/runs/run-gated").json()
     assert released_view["answer_released"] is True

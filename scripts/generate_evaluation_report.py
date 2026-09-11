@@ -29,7 +29,12 @@ REPO = Path(__file__).resolve().parent.parent
 # Which eval artifacts make up the published comparison, and how to label them.
 CONFIGURATIONS = [
     ("runs/eval-northwind-llama3.2-3b.json", "llama3.2:3b", "local, 3B parameters", "baseline"),
-    ("runs/eval-northwind-gpt-oss-20b.json", "gpt-oss:20b-cloud", "hosted, 20B parameters", "baseline"),
+    (
+        "runs/eval-northwind-gpt-oss-20b.json",
+        "gpt-oss:20b-cloud",
+        "hosted, 20B parameters",
+        "baseline",
+    ),
     (
         "runs/eval-northwind-gpt-oss-20b-augmented.json",
         "gpt-oss:20b-cloud",
@@ -75,10 +80,14 @@ def summarise_eval(report: dict) -> dict:
         "refusal_total": len(refusal),
         "refusal_passed": sum(1 for r in refusal if r["eval_status"] == "pass"),
         "confidently_wrong": sum(
-            1 for r in answerable if r["eval_status"] == "fail" and r["grounding_status"] == "verified"
+            1
+            for r in answerable
+            if r["eval_status"] == "fail" and r["grounding_status"] == "verified"
         ),
         "over_refused": sum(
-            1 for r in answerable if r["eval_status"] == "fail" and r["grounding_status"] != "verified"
+            1
+            for r in answerable
+            if r["eval_status"] == "fail" and r["grounding_status"] != "verified"
         ),
         "review_routed": sum(1 for r in answerable if r["eval_status"] == "manual_review"),
         "failed_questions": {r["question"] for r in rows if r["eval_status"] != "pass"},
@@ -100,7 +109,8 @@ def render(evals: list[tuple], red_team: dict, tests: dict) -> str:
     # Identical-failure-set check across the two baseline configurations.
     baselines = [s for label, s in evals if "augmentation" not in label]
     identical = (
-        len(baselines) == 2 and baselines[0]["failed_questions"] == baselines[1]["failed_questions"]
+        len(baselines) == 2
+        and baselines[0]["failed_questions"] == baselines[1]["failed_questions"]
     )
 
     # Same-model off/on comparison, computed rather than narrated.
@@ -138,21 +148,21 @@ def render(evals: list[tuple], red_team: dict, tests: dict) -> str:
     config_rows = "\n".join(
         f"""<tr>
           <td><strong>{e(label)}</strong></td>
-          <td class="num">{s['passed']} / {s['total']}</td>
-          <td class="num strong">{s['refusal_passed']} / {s['refusal_total']}</td>
-          <td class="num">{s['answerable_passed']} / {s['answerable_total']}</td>
-          <td class="num">{s['confidently_wrong']}</td>
-          <td class="num">{s['review_routed']}</td>
+          <td class="num">{s["passed"]} / {s["total"]}</td>
+          <td class="num strong">{s["refusal_passed"]} / {s["refusal_total"]}</td>
+          <td class="num">{s["answerable_passed"]} / {s["answerable_total"]}</td>
+          <td class="num">{s["confidently_wrong"]}</td>
+          <td class="num">{s["review_routed"]}</td>
         </tr>"""
         for label, s in evals
     )
 
     scenario_rows = "\n".join(
-        f"""<tr class="{'rt-backend' if r.get('status') == 'requires_backend' else ''}">
-          <td class="mono">{e(r.get('finding_id'))}</td>
-          <td>{e(r.get('scenario') or r.get('title'))}</td>
-          <td><span class="pill pill-{e(r.get('status'))}">{e(r.get('status'))}</span></td>
-          <td class="detail">{e(r.get('actual_result') or r.get('detail') or '')}</td>
+        f"""<tr class="{"rt-backend" if r.get("status") == "requires_backend" else ""}">
+          <td class="mono">{e(r.get("finding_id"))}</td>
+          <td>{e(r.get("scenario") or r.get("title"))}</td>
+          <td><span class="pill pill-{e(r.get("status"))}">{e(r.get("status"))}</span></td>
+          <td class="detail">{e(r.get("actual_result") or r.get("detail") or "")}</td>
         </tr>"""
         for r in rt_rows
     )
@@ -221,7 +231,9 @@ def render(evals: list[tuple], red_team: dict, tests: dict) -> str:
 <main>
   <h1>Evaluation report</h1>
   <p class="sub">Governed retrieval-augmented generation — measured, not asserted.<br>
-     Generated {e(generated)} by <code>scripts/generate_evaluation_report.py</code> from run artifacts.</p>
+     Generated {
+        e(generated)
+    } by <code>scripts/generate_evaluation_report.py</code> from run artifacts.</p>
 
   <div class="banner">
     <strong>What this is.</strong> A self-built proof of concept. It has never been
@@ -259,13 +271,17 @@ def render(evals: list[tuple], red_team: dict, tests: dict) -> str:
   </table>
   </div>
 
-  {'''<div class="note"><strong>The same questions failed under both models.</strong>
+  {
+        '''<div class="note"><strong>The same questions failed under both models.</strong>
      A per-question comparison of the two baseline configurations shows the failing sets
      are identical, not merely equal in size. Inspecting the retrieved evidence for those
      questions, the expected source document was absent in every case. No model can answer
      from a document it was never given, which places the limit on retrieval rather than
      on generation. This is a mechanism, not a statistic, so it does not depend on the
-     sample size.</div>''' if identical else ''}
+     sample size.</div>'''
+        if identical
+        else ""
+    }
 
   {aug_note}
 
@@ -296,8 +312,8 @@ def render(evals: list[tuple], red_team: dict, tests: dict) -> str:
   </div>
 
   <h2>Test suite</h2>
-  <p><strong>{e(tests['passed'])} tests passed</strong>, {e(tests['failed'])} failed
-     — <code>{e(tests['summary'])}</code></p>
+  <p><strong>{e(tests["passed"])} tests passed</strong>, {e(tests["failed"])} failed
+     — <code>{e(tests["summary"])}</code></p>
   <p>The suite runs entirely offline: no Docker, no database, no model. That is why it
      can run on every push in continuous integration, and why the badge on the repository
      means something.</p>

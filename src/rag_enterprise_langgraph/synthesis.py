@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 from rag_enterprise_langgraph.answer_quality import classify_question, review_answer
-
 
 SYNTHESIS_SYSTEM_PROMPT = (
     "You rewrite retrieved source text into a short, direct answer.\n"
@@ -16,16 +16,39 @@ SYNTHESIS_SYSTEM_PROMPT = (
     "- Answer in 1-2 plain sentences. No preamble, no citations, no quotes."
 )
 
-_REFUSAL_MARKERS = ("not_answerable", "does not answer", "cannot answer", "no information", "not stated in", "not mentioned")
+_REFUSAL_MARKERS = (
+    "not_answerable",
+    "does not answer",
+    "cannot answer",
+    "no information",
+    "not stated in",
+    "not mentioned",
+)
 
 _STOP_ENTITIES = {
-    "The", "This", "That", "These", "Those", "Based", "Source", "Their", "There",
-    "When", "Where", "What", "Which", "While", "About", "According",
+    "The",
+    "This",
+    "That",
+    "These",
+    "Those",
+    "Based",
+    "Source",
+    "Their",
+    "There",
+    "When",
+    "Where",
+    "What",
+    "Which",
+    "While",
+    "About",
+    "According",
 }
 
 
 def _evidence_text(evidence: Sequence[dict[str, Any]]) -> str:
-    return " ".join(str(item.get("snippet") or item.get("excerpt") or "") for item in evidence).strip()
+    return " ".join(
+        str(item.get("snippet") or item.get("excerpt") or "") for item in evidence
+    ).strip()
 
 
 def _numeric_tokens(text: str) -> list[str]:
@@ -43,7 +66,9 @@ def _normalize(text: str) -> str:
     return re.sub(r"\s+", " ", text).lower()
 
 
-def verify_against_evidence(answer: str, evidence: Sequence[dict[str, Any]], *, question: str = "") -> dict[str, Any]:
+def verify_against_evidence(
+    answer: str, evidence: Sequence[dict[str, Any]], *, question: str = ""
+) -> dict[str, Any]:
     """Return {'verified': bool, 'reason': str}. Conservative: any unproven fact fails."""
     answer_text = str(answer or "").strip()
     if not answer_text:
@@ -106,7 +131,7 @@ async def synthesize_and_verify(
 
     prompt = (
         f"QUESTION: {question}\n\n"
-        f"SOURCE:\n\"\"\"\n{evidence_text[:4000]}\n\"\"\"\n\n"
+        f'SOURCE:\n"""\n{evidence_text[:4000]}\n"""\n\n'
         "Write the answer now."
     )
     try:
@@ -116,8 +141,12 @@ async def synthesize_and_verify(
                 {"role": "user", "content": prompt},
             ]
         )
-    except Exception as exc:  # noqa: BLE001 - any model failure falls back to verbatim
-        return {"answer": None, "verified": False, "reason": f"model_error:{exc.__class__.__name__}"}
+    except Exception as exc:
+        return {
+            "answer": None,
+            "verified": False,
+            "reason": f"model_error:{exc.__class__.__name__}",
+        }
 
     content = getattr(response, "content", response)
     answer = content if isinstance(content, str) else str(content)
@@ -129,7 +158,9 @@ async def synthesize_and_verify(
 
     # Second gate: the shared answer reviewer must not find unsupported items.
     profile = question_profile or classify_question(question)
-    review = review_answer(question=question, answer=answer, evidence=list(evidence), question_profile=profile)
+    review = review_answer(
+        question=question, answer=answer, evidence=list(evidence), question_profile=profile
+    )
     if review.unsupported_items:
         return {"answer": answer, "verified": False, "reason": "reviewer_unsupported_items"}
 
