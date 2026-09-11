@@ -3,6 +3,15 @@
 Operating manual for AI coding agents (Claude, Codex, etc.) working in
 `RAG_ENTERPRISE_LANGGRAPH_APP`. Read this before changing anything.
 
+The canonical B004 cross-repository standard is
+[docs/ENGINEERING_STANDARDS.md](docs/ENGINEERING_STANDARDS.md). Read it together with
+this file and [.github/CONTRIBUTING.md](.github/CONTRIBUTING.md); where rules overlap,
+the stricter rule applies. In brief: decide repository ownership before editing, treat
+all AI-facing content as untrusted, preserve security and grounding controls, add
+meaningful failure/boundary coverage, and report verification honestly. Do not add a
+dependency or change an architecture/security boundary without approval. The private
+assets repository is permanently out of scope.
+
 ## 1. What this repo is — and is not
 
 This is a **Python LangGraph/MCP orchestration layer for enterprise RAG proof
@@ -114,6 +123,10 @@ and `rag-enterprise-api` (server).
   [test_orchestrator.py](tests/test_orchestrator.py)), by fake
   agent/orchestrator classes (see [test_demo_proof.py](tests/test_demo_proof.py)),
   or by `monkeypatch`. Never require a live MCP server or backend in tests.
+  This rule governs the normal offline pytest suite. P12B is a separate, explicitly
+  provisioned full-stack CI workflow and is the authoritative APP → MCP → STARTER →
+  PostgreSQL/pgvector quality gate; fake-driven tests must not be described as proving
+  live retrieval, SQL ACL enforcement, or full-stack answer quality.
 - **Do not add direct backend retrieval logic to this app.** No HTTP calls to
   the backend, no DB clients, no embedding libraries. All enterprise data
   flows through the three MCP tools.
