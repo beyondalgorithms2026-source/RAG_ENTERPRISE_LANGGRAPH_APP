@@ -5,8 +5,12 @@ orchestration, evidence validation, refusal and recovery behaviour, proof render
 the red-team and evaluation harnesses. Retrieval, access control, citations, and database
 access belong in the sibling data-layer repository.
 
-Read `AGENTS.md` before making changes. Its architecture boundaries, status vocabulary,
-redaction requirements, and escalation rules are part of the contribution contract.
+Read [`AGENTS.md`](../AGENTS.md) and the canonical
+[B004 engineering standard](../docs/ENGINEERING_STANDARDS.md) before making changes.
+The local guide is sufficient for safe work when sibling repositories are unavailable;
+where instructions overlap, preserve the stricter rule. Their architecture boundaries,
+status vocabulary, redaction requirements, and escalation rules are contributor
+guidance. CI and tests provide the corresponding mechanical checks where stated.
 
 ## Development setup
 
@@ -51,6 +55,12 @@ If a change affects prompts, retrieval configuration, embeddings, evidence rules
 answer/refusal behaviour, attach the relevant evaluation result to the pull request.
 Never weaken evidence thresholds, change public response shapes, add a dependency, or
 move responsibilities across repository boundaries without prior approval.
+
+P12 is the fast fake-driven evaluation-harness smoke test. P12B is the authoritative
+real APP → MCP → STARTER → PostgreSQL/pgvector 25-question quality gate. Do not claim
+that P12 or another mocked test proves live retrieval or SQL authorization. A P12B
+baseline change must be explicit, justified, and owner/CODEOWNER-reviewed; it must never
+be automatically overwritten after a regression.
 
 ## Protected branch policy
 
