@@ -168,6 +168,13 @@ jobs:
           python -m pip install -e "./app[dev]" -e ./mcp
           python -m pip install -r starter/backend/requirements.txt
 
+      - name: Verify pinned OpenAI model access
+        if: steps.secret.outputs.skip != 'true'
+        working-directory: app
+        env:
+          EVAL_OPENAI_API_KEY: ${{ secrets.EVAL_OPENAI_API_KEY }}
+        run: python scripts/check_eval_model_access.py --model "$LLM_MODEL"
+
       - name: Migrate and seed deterministic corpus
         if: steps.secret.outputs.skip != 'true'
         run: |
