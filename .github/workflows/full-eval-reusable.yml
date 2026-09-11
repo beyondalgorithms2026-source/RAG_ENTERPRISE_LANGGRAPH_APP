@@ -1,0 +1,201 @@
+name: reusable-full-eval
+
+on:
+  workflow_call:
+    inputs:
+      candidate:
+        required: true
+        type: string
+      candidate_ref:
+        required: true
+        type: string
+      mode:
+        required: false
+        default: calibration
+        type: string
+    secrets:
+      EVAL_OPENAI_API_KEY:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  full-eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: rag_enterprise_starter
+          POSTGRES_PASSWORD: rag_enterprise_starter_dev_pass
+          POSTGRES_DB: rag_enterprise_starter
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U rag_enterprise_starter"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://rag_enterprise_starter:rag_enterprise_starter_dev_pass@127.0.0.1:55432/rag_enterprise_starter
+      UPLOAD_DIR: ${{ runner.temp }}/northwind-corpus
+      APP_ENV: local
+      AUTH_ENABLED: "false"
+      AUTH_MODE: none
+      ACCESS_STRATEGY: none
+      RATE_LIMIT_ENABLED: "false"
+      EMBEDDING_PROVIDER: openai
+      EMBEDDING_MODEL: text-embedding-3-small
+      EMBEDDING_DIMENSIONS: "384"
+      EMBEDDING_API_KEY: ${{ secrets.EVAL_OPENAI_API_KEY }}
+      EMBEDDING_BASE_URL: https://api.openai.com/v1
+      LLM_PROVIDER: openai
+      LLM_MODEL: gpt-4o-mini-2024-07-18
+      LLM_API_KEY: ${{ secrets.EVAL_OPENAI_API_KEY }}
+      LLM_BASE_URL: https://api.openai.com/v1
+      RERANK_ENABLED: "false"
+      RETRIEVAL_MODE: hybrid
+      ENABLE_GRAPH: "false"
+      ENABLE_TEMPORAL: "false"
+      ENABLE_ONTOLOGY: "false"
+      EXTRACT_ENTITIES: "false"
+      EXTRACT_RELATIONS: "false"
+      EXTRACT_TEMPORAL_METADATA: "false"
+      BUILD_GRAPH_ON_INGEST: "false"
+      ALLOW_LAZY_ENRICHMENT: "false"
+      USE_QUERY_ROUTER: "false"
+      RAG_BACKEND_BASE_URL: http://127.0.0.1:8000
+      RAG_BACKEND_TIMEOUT_SECONDS: "90"
+
+    steps:
+      - name: Check evaluation secret
+        id: secret
+        env:
+          KEY: ${{ secrets.EVAL_OPENAI_API_KEY }}
+        run: |
+          if [ -z "$KEY" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "P12B not configured: EVAL_OPENAI_API_KEY is absent." >> "$GITHUB_STEP_SUMMARY"
+            if [ "${{ inputs.mode }}" = "blocking" ]; then exit 1; fi
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.secret.outputs.skip != 'true'
+        with:
+          repository: beyondalgorithms2026-source/RAG_ENTERPRISE_LANGGRAPH_APP
+          ref: ${{ inputs.candidate == 'app' && inputs.candidate_ref || 'main' }}
+          path: app
+      - uses: actions/checkout@v4
+        if: steps.secret.outputs.skip != 'true'
+        with:
+          repository: beyondalgorithms2026-source/RAG_Langgraph_MCP_server
+          ref: ${{ inputs.candidate == 'mcp' && inputs.candidate_ref || 'main' }}
+          path: mcp
+      - uses: actions/checkout@v4
+        if: steps.secret.outputs.skip != 'true'
+        with:
+          repository: beyondalgorithms2026-source/RAG_ENTERPRISE_STARTER
+          ref: ${{ inputs.candidate == 'starter' && inputs.candidate_ref || 'main' }}
+          path: starter
+      - uses: actions/setup-python@v5
+        if: steps.secret.outputs.skip != 'true'
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            app/pyproject.toml
+            starter/backend/requirements.txt
+
+      - name: Install the three-layer stack
+        if: steps.secret.outputs.skip != 'true'
+        run: |
+          python -m pip install -e "./app[dev]" -e ./mcp
+          python -m pip install -r starter/backend/requirements.txt
+
+      - name: Migrate and seed deterministic corpus
+        if: steps.secret.outputs.skip != 'true'
+        run: |
+          python starter/corpus/generate_corpus.py --out "$UPLOAD_DIR"
+          cd starter/backend
+          python -m app.db.migrate
+          python -m app.seed.public_demo
+
+      - name: Prove RT-06 authorized and denied SQL retrieval
+        if: steps.secret.outputs.skip != 'true'
+        working-directory: starter/backend
+        env:
+          RAG_REQUIRE_DB: "1"
+          ACCESS_STRATEGY: document_acl_with_time_bound_grants
+          AUTH_MODE: dev
+        run: python -m unittest tests.test_rt06_acl_boundary_p11
+
+      - name: Start quality-evaluation backend
+        if: steps.secret.outputs.skip != 'true'
+        working-directory: starter/backend
+        run: |
+          python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 > "$RUNNER_TEMP/backend.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/backend.pid"
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:8000/health >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          echo "Backend readiness failed" >&2
+          exit 1
+
+      - name: Run 25-question evaluation
+        if: steps.secret.outputs.skip != 'true'
+        working-directory: app
+        env:
+          RAG_AGENT_MCP_SERVER_REPO: ${{ github.workspace }}/mcp
+          RAG_EVAL_APP_REPO: ${{ github.workspace }}/app
+          RAG_EVAL_MCP_REPO: ${{ github.workspace }}/mcp
+          RAG_EVAL_STARTER_REPO: ${{ github.workspace }}/starter
+        run: |
+          export RAG_AGENT_MCP_SERVER_PYTHON="$(command -v python)"
+          python -m rag_enterprise_langgraph.cli \
+            --eval-set config/eval-set-northwind.json \
+            --eval-output "$RUNNER_TEMP/eval-report.md" \
+            --eval-json "$RUNNER_TEMP/eval-report.json" \
+            --eval-calibration
+
+      - name: Run live unauthorized RT-06 path
+        if: steps.secret.outputs.skip != 'true'
+        env:
+          RAG_AGENT_MCP_SERVER_REPO: ${{ github.workspace }}/mcp
+        run: |
+          kill "$(cat "$RUNNER_TEMP/backend.pid")"
+          cd starter/backend
+          ACCESS_STRATEGY=document_acl_with_time_bound_grants python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 > "$RUNNER_TEMP/backend-rt06.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/backend.pid"
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:8000/health >/dev/null; then break; fi
+            sleep 2
+          done
+          curl --fail --silent http://127.0.0.1:8000/health >/dev/null
+          cd "$GITHUB_WORKSPACE/app"
+          export RAG_AGENT_MCP_SERVER_PYTHON="$(command -v python)"
+          python scripts/run_rt06_live.py
+
+      - name: Compare approved baseline
+        if: steps.secret.outputs.skip != 'true' && inputs.mode == 'blocking'
+        working-directory: app
+        env:
+          RAG_AGENT_MCP_SERVER_REPO: ${{ github.workspace }}/mcp
+        run: |
+          test -f config/eval-baselines/northwind-openai-v1.json
+          python scripts/compare_eval_reports.py \
+            config/eval-baselines/northwind-openai-v1.json \
+            "$RUNNER_TEMP/eval-report.json"
+
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.secret.outputs.skip != 'true'
+        with:
+          name: p12b-${{ inputs.candidate }}-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/eval-report.json
+            ${{ runner.temp }}/eval-report.md
+          retention-days: 30

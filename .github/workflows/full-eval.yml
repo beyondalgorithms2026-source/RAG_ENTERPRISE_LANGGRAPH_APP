@@ -1,0 +1,18 @@
+name: full-eval
+
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 2 * * *"
+
+jobs:
+  full-eval:
+    uses: ./.github/workflows/full-eval-reusable.yml
+    with:
+      candidate: app
+      candidate_ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      mode: calibration
+    secrets:
+      EVAL_OPENAI_API_KEY: ${{ secrets.EVAL_OPENAI_API_KEY }}
