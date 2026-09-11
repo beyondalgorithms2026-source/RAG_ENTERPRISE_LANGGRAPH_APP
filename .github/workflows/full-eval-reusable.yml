@@ -40,7 +40,7 @@ jobs:
           --health-retries 5
     env:
       DATABASE_URL: postgresql://rag_enterprise_starter:rag_enterprise_starter_dev_pass@127.0.0.1:55432/rag_enterprise_starter
-      UPLOAD_DIR: ${{ runner.temp }}/northwind-corpus
+      UPLOAD_DIR: ${{ github.workspace }}/northwind-corpus
       APP_ENV: local
       AUTH_ENABLED: "false"
       AUTH_MODE: none
