@@ -97,12 +97,12 @@ jobs:
       EMBEDDING_API_KEY: ${{ secrets.EVAL_OPENAI_API_KEY }}
       EMBEDDING_BASE_URL: https://api.openai.com/v1
       LLM_PROVIDER: openai
-      LLM_MODEL: gpt-4o-mini-2024-07-18
+      LLM_MODEL: gpt-4.1-mini-2025-04-14
       LLM_API_KEY: ${{ secrets.EVAL_OPENAI_API_KEY }}
       LLM_BASE_URL: https://api.openai.com/v1
       OPENAI_API_KEY: ${{ secrets.EVAL_OPENAI_API_KEY }}
       RAG_AGENT_MODEL_PROVIDER: openai
-      RAG_AGENT_MODEL_NAME: gpt-4o-mini-2024-07-18
+      RAG_AGENT_MODEL_NAME: gpt-4.1-mini-2025-04-14
       RAG_AGENT_ENABLE_SYNTHESIS: "false"
       RERANK_ENABLED: "false"
       RETRIEVAL_MODE: hybrid
