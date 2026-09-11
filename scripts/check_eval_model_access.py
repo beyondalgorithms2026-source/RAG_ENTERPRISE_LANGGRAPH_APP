@@ -50,13 +50,17 @@ def main() -> int:
     candidates = _candidate_ids(payload)
     print("Accessible allowlisted calibration models: " + (", ".join(candidates) or "none"))
 
-    exact_status, _ = _get_json(
-        f"https://api.openai.com/v1/models/{args.model}",
-        api_key,
-    )
-    if exact_status != 200:
-        print(f"Pinned model is unavailable (HTTP {exact_status}): {args.model}", file=sys.stderr)
-        return 1
+    if args.model not in candidates:
+        exact_status, _ = _get_json(
+            f"https://api.openai.com/v1/models/{args.model}",
+            api_key,
+        )
+        if exact_status != 200:
+            print(
+                f"Pinned model is unavailable (HTTP {exact_status}): {args.model}",
+                file=sys.stderr,
+            )
+            return 1
     print(f"Pinned model is accessible: {args.model}")
     return 0
 
