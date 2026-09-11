@@ -8,11 +8,47 @@ on:
     - cron: "17 2 * * *"
 
 jobs:
+  scope:
+    runs-on: ubuntu-latest
+    outputs:
+      relevant: ${{ steps.changes.outputs.relevant }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Classify quality-sensitive changes
+        id: changes
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [ "$EVENT_NAME" = "schedule" ] || [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "relevant=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            files="$(git diff --name-only "origin/$BASE_REF...HEAD")"
+          else
+            files="$(git diff-tree --no-commit-id --name-only -r HEAD)"
+          fi
+          relevant=false
+          while IFS= read -r path; do
+            case "$path" in
+              src/*|config/eval-*|config/orchestration-*|scripts/build_eval_baseline.py|scripts/compare_eval_reports.py|scripts/run_rt06_live.py|pyproject.toml|.github/workflows/full-eval*)
+                relevant=true
+                break
+                ;;
+            esac
+          done <<< "$files"
+          echo "relevant=$relevant" >> "$GITHUB_OUTPUT"
+
   full-eval:
+    needs: scope
     uses: ./.github/workflows/full-eval-reusable.yml
     with:
       candidate: app
       candidate_ref: ${{ github.event.pull_request.head.sha || github.sha }}
       mode: calibration
+      run_quality: ${{ needs.scope.outputs.relevant == 'true' }}
     secrets:
       EVAL_OPENAI_API_KEY: ${{ secrets.EVAL_OPENAI_API_KEY }}

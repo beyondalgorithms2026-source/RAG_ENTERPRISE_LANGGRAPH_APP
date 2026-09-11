@@ -129,7 +129,9 @@ def _check_unauthorized_private_content() -> tuple[str, str]:
     return (
         "requires_backend",
         "ACL and authorization are enforced by the enterprise backend behind the MCP server. "
-        "The agent layer has no database access, so this scenario must be exercised against a live backend and is not simulated here.",
+        "The offline suite does not simulate that boundary; P11 exercises denied and authorized "
+        "retrieval through production SQL, and P12B also exercises the unauthorized APP → MCP → "
+        "STARTER path.",
     )
 
 

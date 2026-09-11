@@ -238,7 +238,11 @@ def read_eval_xlsx(path: str | Path) -> list[EvalCase]:
 # Every status in which the system declined to produce a grounded answer.
 # "not_found" belongs here for the same reason "not_grounded" does: the system
 # said it could not answer. Omitting it scored a correct refusal as a failure.
-REFUSAL_STATUSES = {"not_grounded", "not_found", "needs_review", "no_answer", "error"}
+# A must-refuse case passes only when the orchestrator emits one of its two
+# terminal no-answer states. ``needs_review`` is deliberately excluded: that
+# path may contain a synthesized answer from rejected evidence and therefore is
+# not a refusal.
+REFUSAL_STATUSES = {"not_grounded", "not_found"}
 INFRASTRUCTURE_STATUSES = {"backend_auth_failed", "backend_timeout", "tool_error"}
 
 

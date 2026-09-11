@@ -7,6 +7,42 @@ class BaselineError(ValueError):
     """An evaluation report cannot be compared safely."""
 
 
+REQUIRED_CONFIGURATION_PATHS = (
+    ("repositories", "app"),
+    ("repositories", "mcp"),
+    ("repositories", "starter"),
+    ("llm", "provider"),
+    ("llm", "model"),
+    ("embedding", "provider"),
+    ("embedding", "model"),
+    ("embedding", "dimensions"),
+    ("retrieval", "mode"),
+    ("retrieval", "rerank_enabled"),
+    ("app_prompts",),
+    ("starter_prompts",),
+    ("corpus_manifest_sha256",),
+)
+
+
+def _configuration(report: dict[str, Any], label: str) -> dict[str, Any]:
+    configuration = report.get("configuration")
+    if not isinstance(configuration, dict) or not configuration:
+        raise BaselineError(f"{label} configuration metadata is required")
+    for path in REQUIRED_CONFIGURATION_PATHS:
+        value: Any = configuration
+        for key in path:
+            value = value.get(key) if isinstance(value, dict) else None
+        if value in (None, "", {}, []):
+            raise BaselineError(f"{label} configuration is missing {'.'.join(path)}")
+    return configuration
+
+
+def _pinned_configuration(configuration: dict[str, Any]) -> dict[str, Any]:
+    # Candidate commits are expected to differ from the approved baseline. All
+    # answer-shaping configuration remains pinned and must match exactly.
+    return {key: value for key, value in configuration.items() if key != "repositories"}
+
+
 def _rows(report: dict[str, Any], label: str) -> dict[str, dict[str, Any]]:
     rows = report.get("rows")
     if not isinstance(rows, list) or not rows:
@@ -23,10 +59,8 @@ def _rows(report: dict[str, Any], label: str) -> dict[str, dict[str, Any]]:
 
 
 def compare_eval_reports(baseline: dict[str, Any], current: dict[str, Any]) -> dict[str, Any]:
-    if not isinstance(baseline.get("configuration"), dict) or not baseline["configuration"]:
-        raise BaselineError("baseline configuration metadata is required")
-    if not isinstance(current.get("configuration"), dict) or not current["configuration"]:
-        raise BaselineError("current configuration metadata is required")
+    baseline_configuration = _configuration(baseline, "baseline")
+    current_configuration = _configuration(current, "current")
     baseline_rows = _rows(baseline, "baseline")
     current_rows = _rows(current, "current")
     if set(baseline_rows) != set(current_rows):
@@ -35,6 +69,13 @@ def compare_eval_reports(baseline: dict[str, Any], current: dict[str, Any]) -> d
         raise BaselineError(f"case ids changed; missing={missing}, added={added}")
 
     regressions: list[dict[str, str]] = []
+    if _pinned_configuration(baseline_configuration) != _pinned_configuration(
+        current_configuration
+    ):
+        regressions.append({"case_id": "configuration", "rule": "pinned_configuration_changed"})
+    current_rt06 = current.get("rt06")
+    if not isinstance(current_rt06, dict) or current_rt06.get("status") != "pass":
+        regressions.append({"case_id": "RT-06", "rule": "acl_boundary_failed"})
     for case_id, before in baseline_rows.items():
         after = current_rows[case_id]
         if after.get("failure_class") == "infrastructure":

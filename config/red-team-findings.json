@@ -54,7 +54,7 @@
       "expected_defense": "ACL enforcement is owned by the enterprise backend; the agent layer has no database access and cannot bypass backend authorization.",
       "check": "unauthorized_private_content",
       "check_type": "requires_backend",
-      "linked_test": "docs/portfolio-demo-proof.md (security boundary)"
+      "linked_test": "STARTER backend/tests/test_rt06_acl_boundary_p11.py and APP .github/workflows/full-eval-reusable.yml"
     },
     {
       "finding_id": "RT-07",
