@@ -5,16 +5,9 @@ from collections.abc import Sequence
 from typing import Any
 
 from rag_enterprise_langgraph.answer_quality import classify_question, review_answer
+from rag_enterprise_langgraph.prompt_registry import load_prompt
 
-SYNTHESIS_SYSTEM_PROMPT = (
-    "You rewrite retrieved source text into a short, direct answer.\n"
-    "Hard rules:\n"
-    "- Use ONLY facts stated in the SOURCE text below. Add nothing.\n"
-    "- Do not introduce any number, percentage, name, date, or claim that is not in the SOURCE.\n"
-    "- Do not use outside knowledge. Do not speculate.\n"
-    "- If the SOURCE does not answer the question, reply exactly: NOT_ANSWERABLE\n"
-    "- Answer in 1-2 plain sentences. No preamble, no citations, no quotes."
-)
+SYNTHESIS_SYSTEM_PROMPT = load_prompt("app_synthesis")
 
 _REFUSAL_MARKERS = (
     "not_answerable",

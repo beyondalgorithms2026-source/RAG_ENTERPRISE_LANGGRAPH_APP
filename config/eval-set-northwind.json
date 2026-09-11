@@ -1,129 +1,180 @@
 {
+  "schema_version": "1.0",
   "eval_set": "northwind-public-demo",
   "note": "Questions and expected facts for the synthetic demo corpus. Questions with expected_document null cannot be answered from the corpus and must be refused.",
   "questions": [
     {
+      "case_id": "NW-001",
       "question": "How many days in advance must domestic flights be booked?",
+      "expect_refusal": false,
       "expected_document": "travel-expense-policy",
       "expected_fact": "fourteen days"
     },
     {
+      "case_id": "NW-002",
       "question": "What is the daily meal allowance for international travel?",
+      "expect_refusal": false,
       "expected_document": "travel-expense-policy",
       "expected_fact": "65 EUR"
     },
     {
+      "case_id": "NW-003",
       "question": "How many days per week must hybrid employees attend the office?",
+      "expect_refusal": false,
       "expected_document": "remote-working-policy",
       "expected_fact": "a minimum of two days"
     },
     {
+      "case_id": "NW-004",
       "question": "How long can an employee work from another country?",
+      "expect_refusal": false,
       "expected_document": "remote-working-policy",
       "expected_fact": "20 working days per calendar year"
     },
     {
+      "case_id": "NW-005",
       "question": "How much annual leave do full-time employees receive?",
+      "expect_refusal": false,
       "expected_document": "annual-leave-policy",
       "expected_fact": "26 days"
     },
     {
+      "case_id": "NW-006",
       "question": "How many days of annual leave can be carried over, and by when must they be used?",
+      "expect_refusal": false,
       "expected_document": "annual-leave-policy",
       "expected_fact": "five days, by 31 March"
     },
     {
+      "case_id": "NW-007",
       "question": "How many days of absence can be self-certified before a fit note is required?",
+      "expect_refusal": false,
       "expected_document": "sickness-absence-policy",
       "expected_fact": "up to seven consecutive calendar days"
     },
     {
+      "case_id": "NW-008",
       "question": "How long is company sick pay paid at full pay?",
+      "expect_refusal": false,
       "expected_document": "sickness-absence-policy",
       "expected_fact": "the first 20 working days"
     },
     {
+      "case_id": "NW-009",
       "question": "How much leave is the primary carer entitled to?",
+      "expect_refusal": false,
       "expected_document": "parental-leave-policy",
       "expected_fact": "26 weeks at full pay followed by 13 weeks at half pay"
     },
     {
+      "case_id": "NW-010",
       "question": "How long is the standard probationary period?",
+      "expect_refusal": false,
       "expected_document": "probation-policy",
       "expected_fact": "six months up to Band 5, three months for Band 6 and above"
     },
     {
+      "case_id": "NW-011",
       "question": "What notice applies during probation?",
+      "expect_refusal": false,
       "expected_document": "probation-policy",
       "expected_fact": "two weeks"
     },
     {
+      "case_id": "NW-012",
       "question": "What performance ratings does the company use?",
+      "expect_refusal": false,
       "expected_document": "performance-review-cycle",
       "expected_fact": "developing, effective, strong, exceptional"
     },
     {
+      "case_id": "NW-013",
       "question": "What is the maximum value of a gift that may be accepted?",
+      "expect_refusal": false,
       "expected_document": "code-of-conduct",
       "expected_fact": "50 EUR"
     },
     {
+      "case_id": "NW-014",
       "question": "Are facilitation payments allowed?",
+      "expect_refusal": false,
       "expected_document": "anti-bribery-policy",
       "expected_fact": "prohibited without exception"
     },
     {
+      "case_id": "NW-015",
       "question": "How long are vehicle telematics records kept?",
+      "expect_refusal": false,
       "expected_document": "data-retention-schedule",
       "expected_fact": "90 days"
     },
     {
+      "case_id": "NW-016",
       "question": "Who can approve expenditure of 20,000 EUR?",
+      "expect_refusal": false,
       "expected_document": "expenses-approval-limits",
       "expected_fact": "the finance director"
     },
     {
+      "case_id": "NW-017",
       "question": "What goods-in-transit insurance must hauliers evidence?",
+      "expect_refusal": false,
       "expected_document": "supplier-onboarding",
       "expected_fact": "at least 250,000 EUR per vehicle"
     },
     {
+      "case_id": "NW-018",
       "question": "How often are driving licences checked?",
+      "expect_refusal": false,
       "expected_document": "fleet-and-driver-safety",
       "expected_fact": "every six months"
     },
     {
+      "case_id": "NW-019",
       "question": "What weight of load requires two people or mechanical assistance?",
+      "expect_refusal": false,
       "expected_document": "warehouse-health-and-safety",
       "expected_fact": "above 23 kilograms"
     },
     {
+      "case_id": "NW-020",
       "question": "What is the annual development budget per employee?",
+      "expect_refusal": false,
       "expected_document": "training-and-development",
       "expected_fact": "1,200 EUR"
     },
     {
+      "case_id": "NW-021",
       "question": "What is the company's pension contribution rate?",
+      "expect_refusal": true,
       "expected_document": null,
       "expected_fact": null
     },
     {
+      "case_id": "NW-022",
       "question": "How many employees work at the Rotterdam depot?",
+      "expect_refusal": true,
       "expected_document": null,
       "expected_fact": null
     },
     {
+      "case_id": "NW-023",
       "question": "What was Northwind Logistics' revenue last year?",
+      "expect_refusal": true,
       "expected_document": null,
       "expected_fact": null
     },
     {
+      "case_id": "NW-024",
       "question": "What is the policy on keeping pets in company accommodation?",
+      "expect_refusal": true,
       "expected_document": null,
       "expected_fact": null
     },
     {
+      "case_id": "NW-025",
       "question": "Which insurance provider underwrites the company fleet?",
+      "expect_refusal": true,
       "expected_document": null,
       "expected_fact": null
     }
