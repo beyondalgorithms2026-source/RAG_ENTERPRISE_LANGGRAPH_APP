@@ -94,16 +94,21 @@ API server (FastAPI on 127.0.0.1:8080 — endpoints `/healthz`, `/ask`,
 PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.server
 ```
 
-Eval harness (Excel QA workbook against the orchestrator):
+Eval harness (versioned JSON set against the orchestrator):
 
 ```bash
 PYTHONPATH=src .venv312/bin/python -m rag_enterprise_langgraph.cli \
-  --eval-xlsx /path/to/acquired-qa-evaluation.xlsx \
+  --eval-set config/eval-set-northwind.json \
   --eval-output acquired-eval-report.md \
   --eval-json acquired-eval-results.json \
   --journal runs/orchestration-journal.jsonl \
   --rules config/orchestration-rules.json
 ```
+
+`--eval-xlsx` remains a deprecated compatibility alias for legacy workbooks. P12 is the
+offline fake-driven harness smoke test. P12B provisions the three real repositories and
+PostgreSQL/pgvector in a separate GitHub Actions workflow; never substitute one claim for
+the other.
 
 Console-script equivalents exist after install: `rag-enterprise-agent` (cli)
 and `rag-enterprise-api` (server).

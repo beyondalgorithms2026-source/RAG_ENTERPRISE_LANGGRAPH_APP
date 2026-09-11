@@ -46,7 +46,7 @@ publishes the unflattering results alongside the good ones.
 | Correct refusals | **5 of 5** |
 | Overall accuracy | 17 of 25, on a 25-question set |
 | Red-team scenarios | 10 red-team scenarios: 9 defended, 0 failed, 1 labelled requires_backend by design. |
-| Automated tests | 114, all offline, run in CI on every push |
+| Automated tests | 121, all offline, run in CI on every push |
 
 Three configurations were measured and all three are published, including the one where
 enabling every retrieval enhancement changed nothing at all. We committed to publishing
@@ -150,6 +150,12 @@ Run the tests — no Docker, no database, no model required:
 pytest -q
 rag-enterprise-agent --red-team
 ```
+
+The offline P12 smoke coverage validates the evaluation mechanism. The separate P12B
+workflow provisions APP, MCP, STARTER and PostgreSQL/pgvector for the real 25-question
+quality run. P12B remains in calibration mode until an owner-reviewed baseline is
+committed and the repository secret is configured; a skipped calibration run is not
+reported as live quality evidence.
 
 ## Licence
 

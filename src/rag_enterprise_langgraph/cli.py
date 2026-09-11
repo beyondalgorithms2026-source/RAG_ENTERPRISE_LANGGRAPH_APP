@@ -16,7 +16,13 @@ from rag_enterprise_langgraph.demo_proof import (
     resolve_demo_questions,
     write_markdown_report,
 )
-from rag_enterprise_langgraph.eval_runner import render_eval_markdown, run_eval, write_eval_outputs
+from rag_enterprise_langgraph.eval_baseline import BaselineError, compare_eval_reports
+from rag_enterprise_langgraph.eval_runner import (
+    build_eval_configuration,
+    render_eval_markdown,
+    run_eval,
+    write_eval_outputs,
+)
 from rag_enterprise_langgraph.eval_store import EvalStore, build_eval_run_summary
 from rag_enterprise_langgraph.orchestrator import EnterpriseRagOrchestrator
 from rag_enterprise_langgraph.red_team import render_red_team_markdown, run_red_team, save_latest
@@ -41,8 +47,22 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--eval-xlsx", help="Run the Acquired-style eval questions from an .xlsx workbook."
     )
+    parser.add_argument(
+        "--eval-set", help="Run a versioned JSON eval set (preferred) or a legacy XLSX workbook."
+    )
     parser.add_argument("--eval-output", help="Write eval Markdown report to this path.")
     parser.add_argument("--eval-json", help="Write eval JSON report to this path.")
+    parser.add_argument(
+        "--eval-baseline", help="Compare the run against an approved JSON baseline."
+    )
+    parser.add_argument(
+        "--eval-comparison-json", help="Write the baseline-comparison result to this path."
+    )
+    parser.add_argument(
+        "--eval-calibration",
+        action="store_true",
+        help="Allow answerable quality misses while still failing refusals or infrastructure.",
+    )
     parser.add_argument(
         "--journal", help="Append safe orchestration decisions to a JSONL journal."
     )
@@ -280,16 +300,35 @@ async def _run(args: argparse.Namespace) -> int:
     approval_store = ApprovalStore(args.approvals_file or settings.approvals_path)
     run_store = RunStore(settings.run_results_dir)
 
-    if args.eval_xlsx:
+    if args.eval_set and args.eval_xlsx:
+        print("error: use only one of --eval-set or --eval-xlsx")
+        return 2
+    eval_path = args.eval_set or args.eval_xlsx
+    if eval_path:
         report = await run_eval(
-            xlsx_path=args.eval_xlsx,
+            eval_path=eval_path,
             rules_path=args.rules,
             journal_path=args.journal,
             max_recovery_steps=args.max_recovery_steps,
+            configuration=build_eval_configuration(),
         )
         written = write_eval_outputs(
             report, markdown_path=args.eval_output, json_path=args.eval_json
         )
+        comparison = None
+        if args.eval_baseline:
+            try:
+                baseline = json.loads(Path(args.eval_baseline).read_text(encoding="utf-8"))
+                comparison = compare_eval_reports(baseline, report)
+            except (OSError, json.JSONDecodeError, BaselineError) as exc:
+                print(f"error: invalid eval baseline: {exc}")
+                return 2
+            if args.eval_comparison_json:
+                comparison_path = Path(args.eval_comparison_json)
+                comparison_path.parent.mkdir(parents=True, exist_ok=True)
+                comparison_path.write_text(
+                    json.dumps(comparison, indent=2, sort_keys=True), encoding="utf-8"
+                )
         saved_summary = None
         if args.save_eval_run:
             saved_summary = build_eval_run_summary(report, settings=settings)
@@ -302,6 +341,14 @@ async def _run(args: argparse.Namespace) -> int:
                 print(f"Wrote eval {kind}: {path}")
         if saved_summary and not args.json:
             print(f"Saved eval run: {saved_summary['eval_run_id']}")
+        if comparison is not None:
+            return 0 if comparison["status"] == "pass" else 1
+        if args.eval_calibration:
+            hard_failure = (
+                report["infrastructure_failures"] > 0
+                or report["refusal_passed"] != report["refusal_total"]
+            )
+            return 1 if hard_failure else 0
         return 0 if report["status"] == "pass" else 1
 
     if args.demo_proof:

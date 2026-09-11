@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0",
+  "prompts": {
+    "app_agent": {
+      "version": "1.0.0",
+      "file": "agent-v1.0.0.txt",
+      "sha256": "4d3c9705137d30a91df213e12e54d950c71a6175fd7f04f5a3e0c5303df8a8a7"
+    },
+    "app_synthesis": {
+      "version": "1.0.0",
+      "file": "synthesis-v1.0.0.txt",
+      "sha256": "0f234d5ceed7e988bb96511d1ddc38ad7f651283dd6eb6753201f94919d51810"
+    }
+  }
+}
