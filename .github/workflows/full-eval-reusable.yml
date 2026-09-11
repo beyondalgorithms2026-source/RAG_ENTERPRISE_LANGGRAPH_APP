@@ -230,7 +230,15 @@ jobs:
         env:
           RAG_AGENT_MCP_SERVER_REPO: ${{ github.workspace }}/mcp
         run: |
-          kill "$(cat "$RUNNER_TEMP/backend.pid")"
+          kill "$(cat "$RUNNER_TEMP/backend.pid")" || true
+          for attempt in $(seq 1 30); do
+            if ! curl --fail --silent http://127.0.0.1:8000/health >/dev/null; then break; fi
+            sleep 1
+          done
+          if curl --fail --silent http://127.0.0.1:8000/health >/dev/null; then
+            echo "Quality-evaluation backend did not stop before ACL restart" >&2
+            exit 1
+          fi
           cd starter/backend
           ACCESS_STRATEGY=document_acl_with_time_bound_grants python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 > "$RUNNER_TEMP/backend-rt06.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/backend.pid"
