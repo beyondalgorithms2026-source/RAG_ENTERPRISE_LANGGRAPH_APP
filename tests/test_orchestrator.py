@@ -58,6 +58,15 @@ def test_anchor_terms_and_phrase_bias_extract_distinctive_query_terms():
     assert exact_phrase_bias(question, anchors) == "Ben Franklin"
 
 
+def test_phrase_bias_does_not_replace_full_query_with_generic_first_anchor():
+    question = "How many days of annual leave can be carried over?"
+
+    anchors = extract_anchor_terms(question)
+
+    assert anchors[0].lower() == "days"
+    assert exact_phrase_bias(question, anchors) is None
+
+
 def test_orchestrator_returns_structured_tool_error_when_tool_call_raises():
     orchestrator = EnterpriseRagOrchestrator(quiet_mcp=False)
 
@@ -209,7 +218,7 @@ def test_evidence_gate_accepts_a_snippet_containing_the_expected_answer():
     assert rejected == []
 
 
-def test_orchestrator_does_not_recover_from_irrelevant_excerpt():
+def test_orchestrator_refuses_irrelevant_excerpt():
     orchestrator = EnterpriseRagOrchestrator(quiet_mcp=False)
     calls: list[str] = []
 
@@ -248,15 +257,13 @@ def test_orchestrator_does_not_recover_from_irrelevant_excerpt():
         orchestrator.run("What seminar did Sam Walton enroll himself in in Poughkeepsie New York?")
     )
 
-    assert result.grounding_status == "needs_review"
+    assert result.grounding_status == "not_found"
     assert result.error is None
-    assert result.failure_reason == "human_review_required"
-    # The review requirement lives in review_guidance, not inside the answer text.
-    assert "requires human review" not in result.answer.lower()
-    assert "human review" in (result.review_guidance or "").lower()
-    assert result.evidence_count == 1
+    assert result.failure_reason is None
+    assert result.answer == "No grounded answer could be produced from the available MCP evidence."
+    assert result.evidence_count == 0
     assert result.rejected_evidence
-    # Weak candidates now trigger the excerpt lookup so the reviewer gets full context.
+    # Weak candidates still trigger excerpt lookup so classification uses full context.
     assert "get_document_excerpt" in calls
 
 
@@ -280,6 +287,48 @@ def test_numeric_expected_answer_equivalence_for_eval_terms():
 
     assert rent_eval["status"] == "pass"
     assert revenue_eval["status"] == "pass"
+
+
+def test_irrelevant_recovery_evidence_ends_in_safe_refusal():
+    orchestrator = EnterpriseRagOrchestrator(quiet_mcp=False)
+
+    async def fake_tool_call(name, arguments):
+        if name == "ask_grounded":
+            return {"answer": "Not found in provided sources.", "citations": []}, {
+                "tool_name": name,
+                "tool_call_id": None,
+                "content": {},
+            }
+        if name == "search_documents":
+            return {
+                "results": [
+                    {
+                        "source_id": 3,
+                        "source_part_id": 9,
+                        "file_name": "remote-working-policy.md",
+                        "snippet": "The company provides a laptop and an external monitor.",
+                    }
+                ]
+            }, {"tool_name": name, "tool_call_id": None, "content": {}}
+        return {
+            "matched": True,
+            "excerpt": "The company provides a laptop and an external monitor.",
+            "result": {
+                "source_id": 3,
+                "source_part_id": 9,
+                "file_name": "remote-working-policy.md",
+            },
+        }, {"tool_name": name, "tool_call_id": None, "content": {}}
+
+    orchestrator._call_tool = fake_tool_call  # type: ignore[method-assign]
+
+    result = asyncio.run(orchestrator.run("What is the company's pension contribution rate?"))
+
+    assert result.grounding_status == "not_found"
+    assert result.answer == "No grounded answer could be produced from the available MCP evidence."
+    assert result.evidence == []
+    assert result.source_evidence == []
+    assert result.failure_reason is None
 
 
 def test_cutoff_relevant_snippet_requests_neighbor_expansion():
