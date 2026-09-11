@@ -1,0 +1,27 @@
+name: cross-repository-contracts
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: app
+      - uses: actions/checkout@v4
+        with:
+          repository: beyondalgorithms2026-source/RAG_Langgraph_MCP_server
+          path: mcp
+      - uses: actions/checkout@v4
+        with:
+          repository: beyondalgorithms2026-source/RAG_ENTERPRISE_STARTER
+          path: starter
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify APP, MCP, and STARTER contracts
+        run: python app/scripts/check_cross_repo_contracts.py --app app --mcp mcp --starter starter
