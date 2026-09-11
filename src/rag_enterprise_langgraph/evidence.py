@@ -235,7 +235,16 @@ def validate_evidence(
             1.0 if re.search(r"\b\d+(?:\.\d+)?\s*%|\b0\.\d+\b", normalized) else 0.0
         )
     elif "when" in lowered_question:
-        answer_type_score = 1.0 if re.search(r"\b\d{4}\b", normalized) else 0.0
+        month = (
+            "january|february|march|april|may|june|july|august|september|october|november|december"
+        )
+        answer_type_score = (
+            1.0
+            if re.search(r"\b\d{4}\b", normalized)
+            or re.search(rf"\b(?:\d{{1,2}}\s+)?(?:{month})\b", normalized)
+            or re.search(r"\b\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?\b", normalized)
+            else 0.0
+        )
     elif "where" in lowered_question:
         # A location answer should contain a proper noun. Naming specific places
         # here would be the same mistake as the removed answer keys: it would

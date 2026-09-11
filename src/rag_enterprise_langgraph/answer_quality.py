@@ -115,6 +115,26 @@ _NUMBER_WORDS = {
     "eight": 8,
     "nine": 9,
     "ten": 10,
+    "eleven": 11,
+    "twelve": 12,
+    "thirteen": 13,
+    "fourteen": 14,
+    "fifteen": 15,
+    "sixteen": 16,
+    "seventeen": 17,
+    "eighteen": 18,
+    "nineteen": 19,
+    "twenty": 20,
+    "thirty": 30,
+    "forty": 40,
+    "fifty": 50,
+    "sixty": 60,
+    "seventy": 70,
+    "eighty": 80,
+    "ninety": 90,
+    "hundred": 100,
+    "thousand": 1000,
+    "million": 1000000,
 }
 
 
@@ -129,7 +149,25 @@ def _answer_text(evidence: Sequence[dict[str, Any]]) -> str:
 
 
 def _numbers(text: str) -> list[str]:
-    return re.findall(r"\b\d+(?:\.\d+)?\b", text)
+    values = re.findall(r"\b\d+(?:\.\d+)?\b", text)
+    values.extend(
+        match.group(0).lower()
+        for match in re.finditer(
+            rf"\b(?:{'|'.join(map(re.escape, _NUMBER_WORDS))})\b", text, re.IGNORECASE
+        )
+    )
+    return values
+
+
+def _contains_date_value(text: str) -> bool:
+    months = (
+        "january|february|march|april|may|june|july|august|september|october|november|december"
+    )
+    return bool(
+        re.search(r"\b\d{4}\b", text)
+        or re.search(rf"\b(?:\d{{1,2}}\s+)?(?:{months})\b", text, re.IGNORECASE)
+        or re.search(r"\b\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?\b", text)
+    )
 
 
 def _percentages(text: str) -> list[str]:
@@ -381,7 +419,7 @@ def review_answer(
             citation_values=citation_values,
             needs_neighbor_expansion=needs_neighbor,
         )
-    if shape.requires_date and not re.search(r"\b\d{4}\b", answer):
+    if shape.requires_date and not _contains_date_value(answer):
         return AnswerReview(
             "weak",
             "missing_date_answer",

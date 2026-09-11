@@ -28,9 +28,24 @@ def _record(path: Path | None, result: dict[str, object]) -> None:
     path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def _restricted_marker_count(payload: dict[str, object]) -> int:
-    serialized = re.sub(r"[^a-z0-9]", "", json.dumps(payload, sort_keys=True).lower())
-    return sum(marker in serialized for marker in FORBIDDEN_NORMALIZED)
+def _restricted_marker_paths(payload: object, path: str = "$") -> list[str]:
+    matches: list[str] = []
+    if isinstance(payload, dict):
+        for key, value in payload.items():
+            matches.extend(_restricted_marker_paths(value, f"{path}.{key}"))
+    elif isinstance(payload, list):
+        for index, value in enumerate(payload):
+            matches.extend(_restricted_marker_paths(value, f"{path}[{index}]"))
+    elif isinstance(payload, str):
+        normalized = re.sub(r"[^a-z0-9]", "", payload.lower())
+        for marker in FORBIDDEN_NORMALIZED:
+            if marker in normalized:
+                matches.append(f"{marker}@{path}")
+    return matches
+
+
+def _restricted_marker_count(payload: object) -> int:
+    return len(_restricted_marker_paths(payload))
 
 
 async def _run(eval_report: Path | None = None) -> int:
@@ -42,12 +57,13 @@ async def _run(eval_report: Path | None = None) -> int:
         _record(eval_report, record)
         print(json.dumps(record))
         return 2
-    restricted_marker_count = _restricted_marker_count(payload)
-    if status not in SAFE_REFUSALS or restricted_marker_count:
+    restricted_marker_paths = _restricted_marker_paths(payload)
+    if status not in SAFE_REFUSALS or restricted_marker_paths:
         record = {
             "status": "acl_failure",
             "grounding_status": status,
-            "restricted_marker_count": restricted_marker_count,
+            "restricted_marker_count": len(restricted_marker_paths),
+            "restricted_marker_paths": restricted_marker_paths,
         }
         _record(eval_report, record)
         print(json.dumps(record))
