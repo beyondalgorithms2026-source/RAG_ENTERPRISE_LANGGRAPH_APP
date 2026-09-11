@@ -206,7 +206,9 @@ jobs:
           exit 1
 
       - name: Run 25-question evaluation
+        id: evaluation
         if: steps.secret.outputs.skip != 'true'
+        continue-on-error: true
         working-directory: app
         env:
           RAG_AGENT_MCP_SERVER_REPO: ${{ github.workspace }}/mcp
@@ -222,7 +224,9 @@ jobs:
             --eval-calibration
 
       - name: Run live unauthorized RT-06 path
-        if: steps.secret.outputs.skip != 'true'
+        id: rt06_live
+        if: always() && steps.secret.outputs.skip != 'true'
+        continue-on-error: true
         env:
           RAG_AGENT_MCP_SERVER_REPO: ${{ github.workspace }}/mcp
         run: |
@@ -240,7 +244,9 @@ jobs:
           python scripts/run_rt06_live.py --eval-report "$RUNNER_TEMP/eval-report.json"
 
       - name: Compare approved baseline
-        if: steps.secret.outputs.skip != 'true' && inputs.mode == 'blocking'
+        id: baseline
+        if: always() && steps.secret.outputs.skip != 'true' && inputs.mode == 'blocking'
+        continue-on-error: true
         working-directory: app
         env:
           RAG_AGENT_MCP_SERVER_REPO: ${{ github.workspace }}/mcp
@@ -266,3 +272,26 @@ jobs:
             ${{ runner.temp }}/eval-report.json
             ${{ runner.temp }}/eval-report.md
           retention-days: 30
+
+      - name: Enforce evaluation outcome
+        if: always() && steps.secret.outputs.skip != 'true'
+        env:
+          EVALUATION_OUTCOME: ${{ steps.evaluation.outcome }}
+          RT06_OUTCOME: ${{ steps.rt06_live.outcome }}
+          BASELINE_OUTCOME: ${{ steps.baseline.outcome }}
+          EVAL_MODE: ${{ inputs.mode }}
+        run: |
+          failed=false
+          if [ "$EVALUATION_OUTCOME" != "success" ]; then
+            echo "The 25-question quality evaluation did not meet its acceptance criteria." >> "$GITHUB_STEP_SUMMARY"
+            failed=true
+          fi
+          if [ "$RT06_OUTCOME" != "success" ]; then
+            echo "The live RT-06 authorization path did not pass." >> "$GITHUB_STEP_SUMMARY"
+            failed=true
+          fi
+          if [ "$EVAL_MODE" = "blocking" ] && [ "$BASELINE_OUTCOME" != "success" ]; then
+            echo "The approved-baseline comparison did not pass." >> "$GITHUB_STEP_SUMMARY"
+            failed=true
+          fi
+          if [ "$failed" = "true" ]; then exit 1; fi

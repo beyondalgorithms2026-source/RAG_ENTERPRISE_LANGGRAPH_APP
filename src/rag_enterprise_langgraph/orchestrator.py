@@ -50,9 +50,11 @@ _STOPWORDS = {
     "does",
     "from",
     "have",
+    "how",
     "into",
     "itself",
     "just",
+    "many",
     "more",
     "than",
     "that",
@@ -969,8 +971,11 @@ def exact_phrase_bias(question: str, anchors: Sequence[str]) -> str | None:
     ]
     if capitalized:
         return max(capitalized, key=len).strip()
-    if anchors:
-        return anchors[0]
+    # A single ordinary anchor is not an exact phrase. Passing the first token
+    # here causes STARTER's exact-phrase recovery to replace the full query with
+    # a broad word such as "days" or "policy", which can hide the known source.
+    # Keep the complete recovery question unless the user supplied a quoted or
+    # distinctive proper-name phrase above.
     return None
 
 
@@ -1866,7 +1871,11 @@ class EnterpriseRagOrchestrator:
             failure_reason = (
                 None if final_status == "not_found" else "answer_without_citations_or_evidence"
             )
-            if rejected_evidence:
+            # Irrelevant evidence is not a reviewable answer candidate. Exposing
+            # it under needs_review can make an unsupported question look partly
+            # answered and leaks unrelated retrieved text. Retain human review
+            # only for evidence that is genuinely partial; otherwise refuse.
+            if rejected_evidence and final_verdict and final_verdict.status == "partial":
                 final_status = "needs_review"
                 failure_reason = "human_review_required"
             review_evidence = list(evidence)
