@@ -93,3 +93,26 @@ def test_material_cost_percentage_supported_by_evidence_is_verified():
     assert review.status == "verified"
     assert review.answer_values == ["2%"]
     assert review.citation_values == ["2%"]
+
+
+def test_written_number_is_accepted_for_numeric_answer_shape():
+    review = review_answer(
+        question="How many days in advance must domestic flights be booked?",
+        answer="Domestic flights must be booked at least fourteen days in advance.",
+        evidence=[
+            {"snippet": "Domestic flights must be booked at least fourteen days in advance."}
+        ],
+    )
+
+    assert review.status == "verified"
+    assert review.answer_values == ["fourteen"]
+
+
+def test_day_and_month_is_accepted_for_date_answer_shape():
+    review = review_answer(
+        question="How many days may be carried over, and by when must they be used?",
+        answer="Five days may be carried over and must be used by 31 March.",
+        evidence=[{"snippet": "Five days may be carried over and must be used by 31 March."}],
+    )
+
+    assert review.status == "verified"

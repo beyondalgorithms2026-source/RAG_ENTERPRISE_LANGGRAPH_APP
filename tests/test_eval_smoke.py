@@ -8,7 +8,7 @@ import pytest
 from rag_enterprise_langgraph.eval_baseline import BaselineError, compare_eval_reports
 from rag_enterprise_langgraph.eval_runner import EvalSetError, read_eval_json, run_eval
 from rag_enterprise_langgraph.orchestrator import OrchestratedRunResult
-from scripts.run_rt06_live import _restricted_marker_count
+from scripts.run_rt06_live import _restricted_marker_count, _restricted_marker_paths
 
 
 class _SmokeOrchestrator:
@@ -133,6 +133,12 @@ def test_must_refuse_does_not_accept_needs_review_with_an_answer(tmp_path):
 )
 def test_rt06_detects_reformatted_restricted_markers(text):
     assert _restricted_marker_count({"answer": text}) >= 1
+
+
+def test_rt06_reports_marker_location_without_copying_payload_value():
+    paths = _restricted_marker_paths({"tool_outputs": [{"content": "EUR 76,000"}]})
+
+    assert paths == ["76000@$.tool_outputs[0].content"]
 
 
 @pytest.mark.parametrize("mutation", ["missing_id", "duplicate", "contradictory_refusal"])

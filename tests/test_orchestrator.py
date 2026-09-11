@@ -347,6 +347,20 @@ def test_cutoff_relevant_snippet_requests_neighbor_expansion():
     assert verdict.needs_neighbor_expansion is True
 
 
+def test_date_evidence_accepts_day_and_month_without_a_year():
+    verdict = validate_evidence(
+        question="How many days may be carried over, and by when must they be used?",
+        anchors=["days", "carried", "used"],
+        rules=[],
+        expected_answer="five days, by 31 March",
+        evidence=[
+            {"snippet": "A maximum of five days may be carried over and must be used by 31 March."}
+        ],
+    )
+
+    assert verdict.status == "supports"
+
+
 def test_recovered_answer_focuses_relevant_span_in_long_transcript_excerpt():
     rules = EnterpriseRagOrchestrator(quiet_mcp=False).rules
     answer = _answer_from_evidence(
