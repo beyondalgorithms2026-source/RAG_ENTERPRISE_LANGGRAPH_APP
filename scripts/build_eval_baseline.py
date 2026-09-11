@@ -26,6 +26,22 @@ def main() -> int:
             raise SystemExit("infrastructure-failed reports cannot enter calibration")
         if report.get("refusal_passed") != report.get("refusal_total"):
             raise SystemExit("every calibration report must pass all refusal cases")
+        if report.get("rt06", {}).get("status") != "pass":
+            raise SystemExit("every calibration report must include a passing RT-06 result")
+
+    pinned_configurations = []
+    for report in reports:
+        configuration = report.get("configuration")
+        if not isinstance(configuration, dict) or not configuration:
+            raise SystemExit("every calibration report must include configuration metadata")
+        pinned_configurations.append(
+            json.dumps(
+                {key: value for key, value in configuration.items() if key != "repositories"},
+                sort_keys=True,
+            )
+        )
+    if len(set(pinned_configurations)) != 1:
+        raise SystemExit("calibration reports use different pinned configurations")
 
     case_sets = [{row["case_id"] for row in report["rows"]} for report in reports]
     if any(case_set != case_sets[0] for case_set in case_sets[1:]):
@@ -39,11 +55,12 @@ def main() -> int:
         if statuses.most_common(1)[0][1] < stable_required:
             raise SystemExit(f"unstable calibration case: {case_id} {dict(statuses)}")
 
-    ordered = sorted(
-        reports,
-        key=lambda report: (int(report["passed"]), -int(report["manual_review"])),
-    )
-    selected = ordered[(len(ordered) - 1) // 2]
+    pass_counts = sorted(int(report["passed"]) for report in reports)
+    median_pass_count = pass_counts[(len(pass_counts) - 1) // 2]
+    median_candidates = [
+        report for report in reports if int(report["passed"]) == median_pass_count
+    ]
+    selected = min(median_candidates, key=lambda report: int(report["manual_review"]))
     selected["baseline_approval"] = {
         "status": "candidate",
         "justification": args.justification,

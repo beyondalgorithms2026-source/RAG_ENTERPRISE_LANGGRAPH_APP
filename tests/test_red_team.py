@@ -48,7 +48,7 @@ def test_red_team_markdown_rendering():
     )
     assert "RT-01" in markdown
     assert "requires_backend" in markdown
-    assert "not simulated" in markdown
+    assert "P11 exercises denied and authorized retrieval" in markdown
 
 
 def test_prompt_injection_snippet_is_rejected_as_evidence():

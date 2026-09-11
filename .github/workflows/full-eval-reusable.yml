@@ -13,6 +13,10 @@ on:
         required: false
         default: calibration
         type: string
+      run_quality:
+        required: false
+        default: true
+        type: boolean
     secrets:
       EVAL_OPENAI_API_KEY:
         required: false
@@ -22,6 +26,7 @@ permissions:
 
 jobs:
   rt06-sql:
+    if: inputs.run_quality
     runs-on: ubuntu-latest
     timeout-minutes: 20
     services:
@@ -95,6 +100,10 @@ jobs:
       LLM_MODEL: gpt-4o-mini-2024-07-18
       LLM_API_KEY: ${{ secrets.EVAL_OPENAI_API_KEY }}
       LLM_BASE_URL: https://api.openai.com/v1
+      OPENAI_API_KEY: ${{ secrets.EVAL_OPENAI_API_KEY }}
+      RAG_AGENT_MODEL_PROVIDER: openai
+      RAG_AGENT_MODEL_NAME: gpt-4o-mini-2024-07-18
+      RAG_AGENT_ENABLE_SYNTHESIS: "false"
       RERANK_ENABLED: "false"
       RETRIEVAL_MODE: hybrid
       ENABLE_GRAPH: "false"
@@ -115,7 +124,10 @@ jobs:
         env:
           KEY: ${{ secrets.EVAL_OPENAI_API_KEY }}
         run: |
-          if [ -z "$KEY" ]; then
+          if [ "${{ inputs.run_quality }}" != "true" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "P12B not applicable: this change does not touch a quality-sensitive path." >> "$GITHUB_STEP_SUMMARY"
+          elif [ -z "$KEY" ]; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
             echo "P12B not configured: EVAL_OPENAI_API_KEY is absent." >> "$GITHUB_STEP_SUMMARY"
             if [ "${{ inputs.mode }}" = "blocking" ]; then exit 1; fi
@@ -218,7 +230,7 @@ jobs:
           curl --fail --silent http://127.0.0.1:8000/health >/dev/null
           cd "$GITHUB_WORKSPACE/app"
           export RAG_AGENT_MCP_SERVER_PYTHON="$(command -v python)"
-          python scripts/run_rt06_live.py
+          python scripts/run_rt06_live.py --eval-report "$RUNNER_TEMP/eval-report.json"
 
       - name: Compare approved baseline
         if: steps.secret.outputs.skip != 'true' && inputs.mode == 'blocking'
@@ -230,6 +242,14 @@ jobs:
           python scripts/compare_eval_reports.py \
             config/eval-baselines/northwind-openai-v1.json \
             "$RUNNER_TEMP/eval-report.json"
+
+      - name: Record infrastructure failure for artifact upload
+        if: failure() && steps.secret.outputs.skip != 'true'
+        run: |
+          if [ ! -f "$RUNNER_TEMP/eval-report.json" ]; then
+            printf '%s\n' '{"schema_version":"1.0","status":"fail","failure_class":"infrastructure","message":"Full-stack evaluation failed before a case report was produced."}' > "$RUNNER_TEMP/eval-report.json"
+            printf '%s\n' '# Full-stack evaluation infrastructure failure' '' 'The run failed before a case report was produced. Inspect the CI step status; raw service diagnostics are not included in this artifact.' > "$RUNNER_TEMP/eval-report.md"
+          fi
 
       - uses: actions/upload-artifact@v4
         if: always() && steps.secret.outputs.skip != 'true'

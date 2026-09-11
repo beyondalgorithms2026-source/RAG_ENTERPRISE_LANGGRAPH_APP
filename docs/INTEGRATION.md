@@ -12,9 +12,12 @@ policy.
 | `get_document_excerpt` | `/search` / `SearchRequest` | One ACL-trimmed scoped excerpt |
 
 The mechanical contract check compares APP's required inventory, MCP's live JSON schemas,
-and STARTER's request/response model fields. Additive backend fields remain compatible;
-MCP-exposed fields must be accepted by STARTER. Breaking changes use an
-expand–migrate–contract sequence across repositories.
+runtime payload mapping and JSON-RPC error envelope, and STARTER's request/response model
+fields. It checks required versus optional fields, types, defaults, numeric ranges,
+retrieval-mode enums, filters, nested citation/source fields, and the response/error keys
+APP consumes. Additive backend fields remain compatible; MCP-exposed fields must be
+accepted by STARTER. Breaking changes use an expand–migrate–contract sequence across
+repositories.
 
 Structured validation, authentication, readiness, timeout, transport, and backend errors
 must remain distinguishable. Retrieved content and backend diagnostics are untrusted and
