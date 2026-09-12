@@ -44,8 +44,8 @@ an ID to hide a regression.
 
 P12B compares cases and aggregates; it is not an exact-answer string comparison. All
 must-refuse cases, infrastructure failures, prior passes, and prior expected-document
-matches are hard controls. Model, embedding, retrieval, corpus-manifest, and prompt
-metadata are pinned. CI never writes the approved baseline. A candidate baseline comes
+matches are hard controls. Model, embedding, chunking, retrieval, recovery/scoring,
+corpus-manifest, and prompt metadata are pinned. CI never writes the approved baseline. A candidate baseline comes
 from 10–15 successful, configuration-consistent calibration reports in which RT-06 and
 all refusals pass; it is promoted only in an explicit, justified, owner-reviewed pull
 request.

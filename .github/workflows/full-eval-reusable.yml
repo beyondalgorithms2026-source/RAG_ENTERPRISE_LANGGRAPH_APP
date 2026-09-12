@@ -94,6 +94,9 @@ jobs:
       EMBEDDING_PROVIDER: openai
       EMBEDDING_MODEL: text-embedding-3-small
       EMBEDDING_DIMENSIONS: "384"
+      CHUNK_POLICY: default
+      CHUNK_TARGET_WORDS: "320"
+      CHUNK_OVERLAP_WORDS: "40"
       EMBEDDING_API_KEY: ${{ secrets.EVAL_OPENAI_API_KEY }}
       EMBEDDING_BASE_URL: https://api.openai.com/v1
       LLM_PROVIDER: openai
@@ -221,6 +224,7 @@ jobs:
             --eval-set config/eval-set-northwind.json \
             --eval-output "$RUNNER_TEMP/eval-report.md" \
             --eval-json "$RUNNER_TEMP/eval-report.json" \
+            --max-recovery-steps 3 \
             --eval-calibration
 
       - name: Run live unauthorized RT-06 path

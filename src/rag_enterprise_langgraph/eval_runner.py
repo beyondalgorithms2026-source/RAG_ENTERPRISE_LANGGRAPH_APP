@@ -63,7 +63,7 @@ def _external_prompt_metadata(repo: Path) -> dict[str, dict[str, str]]:
     return output
 
 
-def build_eval_configuration() -> dict[str, Any]:
+def build_eval_configuration(*, max_recovery_steps: int = 3) -> dict[str, Any]:
     repo_paths = {
         name: Path(value)
         for name, value in {
@@ -84,9 +84,18 @@ def build_eval_configuration() -> dict[str, Any]:
             "model": os.environ.get("EMBEDDING_MODEL"),
             "dimensions": os.environ.get("EMBEDDING_DIMENSIONS"),
         },
+        "chunking": {
+            "policy": os.environ.get("CHUNK_POLICY"),
+            "target_words": os.environ.get("CHUNK_TARGET_WORDS"),
+            "overlap_words": os.environ.get("CHUNK_OVERLAP_WORDS"),
+        },
         "retrieval": {
             "mode": os.environ.get("RETRIEVAL_MODE"),
             "rerank_enabled": os.environ.get("RERANK_ENABLED"),
+        },
+        "orchestration": {
+            "max_recovery_steps": max_recovery_steps,
+            "expected_fact_scope": "generated_answer",
         },
     }
     starter = repo_paths.get("starter")

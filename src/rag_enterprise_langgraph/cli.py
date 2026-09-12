@@ -310,7 +310,7 @@ async def _run(args: argparse.Namespace) -> int:
             rules_path=args.rules,
             journal_path=args.journal,
             max_recovery_steps=args.max_recovery_steps,
-            configuration=build_eval_configuration(),
+            configuration=build_eval_configuration(max_recovery_steps=args.max_recovery_steps),
         )
         written = write_eval_outputs(
             report, markdown_path=args.eval_output, json_path=args.eval_json
