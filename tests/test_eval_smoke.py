@@ -141,6 +141,23 @@ def test_rt06_reports_marker_location_without_copying_payload_value():
     assert paths == ["76000@$.tool_outputs[0].content"]
 
 
+def test_rt06_ignores_forbidden_digits_inside_freshness_timestamps():
+    payload = {
+        "freshness": {
+            "last_ingested_at": "2026-09-12T01:04:36.760000+00:00",
+            "observed_at": "2026-09-12T01:04:36.76000Z",
+        }
+    }
+
+    assert _restricted_marker_paths(payload) == []
+
+
+def test_rt06_still_scans_non_timestamp_values_in_freshness_fields():
+    assert _restricted_marker_paths({"freshness": {"observed_at": "EUR 76,000"}}) == [
+        "76000@$.freshness.observed_at"
+    ]
+
+
 @pytest.mark.parametrize("mutation", ["missing_id", "duplicate", "contradictory_refusal"])
 def test_eval_set_rejects_malformed_cases(tmp_path, mutation):
     payload = _payload()
