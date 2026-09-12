@@ -1,0 +1,949 @@
+{
+  "baseline_approval": {
+    "calibration_run_count": 10,
+    "generated_at": "2026-09-12T00:56:38.099541+00:00",
+    "justification": "Ten eligible full-stack calibration runs on the pinned B004 configuration; all five must-refuse cases and RT-06 passed in every counted run, and every case retained the same classification in at least nine of ten runs.",
+    "status": "approved"
+  },
+  "configuration": {
+    "app_prompts": {
+      "app_agent": {
+        "sha256": "4d3c9705137d30a91df213e12e54d950c71a6175fd7f04f5a3e0c5303df8a8a7",
+        "version": "1.0.0"
+      },
+      "app_synthesis": {
+        "sha256": "0f234d5ceed7e988bb96511d1ddc38ad7f651283dd6eb6753201f94919d51810",
+        "version": "1.0.0"
+      }
+    },
+    "corpus_manifest_sha256": "5760b4d7662b395d02b83043975a9037d0d8ba140f45fdcf3138f5d66dc6fdfe",
+    "embedding": {
+      "dimensions": "384",
+      "model": "text-embedding-3-small",
+      "provider": "openai"
+    },
+    "llm": {
+      "model": "gpt-4o-mini-2024-07-18",
+      "provider": "openai"
+    },
+    "repositories": {
+      "app": "8aee53fee5f6c1a7c72e8ba6fe5758d1b7829998",
+      "mcp": "a90dd2cd7e31045cb690333b14558dd9a7fcedfc",
+      "starter": "440730cc34f5baa0fdebbbd8450b0e4a0cd12a47"
+    },
+    "retrieval": {
+      "mode": "hybrid",
+      "rerank_enabled": "false"
+    },
+    "starter_prompts": {
+      "starter_answer": {
+        "sha256": "9b76a7b3c554e38c1a56b417d27625d1bce2774b2148f305ce207d461628cb03",
+        "version": "1.0.0"
+      },
+      "starter_json_repair": {
+        "sha256": "e0a2193b14da0b4841495537c4e83dab057efd22e067049a47caba216115d305",
+        "version": "1.0.0"
+      },
+      "starter_second_pass": {
+        "sha256": "7e55344f072948cf9097d3d865cf5e26326e065d2ff566c2eea96fdce1641f72",
+        "version": "1.0.0"
+      }
+    }
+  },
+  "eval_set": "config/eval-set-northwind.json",
+  "failed": 0,
+  "infrastructure_failures": 0,
+  "manual_review": 0,
+  "passed": 25,
+  "refusal_passed": 5,
+  "refusal_total": 5,
+  "rows": [
+    {
+      "case_id": "NW-001",
+      "error": null,
+      "eval_status": "pass",
+      "evidence_verdict": null,
+      "expect_refusal": false,
+      "expected_answer": "fourteen days",
+      "expected_document_matched": true,
+      "expected_eval": {
+        "expected_terms": [
+          "fourteen",
+          "days"
+        ],
+        "matched_terms": [
+          "fourteen",
+          "days"
+        ],
+        "rule_id": null,
+        "status": "pass"
+      },
+      "failure_class": null,
+      "failure_reason": null,
+      "file_name": "travel-expense-policy",
+      "generated_answer": "Domestic flights must be booked at least fourteen days in advance where the itinerary is known [S1].",
+      "grounding_status": "verified",
+      "latency_ms": 1344,
+      "post_url": null,
+      "question": "How many days in advance must domestic flights be booked?",
+      "refusal_passed": null,
+      "run_id": "a68a8844520245cc9144fba9f1ad9705",
+      "tools_used": [
+        "ask_grounded"
+      ]
+    },
+    {
+      "case_id": "NW-002",
+      "error": null,
+      "eval_status": "pass",
+      "evidence_verdict": null,
+      "expect_refusal": false,
+      "expected_answer": "65 EUR",
+      "expected_document_matched": true,
+      "expected_eval": {
+        "expected_terms": [
+          "EUR"
+        ],
+        "matched_terms": [
+          "EUR"
+        ],
+        "rule_id": null,
+        "status": "pass"
+      },
+      "failure_class": null,
+      "failure_reason": null,
+      "file_name": "travel-expense-policy",
+      "generated_answer": "The daily meal allowance for international travel is 65 EUR. Receipts are required for any single expense above 25 EUR [S1].",
+      "grounding_status": "verified",
+      "latency_ms": 1430,
+      "post_url": null,
+      "question": "What is the daily meal allowance for international travel?",
+      "refusal_passed": null,
+      "run_id": "3ef3c5bf27234c8aba8829943ce2c63a",
+      "tools_used": [
+        "ask_grounded"
+      ]
+    },
+    {
+      "case_id": "NW-003",
+      "error": null,
+      "eval_status": "pass",
+      "evidence_verdict": null,
+      "expect_refusal": false,
+      "expected_answer": "a minimum of two days",
+      "expected_document_matched": true,
+      "expected_eval": {
+        "expected_terms": [
+          "minimum",
+          "days"
+        ],
+        "matched_terms": [
+          "minimum",
+          "days"
+        ],
+        "rule_id": null,
+        "status": "pass"
+      },
+      "failure_class": null,
+      "failure_reason": null,
+      "file_name": "remote-working-policy",
+      "generated_answer": "Hybrid employees attend the office a minimum of two days per week [S1].",
+      "grounding_status": "verified",
+      "latency_ms": 1416,
+      "post_url": null,
+      "question": "How many days per week must hybrid employees attend the office?",
+      "refusal_passed": null,
+      "run_id": "d2f38378e4124675ad9a307ecc6e08cb",
+      "tools_used": [
+        "ask_grounded"
+      ]
+    },
+    {
+      "case_id": "NW-004",
+      "error": null,
+      "eval_status": "pass",
+      "evidence_verdict": null,
+      "expect_refusal": false,
+      "expected_answer": "20 working days per calendar year",
+      "expected_document_matched": true,
+      "expected_eval": {
+        "expected_terms": [
+          "working",
+          "days",
+          "calendar",
+          "year"
+        ],
+        "matched_terms": [
+          "working",
+          "days",
+          "calendar",
+          "year"
+        ],
+        "rule_id": null,
+        "status": "pass"
+      },
+      "failure_class": null,
+      "failure_reason": null,
+      "file_name": "remote-working-policy",
+      "generated_answer": "An employee can work from another country for a maximum of 20 working days per calendar year, provided they obtain prior written approval, due to tax residency reasons [S1].",
+      "grounding_status": "verified",
+      "latency_ms": 1133,
+      "post_url": null,
+      "question": "How long can an employee work from another country?",
+      "refusal_passed": null,
+      "run_id": "ad510868482346138fe0f019586cab08",
+      "tools_used": [
+        "ask_grounded"
+      ]
+    },
+    {
+      "case_id": "NW-005",
+      "error": null,
+      "eval_status": "pass",
+      "evidence_verdict": null,
+      "expect_refusal": false,
+      "expected_answer": "26 days",
+      "expected_document_matched": true,
+      "expected_eval": {
+        "expected_terms": [
+          "days"
+        ],
+        "matched_terms": [
+          "days"
+        ],
+        "rule_id": null,
+        "status": "pass"
+      },
+      "failure_class": null,
+      "failure_reason": null,
+      "file_name": "annual-leave-policy",
+      "generated_answer": "Full-time employees receive 26 days of annual leave per calendar year, in addition to public holidays observed in their country of employment [S1].",
+      "grounding_status": "verified",
+      "latency_ms": 1195,
+      "post_url": null,
+      "question": "How much annual leave do full-time employees receive?",
+      "refusal_passed": null,
+      "run_id": "46eabcddc73f4f60bf612bd0c6115f64",
+      "tools_used": [
+        "ask_grounded"
+      ]
+    },
+    {
+      "case_id": "NW-006",
+      "error": null,
+      "eval_status": "pass",
+      "evidence_verdict": null,
+      "expect_refusal": false,
+      "expected_answer": "five days, by 31 March",
+      "expected_document_matched": true,
+      "expected_eval": {
+        "expected_terms": [
+          "March",
+          "five",
+          "days"
+        ],
+        "matched_terms": [
+          "March",
+          "five",
+          "days"
+        ],
+        "rule_id": null,
+        "status": "pass"
+      },
+      "failure_class": null,
+      "failure_reason": null,
+      "file_name": "annual-leave-policy",
+      "generated_answer": "A maximum of five days of annual leave may be carried into the following year and must be used by 31 March. Any days not used by that date are forfeited [S1].",
+      "grounding_status": "verified",
+      "latency_ms": 1086,
+      "post_url": null,
+      "question": "How many days of annual leave can be carried over, and by when must they be used?",
+      "refusal_passed": null,
+      "run_id": "8eaa13fc928f432ea459681dae8fd981",
+      "tools_used": [
+        "ask_grounded"
+      ]
+    },
+    {
+      "case_id": "NW-007",
+      "error": null,
+      "eval_status": "pass",
+      "evidence_verdict": null,
+      "expect_refusal": false,
+      "expected_answer": "up to seven consecutive calendar days",
+      "expected_document_matched": true,
+      "expected_eval": {
+        "expected_terms": [
+          "seven",
+          "consecutive",
+          "calendar",
+          "days"
+        ],
+        "matched_terms": [
+          "seven",
+          "consecutive",
+          "calendar",
+          "days"
+        ],
+        "rule_id": null,
+        "status": "pass"
+      },
+      "failure_class": null,
+      "failure_reason": null,
+      "file_name": "sickness-absence-policy",
+      "generated_answer": "Absence of up to seven consecutive calendar days may be self-certified on return. Absence beyond seven calendar days requires a fit note from a registered practitioner, submitted to People Operations [S1].",
+      "grounding_status": "verified",
+      "latency_ms": 2406,
+      "post_url": null,
+      "question": "How many days of absence can be self-certified before a fit note is required?",
+      "refusal_passed": null,
+      "run_id": "7639359afcdf47e88da58430f46019f7",
+      "tools_used": [
+        "ask_grounded"
+      ]
+    },
+    {
+      "case_id": "NW-008",
+      "error": null,
+      "eval_status": "pass",
+      "evidence_verdict": null,
+      "expect_refusal": false,
+      "expected_answer": "the first 20 working days",
+      "expected_document_matched": true,
+      "expected_eval": {
+        "expected_terms": [
+          "first",
+          "working",
+          "days"
+        ],
+        "matched_terms": [
+          "first",
+          "working",
+          "days"
+        ],
+        "rule_id": null,
+        "status": "pass"
+      },
+      "failure_class": null,
+      "failure_reason": null,
+      "file_name": "sickness-absence-policy",
+      "generated_answer": "Employees with more than six months of service receive full pay for the first 20 working days of absence in any rolling twelve-month period [S1].",
+      "grounding_status": "verified",
+      "latency_ms": 1166,
+      "post_url": null,
+      "question": "How long is company sick pay paid at full pay?",
+      "refusal_passed": null,
+      "run_id": "b90562f9ecc84490931e2933d5ba0b56",
+      "tools_used": [
+        "ask_grounded"
+      ]
+    },
+    {
+      "case_id": "NW-009",
+      "error": null,
+      "eval_status": "pass",
+      "evidence_verdict": null,
+      "expect_refusal": false,
+      "expected_answer": "26 weeks at full pay followed by 13 weeks at half pay",
+      "expected_document_matched": true,
+      "expected_eval": {
+        "expected_terms": [
+          "weeks",
+          "full",
+          "followed",
+          "half"
+        ],
+        "matched_terms": [
+          "weeks",
+          "full",
+          "followed",
+          "half"
+        ],
+        "rule_id": null,
+        "status": "pass"
+      },
+      "failure_class": null,
+      "failure_reason": null,
+      "file_name": "parental-leave-policy",
+      "generated_answer": "The primary carer is entitled to 26 weeks at full pay, followed by 13 weeks at half pay. Leave must begin within eight weeks of the birth or placement [S1].",
+      "grounding_status": "verified",
+      "latency_ms": 1467,
+      "post_url": null,
+      "question": "How much leave is the primary carer entitled to?",
+      "refusal_passed": null,
+      "run_id": "d0b77dfc643942ef9102f0fa7ffbc50c",
+      "tools_used": [
+        "ask_grounded"
+      ]
+    },
+    {
+      "case_id": "NW-010",
+      "error": null,
+      "eval_status": "pass",
+      "evidence_verdict": null,
+      "expect_refusal": false,
+      "expected_answer": "six months up to Band 5, three months for Band 6 and above",
+      "expected_document_matched": true,
+      "expected_eval": {
+        "expected_terms": [
+          "Band",
+          "months",
+          "three",
+          "above"
+        ],
+        "matched_terms": [
+          "Band",
+          "months",
+          "three",
+          "above"
+        ],
+        "rule_id": null,
+        "status": "pass"
+      },
+      "failure_class": null,
+      "failure_reason": null,
+      "file_name": "probation-policy",
+      "generated_answer": "The standard probationary period is six months from the start date for all roles up to Band 5, and three months for Band 6 and above [S1].",
+      "grounding_status": "verified",
+      "latency_ms": 1458,
+      "post_url": null,
+      "question": "How long is the standard probationary period?",
+      "refusal_passed": null,
+      "run_id": "b21e3b5f12924b8a957d014302451ac3",
+      "tools_used": [
+        "ask_grounded"
+      ]
+    },
+    {
+      "case_id": "NW-011",
+      "error": null,
+      "eval_status": "pass",
+      "evidence_verdict": null,
+      "expect_refusal": false,
+      "expected_answer": "two weeks",
+      "expected_document_matched": true,
+      "expected_eval": {
+        "expected_terms": [
+          "weeks"
+        ],
+        "matched_terms": [
+          "weeks"
+        ],
+        "rule_id": null,
+        "status": "pass"
+      },
+      "failure_class": null,
+      "failure_reason": null,
+      "file_name": "probation-policy",
+      "generated_answer": "During probation, either party may end the employment with two weeks of notice, which replaces the contractual notice period that applies after confirmation of employment [S1].",
+      "grounding_status": "verified",
+      "latency_ms": 1404,
+      "post_url": null,
+      "question": "What notice applies during probation?",
+      "refusal_passed": null,
+      "run_id": "7b7148697f2e48be974d072fed559cb9",
+      "tools_used": [
+        "ask_grounded"
+      ]
+    },
+    {
+      "case_id": "NW-012",
+      "error": null,
+      "eval_status": "pass",
+      "evidence_verdict": null,
+      "expect_refusal": false,
+      "expected_answer": "developing, effective, strong, exceptional",
+      "expected_document_matched": true,
+      "expected_eval": {
+        "expected_terms": [
+          "developing",
+          "effective",
+          "strong",
+          "exceptional"
+        ],
+        "matched_terms": [
+          "developing",
+          "effective",
+          "strong",
+          "exceptional"
+        ],
+        "rule_id": null,
+        "status": "pass"
+      },
+      "failure_class": null,
+      "failure_reason": null,
+      "file_name": "performance-review-cycle",
+      "generated_answer": "The company uses four performance ratings: developing, effective, strong, and exceptional. There is no forced distribution of these ratings, and managers must provide specific evidence to justify any rating of exceptional [S1].",
+      "grounding_status": "verified",
+      "latency_ms": 2132,
+      "post_url": null,
+      "question": "What performance ratings does the company use?",
+      "refusal_passed": null,
+      "run_id": "85fcec79560e40b383bd8dc5c52ac1cb",
+      "tools_used": [
+        "ask_grounded"
+      ]
+    },
+    {
+      "case_id": "NW-013",
+      "error": null,
+      "eval_status": "pass",
+      "evidence_verdict": null,
+      "expect_refusal": false,
+      "expected_answer": "50 EUR",
+      "expected_document_matched": true,
+      "expected_eval": {
+        "expected_terms": [
+          "EUR"
+        ],
+        "matched_terms": [
+          "EUR"
+        ],
+        "rule_id": null,
+        "status": "pass"
+      },
+      "failure_class": null,
+      "failure_reason": null,
+      "file_name": "code-of-conduct",
+      "generated_answer": "Gifts with a value above 50 EUR may not be accepted [S1].",
+      "grounding_status": "verified",
+      "latency_ms": 1098,
+      "post_url": null,
+      "question": "What is the maximum value of a gift that may be accepted?",
+      "refusal_passed": null,
+      "run_id": "12594474857f45cabafa26479029816b",
+      "tools_used": [
+        "ask_grounded"
+      ]
+    },
+    {
+      "case_id": "NW-014",
+      "error": null,
+      "eval_status": "pass",
+      "evidence_verdict": null,
+      "expect_refusal": false,
+      "expected_answer": "prohibited without exception",
+      "expected_document_matched": true,
+      "expected_eval": {
+        "expected_terms": [
+          "prohibited",
+          "without",
+          "exception"
+        ],
+        "matched_terms": [
+          "prohibited",
+          "without",
+          "exception"
+        ],
+        "rule_id": null,
+        "status": "pass"
+      },
+      "failure_class": null,
+      "failure_reason": null,
+      "file_name": "anti-bribery-policy",
+      "generated_answer": "Facilitation payments are prohibited without exception, including small payments to expedite routine customs or permit processing. However, if a payment is demanded under duress and personal safety is at risk, it may be made but must be reported to Legal within 24 hours [S1].",
+      "grounding_status": "verified",
+      "latency_ms": 1314,
+      "post_url": null,
+      "question": "Are facilitation payments allowed?",
+      "refusal_passed": null,
+      "run_id": "2934977ec48842b7813413609587a22f",
+      "tools_used": [
+        "ask_grounded"
+      ]
+    },
+    {
+      "case_id": "NW-015",
+      "error": null,
+      "eval_status": "pass",
+      "evidence_verdict": null,
+      "expect_refusal": false,
+      "expected_answer": "90 days",
+      "expected_document_matched": true,
+      "expected_eval": {
+        "expected_terms": [
+          "days"
+        ],
+        "matched_terms": [
+          "days"
+        ],
+        "rule_id": null,
+        "status": "pass"
+      },
+      "failure_class": null,
+      "failure_reason": null,
+      "file_name": "data-retention-schedule",
+      "generated_answer": "Vehicle telematics data is retained for 90 days, except where it relates to an open incident investigation [S1][S2].",
+      "grounding_status": "verified",
+      "latency_ms": 1245,
+      "post_url": null,
+      "question": "How long are vehicle telematics records kept?",
+      "refusal_passed": null,
+      "run_id": "0732bab6f31f4725a7dd2c871d2b86b8",
+      "tools_used": [
+        "ask_grounded"
+      ]
+    },
+    {
+      "case_id": "NW-016",
+      "error": null,
+      "eval_status": "pass",
+      "evidence_verdict": null,
+      "expect_refusal": false,
+      "expected_answer": "the finance director",
+      "expected_document_matched": true,
+      "expected_eval": {
+        "expected_terms": [
+          "finance",
+          "director"
+        ],
+        "matched_terms": [
+          "finance",
+          "director"
+        ],
+        "rule_id": null,
+        "status": "pass"
+      },
+      "failure_class": null,
+      "failure_reason": null,
+      "file_name": "expenses-approval-limits",
+      "generated_answer": "Expenditure of 20,000 EUR requires approval from the finance director, as it falls within the range of 5,001 EUR to 50,000 EUR [S1].",
+      "grounding_status": "verified",
+      "latency_ms": 1230,
+      "post_url": null,
+      "question": "Who can approve expenditure of 20,000 EUR?",
+      "refusal_passed": null,
+      "run_id": "ced56140c66c4f619905191460ac9a42",
+      "tools_used": [
+        "ask_grounded"
+      ]
+    },
+    {
+      "case_id": "NW-017",
+      "error": null,
+      "eval_status": "pass",
+      "evidence_verdict": null,
+      "expect_refusal": false,
+      "expected_answer": "at least 250,000 EUR per vehicle",
+      "expected_document_matched": true,
+      "expected_eval": {
+        "expected_terms": [
+          "EUR",
+          "least",
+          "vehicle"
+        ],
+        "matched_terms": [
+          "EUR",
+          "least",
+          "vehicle"
+        ],
+        "rule_id": null,
+        "status": "pass"
+      },
+      "failure_class": null,
+      "failure_reason": null,
+      "file_name": "supplier-onboarding",
+      "generated_answer": "Hauliers must evidence goods-in-transit cover of at least 250,000 EUR per vehicle and public liability cover of at least 5,000,000 EUR. Certificates are checked at onboarding and at each annual renewal [S1].",
+      "grounding_status": "verified",
+      "latency_ms": 1463,
+      "post_url": null,
+      "question": "What goods-in-transit insurance must hauliers evidence?",
+      "refusal_passed": null,
+      "run_id": "f8b86b86e5884b54a63141f154cce036",
+      "tools_used": [
+        "ask_grounded"
+      ]
+    },
+    {
+      "case_id": "NW-018",
+      "error": null,
+      "eval_status": "pass",
+      "evidence_verdict": null,
+      "expect_refusal": false,
+      "expected_answer": "every six months",
+      "expected_document_matched": true,
+      "expected_eval": {
+        "expected_terms": [
+          "every",
+          "months"
+        ],
+        "matched_terms": [
+          "every",
+          "months"
+        ],
+        "rule_id": null,
+        "status": "pass"
+      },
+      "failure_class": null,
+      "failure_reason": null,
+      "file_name": "fleet-and-driver-safety",
+      "generated_answer": "Driving licences are checked at recruitment and every six months thereafter. If a driver's licence check is overdue by more than 14 days, they are removed from the driving roster until the check is completed [S1].",
+      "grounding_status": "verified",
+      "latency_ms": 1231,
+      "post_url": null,
+      "question": "How often are driving licences checked?",
+      "refusal_passed": null,
+      "run_id": "b0863d435dc542edae5ebce26e750e71",
+      "tools_used": [
+        "ask_grounded"
+      ]
+    },
+    {
+      "case_id": "NW-019",
+      "error": null,
+      "eval_status": "pass",
+      "evidence_verdict": null,
+      "expect_refusal": false,
+      "expected_answer": "above 23 kilograms",
+      "expected_document_matched": true,
+      "expected_eval": {
+        "expected_terms": [
+          "above",
+          "kilograms"
+        ],
+        "matched_terms": [
+          "above",
+          "kilograms"
+        ],
+        "rule_id": null,
+        "status": "pass"
+      },
+      "failure_class": null,
+      "failure_reason": null,
+      "file_name": "warehouse-health-and-safety",
+      "generated_answer": "Loads above 23 kilograms require either two people or mechanical assistance [S1].",
+      "grounding_status": "verified",
+      "latency_ms": 1178,
+      "post_url": null,
+      "question": "What weight of load requires two people or mechanical assistance?",
+      "refusal_passed": null,
+      "run_id": "6d8917c7ff6d49b48cfe971a8da79020",
+      "tools_used": [
+        "ask_grounded"
+      ]
+    },
+    {
+      "case_id": "NW-020",
+      "error": null,
+      "eval_status": "pass",
+      "evidence_verdict": null,
+      "expect_refusal": false,
+      "expected_answer": "1,200 EUR",
+      "expected_document_matched": true,
+      "expected_eval": {
+        "expected_terms": [
+          "EUR"
+        ],
+        "matched_terms": [
+          "EUR"
+        ],
+        "rule_id": null,
+        "status": "pass"
+      },
+      "failure_class": null,
+      "failure_reason": null,
+      "file_name": "training-and-development",
+      "generated_answer": "Each employee has an annual development budget of 1,200 EUR. The budget does not carry over between years [S1].",
+      "grounding_status": "verified",
+      "latency_ms": 1041,
+      "post_url": null,
+      "question": "What is the annual development budget per employee?",
+      "refusal_passed": null,
+      "run_id": "c6ba109d75d84f7e8bfa82e8368c34e7",
+      "tools_used": [
+        "ask_grounded"
+      ]
+    },
+    {
+      "case_id": "NW-021",
+      "error": null,
+      "eval_status": "pass",
+      "evidence_verdict": {
+        "anchor_hits": [
+          "company",
+          "contribution"
+        ],
+        "missing_terms": [],
+        "needs_neighbor_expansion": false,
+        "reason": "evidence_found_but_irrelevant",
+        "score": 0.375,
+        "status": "irrelevant"
+      },
+      "expect_refusal": true,
+      "expected_answer": "",
+      "expected_document_matched": null,
+      "expected_eval": {
+        "expected_terms": [],
+        "matched_terms": [],
+        "rule_id": null,
+        "status": "fail"
+      },
+      "failure_class": null,
+      "failure_reason": null,
+      "file_name": null,
+      "generated_answer": "No grounded answer could be produced from the available MCP evidence.",
+      "grounding_status": "not_found",
+      "latency_ms": null,
+      "post_url": null,
+      "question": "What is the company's pension contribution rate?",
+      "refusal_passed": true,
+      "run_id": "71be254ebd154789beb13d87aeacfe96",
+      "tools_used": [
+        "ask_grounded",
+        "search_documents"
+      ]
+    },
+    {
+      "case_id": "NW-022",
+      "error": null,
+      "eval_status": "pass",
+      "evidence_verdict": null,
+      "expect_refusal": true,
+      "expected_answer": "",
+      "expected_document_matched": null,
+      "expected_eval": {
+        "expected_terms": [],
+        "matched_terms": [],
+        "rule_id": null,
+        "status": "fail"
+      },
+      "failure_class": null,
+      "failure_reason": null,
+      "file_name": null,
+      "generated_answer": "No grounded answer could be produced from the available MCP evidence.",
+      "grounding_status": "not_found",
+      "latency_ms": null,
+      "post_url": null,
+      "question": "How many employees work at the Rotterdam depot?",
+      "refusal_passed": true,
+      "run_id": "72d0cc7ba6714038b8a465b3797d5f90",
+      "tools_used": [
+        "ask_grounded",
+        "search_documents"
+      ]
+    },
+    {
+      "case_id": "NW-023",
+      "error": null,
+      "eval_status": "pass",
+      "evidence_verdict": {
+        "anchor_hits": [
+          "Northwind",
+          "Logistics"
+        ],
+        "missing_terms": [],
+        "needs_neighbor_expansion": false,
+        "reason": "evidence_found_but_irrelevant",
+        "score": 0.375,
+        "status": "irrelevant"
+      },
+      "expect_refusal": true,
+      "expected_answer": "",
+      "expected_document_matched": null,
+      "expected_eval": {
+        "expected_terms": [],
+        "matched_terms": [],
+        "rule_id": null,
+        "status": "fail"
+      },
+      "failure_class": null,
+      "failure_reason": null,
+      "file_name": null,
+      "generated_answer": "No grounded answer could be produced from the available MCP evidence.",
+      "grounding_status": "not_found",
+      "latency_ms": null,
+      "post_url": null,
+      "question": "What was Northwind Logistics' revenue last year?",
+      "refusal_passed": true,
+      "run_id": "9b7b3e5159344dd7b7a0ccf5bf157b03",
+      "tools_used": [
+        "ask_grounded",
+        "search_documents"
+      ]
+    },
+    {
+      "case_id": "NW-024",
+      "error": null,
+      "eval_status": "pass",
+      "evidence_verdict": {
+        "anchor_hits": [
+          "policy",
+          "company"
+        ],
+        "missing_terms": [],
+        "needs_neighbor_expansion": false,
+        "reason": "evidence_found_but_irrelevant",
+        "score": 0.375,
+        "status": "irrelevant"
+      },
+      "expect_refusal": true,
+      "expected_answer": "",
+      "expected_document_matched": null,
+      "expected_eval": {
+        "expected_terms": [],
+        "matched_terms": [],
+        "rule_id": null,
+        "status": "fail"
+      },
+      "failure_class": null,
+      "failure_reason": null,
+      "file_name": null,
+      "generated_answer": "No grounded answer could be produced from the available MCP evidence.",
+      "grounding_status": "not_found",
+      "latency_ms": null,
+      "post_url": null,
+      "question": "What is the policy on keeping pets in company accommodation?",
+      "refusal_passed": true,
+      "run_id": "22e01ad9554647c8b65f8c6ca53211fe",
+      "tools_used": [
+        "ask_grounded",
+        "search_documents"
+      ]
+    },
+    {
+      "case_id": "NW-025",
+      "error": null,
+      "eval_status": "pass",
+      "evidence_verdict": {
+        "anchor_hits": [
+          "insurance"
+        ],
+        "missing_terms": [],
+        "needs_neighbor_expansion": false,
+        "reason": "evidence_found_but_irrelevant",
+        "score": 0.2875,
+        "status": "irrelevant"
+      },
+      "expect_refusal": true,
+      "expected_answer": "",
+      "expected_document_matched": null,
+      "expected_eval": {
+        "expected_terms": [],
+        "matched_terms": [],
+        "rule_id": null,
+        "status": "fail"
+      },
+      "failure_class": null,
+      "failure_reason": null,
+      "file_name": null,
+      "generated_answer": "No grounded answer could be produced from the available MCP evidence.",
+      "grounding_status": "not_found",
+      "latency_ms": null,
+      "post_url": null,
+      "question": "Which insurance provider underwrites the company fleet?",
+      "refusal_passed": true,
+      "run_id": "9c6b54a74ce042e18506c8490cb40ef2",
+      "tools_used": [
+        "ask_grounded",
+        "search_documents"
+      ]
+    }
+  ],
+  "rt06": {
+    "grounding_status": "not_grounded",
+    "status": "pass"
+  },
+  "schema_version": "1.0",
+  "status": "pass",
+  "total": 25
+}
