@@ -10,6 +10,7 @@ from rag_enterprise_langgraph.eval_runner import (
     run_eval,
     write_eval_outputs,
 )
+from rag_enterprise_langgraph.evidence import evaluate_expected_answer
 from rag_enterprise_langgraph.orchestrator import OrchestratedRunResult
 
 
@@ -111,3 +112,17 @@ def test_run_eval_marks_expected_answers_and_writes_reports(tmp_path):
     assert written["markdown"] == str(markdown)
     assert markdown.exists()
     assert json_path.exists()
+
+
+def test_expected_fact_in_evidence_does_not_hide_wrong_generated_answer():
+    result = evaluate_expected_answer(
+        answer="Expenditure of 20,000 EUR requires department head approval.",
+        evidence=[{"snippet": "Above 15,000 EUR requires the finance director."}],
+        expected_answer="the finance director",
+        question="Who can approve expenditure of 20,000 EUR?",
+        rules=[],
+    )
+
+    assert result["status"] == "fail"
+    assert result["answer_matched_terms"] == []
+    assert result["evidence_matched_terms"] == ["finance", "director"]
