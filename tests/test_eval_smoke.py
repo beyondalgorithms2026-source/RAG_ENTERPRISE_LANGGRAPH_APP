@@ -89,7 +89,12 @@ def _full_configuration():
             "model": "pinned-embedding",
             "dimensions": "384",
         },
+        "chunking": {"policy": "default", "target_words": "320", "overlap_words": "40"},
         "retrieval": {"mode": "hybrid", "rerank_enabled": "false"},
+        "orchestration": {
+            "max_recovery_steps": 3,
+            "expected_fact_scope": "generated_answer",
+        },
         "starter_prompts": {"answer": {"version": "1.0.0", "sha256": "abc"}},
         "corpus_manifest_sha256": "def",
     }

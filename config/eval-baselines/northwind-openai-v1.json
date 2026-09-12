@@ -2,7 +2,7 @@
   "baseline_approval": {
     "calibration_run_count": 10,
     "generated_at": "2026-09-12T00:56:38.099541+00:00",
-    "justification": "Ten eligible full-stack calibration runs on the pinned B004 configuration; all five must-refuse cases and RT-06 passed in every counted run, and every case retained the same classification in at least nine of ten runs.",
+    "justification": "Ten eligible full-stack calibration runs on the pinned B004 configuration; all five must-refuse cases and RT-06 passed in every counted run, and every case retained the same classification in at least nine of ten runs. The approval PR also records the effective default chunking policy and recovery/scoring settings; these metadata additions do not change the calibrated outcomes, and all baseline answerable rows were rechecked with answer-only expected-fact scoring.",
     "status": "approved"
   },
   "configuration": {
@@ -16,6 +16,11 @@
         "version": "1.0.0"
       }
     },
+    "chunking": {
+      "overlap_words": "40",
+      "policy": "default",
+      "target_words": "320"
+    },
     "corpus_manifest_sha256": "5760b4d7662b395d02b83043975a9037d0d8ba140f45fdcf3138f5d66dc6fdfe",
     "embedding": {
       "dimensions": "384",
@@ -25,6 +30,10 @@
     "llm": {
       "model": "gpt-4o-mini-2024-07-18",
       "provider": "openai"
+    },
+    "orchestration": {
+      "expected_fact_scope": "generated_answer",
+      "max_recovery_steps": 3
     },
     "repositories": {
       "app": "8aee53fee5f6c1a7c72e8ba6fe5758d1b7829998",
