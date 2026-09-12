@@ -291,12 +291,19 @@ def evaluate_expected_answer(
     rules: Sequence[OrchestrationRule],
 ) -> dict[str, Any]:
     rule = matching_rule(question, rules)
-    combined = " ".join([answer, _snippet_text(evidence)])
+    evidence_text = _snippet_text(evidence)
     terms = expected_terms_from_answer(expected_answer, rule)
-    passed = _contains_any(combined, terms) if terms else False
+    answer_matches = [term for term in terms if _contains_any(answer, [term])]
+    evidence_matches = [term for term in terms if _contains_any(evidence_text, [term])]
+    # A correct fact in retrieved evidence must not conceal a wrong generated
+    # answer. Grounding validation separately proves whether evidence supports
+    # the answer, so this check measures the generated answer itself.
+    passed = bool(terms and answer_matches)
     return {
         "status": "pass" if passed else "fail",
-        "matched_terms": [term for term in terms if _contains_any(combined, [term])],
+        "matched_terms": answer_matches,
+        "answer_matched_terms": answer_matches,
+        "evidence_matched_terms": evidence_matches,
         "expected_terms": terms[:20],
         "rule_id": rule.id if rule else None,
     }
