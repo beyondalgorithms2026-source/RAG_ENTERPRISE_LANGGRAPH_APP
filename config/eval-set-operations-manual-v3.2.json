@@ -2116,7 +2116,7 @@
     },
     {
       "case_id": "OM-081",
-      "question": "Does Operations Manual Section 6.5 specify exactly how many days an investigator has to interview the accused after an anonymous report, or does it defer the full procedure to a separate controlled document?",
+      "question": "In the Operations Manual's Whistleblowing section, is an investigator interview deadline stated? If not, identify the separate controlled procedure to which the manual defers.",
       "expectation": "safe_boundary",
       "expected_documents": [
         "northwind-operations-manual-v3.2"
