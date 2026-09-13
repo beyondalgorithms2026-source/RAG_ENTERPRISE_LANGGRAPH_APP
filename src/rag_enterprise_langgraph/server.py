@@ -5,7 +5,7 @@ import asyncio
 import uvicorn
 from fastapi import FastAPI, Query, Request
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 
 from rag_enterprise_langgraph.agent import RagEnterpriseAgent
 from rag_enterprise_langgraph.approval import ApprovalStore, build_approval_router
@@ -20,11 +20,13 @@ from rag_enterprise_langgraph.ui import build_ui_router
 
 
 class AskRequest(BaseModel):
-    question: str
+    model_config = ConfigDict(extra="forbid")
+    question: str = Field(min_length=1, max_length=12000)
 
 
 class AskOrchestratedRequest(BaseModel):
-    question: str
+    model_config = ConfigDict(extra="forbid")
+    question: str = Field(min_length=1, max_length=12000)
     max_recovery_steps: int = 3
     max_attempts: int | None = None
     validation_mode: str = "balanced"
@@ -36,7 +38,8 @@ class AskOrchestratedRequest(BaseModel):
 
 
 class BeforeAfterRequest(BaseModel):
-    question: str
+    model_config = ConfigDict(extra="forbid")
+    question: str = Field(min_length=1, max_length=12000)
     max_recovery_steps: int = 3
     validation_mode: str = "balanced"
     require_approval: bool = False

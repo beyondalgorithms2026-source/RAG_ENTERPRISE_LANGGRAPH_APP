@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "eval_suite": "northwind-full-stack-v2",
+  "total_cases": 90,
+  "phases": [
+    {
+      "id": "core",
+      "eval_set": "config/eval-set-northwind.json",
+      "case_count": 25,
+      "corpus": "legacy-27",
+      "access_strategy": "none"
+    },
+    {
+      "id": "operations-manual",
+      "eval_set": "config/eval-set-operations-manual-v3.2.json",
+      "case_count": 65,
+      "corpus": "full-28",
+      "access_strategy": "document_acl_with_time_bound_grants",
+      "principal": "anonymous-public"
+    }
+  ],
+  "rt06": {
+    "required": true,
+    "access_strategy": "document_acl_with_time_bound_grants"
+  }
+}
