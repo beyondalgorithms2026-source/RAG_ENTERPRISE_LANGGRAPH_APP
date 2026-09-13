@@ -1844,10 +1844,18 @@ class EnterpriseRagOrchestrator:
                 evidence
                 and excerpt_evidence
                 and final_verdict
-                and final_verdict.status != "supports"
                 and selected_evidence
                 and selected_verdict
                 and selected_verdict.status == "supports"
+                and (
+                    final_verdict.status != "supports"
+                    or (
+                        selected_evidence.get("chunk_id") is not None
+                        and excerpt_evidence[0].get("chunk_id") is not None
+                        and selected_evidence.get("chunk_id")
+                        != excerpt_evidence[0].get("chunk_id")
+                    )
+                )
             ):
                 rejected_evidence.append(
                     _rejected_evidence_summary(excerpt_evidence[0], final_verdict)

@@ -290,6 +290,68 @@ def test_high_risk_partial_recovery_is_safe_no_answer():
     assert result.rejected_evidence
 
 
+def test_excerpt_from_different_chunk_cannot_replace_selected_support():
+    orchestrator = EnterpriseRagOrchestrator(quiet_mcp=False)
+
+    async def fake_tool_call(name, arguments):
+        if name == "ask_grounded":
+            return {
+                "answer": "Not found in provided sources.",
+                "citations": [],
+                "debug_info": {
+                    "retrieval_trace": {
+                        "score_diagnostics": [{"chunk_id": 81, "keyword_score": 1.0}]
+                    }
+                },
+            }, {"tool_name": name, "tool_call_id": None, "content": {}}
+        if name == "search_documents":
+            return {
+                "results": [
+                    {
+                        "source_id": 28,
+                        "source_part_id": 1,
+                        "chunk_id": 81,
+                        "file_name": "operations-manual.md",
+                        "heading": "6.5 Whistleblowing",
+                        "snippet": (
+                            "The Operations Manual defers to a separate Controlled Document: "
+                            "the full whistleblowing procedure is maintained as GOV-POL-006 "
+                            "Speak-Up and Protected Disclosure Procedure."
+                        ),
+                    }
+                ]
+            }, {"tool_name": name, "tool_call_id": None, "content": {}}
+        return {
+            "matched": True,
+            "excerpt": (
+                "This Operations Manual establishes standard operating requirements "
+                "for Northwind Logistics."
+            ),
+            "result": {
+                "source_id": 28,
+                "source_part_id": 1,
+                "chunk_id": 1,
+                "file_name": "operations-manual.md",
+                "heading": "Introduction",
+            },
+        }, {"tool_name": name, "tool_call_id": None, "content": {}}
+
+    orchestrator._call_tool = fake_tool_call  # type: ignore[method-assign]
+
+    result = asyncio.run(
+        orchestrator.run(
+            "In the Operations Manual's Whistleblowing section, identify the separate "
+            "controlled procedure to which the manual defers.",
+            expected_answer="GOV-POL-006 full whistleblowing procedure",
+        )
+    )
+
+    assert result.grounding_status == "recovered"
+    assert "GOV-POL-006" in result.answer
+    assert "standard operating requirements" not in result.answer
+    assert result.evidence[0]["chunk_id"] == 81
+
+
 def test_evidence_gate_rejects_a_snippet_without_the_expected_answer():
     evidence, verdict, rejected = _select_evidence_candidate(
         question="How many days of annual leave do full-time employees receive?",
