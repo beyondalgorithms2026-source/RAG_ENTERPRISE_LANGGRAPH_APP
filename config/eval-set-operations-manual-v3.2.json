@@ -2116,7 +2116,7 @@
     },
     {
       "case_id": "OM-081",
-      "question": "Under the Speak-Up procedure, exactly how many days does the investigator have to interview the accused after an anonymous report?",
+      "question": "Does Operations Manual Section 6.5 specify exactly how many days an investigator has to interview the accused after an anonymous report, or does it defer the full procedure to a separate controlled document?",
       "expectation": "safe_boundary",
       "expected_documents": [
         "northwind-operations-manual-v3.2"
