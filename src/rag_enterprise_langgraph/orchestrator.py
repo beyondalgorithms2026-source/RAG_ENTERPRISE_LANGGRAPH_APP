@@ -1807,6 +1807,8 @@ class EnterpriseRagOrchestrator:
                         excerpt_args["source_part_id"] = selected_evidence.get("source_part_id")
                     elif selected_evidence.get("source_id") is not None:
                         excerpt_args["source_id"] = selected_evidence.get("source_id")
+                    if selected_evidence.get("locator"):
+                        excerpt_args["locator_filter"] = selected_evidence.get("locator")
                     excerpt_content = await call(
                         "get_document_excerpt", "raw_excerpt_lookup", excerpt_args
                     )
@@ -1944,6 +1946,7 @@ class EnterpriseRagOrchestrator:
                 and final_verdict
                 and final_verdict.status == "partial"
                 and not assess_risk(question)
+                and not question_profile.expected_answer_shape.requires_named_entity
             ):
                 final_status = "needs_review"
                 failure_reason = "human_review_required"
