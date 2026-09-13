@@ -969,6 +969,7 @@ def exact_phrase_bias(question: str, anchors: Sequence[str]) -> str | None:
         for phrase in capitalized
         if phrase.split()[0].lower() not in _STOPWORDS
         and phrase.split()[0].lower() not in {"what", "why", "how", "who", "when", "where"}
+        and phrase.casefold() not in {"operations manual", "the operations manual"}
     ]
     if capitalized:
         return max(capitalized, key=len).strip()
@@ -1935,11 +1936,14 @@ class EnterpriseRagOrchestrator:
             # it under needs_review can make an unsupported question look partly
             # answered and leaks unrelated retrieved text. Retain human review
             # only for evidence that is genuinely partial; otherwise refuse.
+            # Partial evidence for a high-risk question is not an answer candidate.
+            # Preserve it internally for diagnostics, but return a safe no-answer
+            # state instead of presenting nearby HR/legal/financial/security text.
             if (
                 rejected_evidence
                 and final_verdict
                 and final_verdict.status == "partial"
-                and not _is_not_found(initial.get("answer"))
+                and not assess_risk(question)
             ):
                 final_status = "needs_review"
                 failure_reason = "human_review_required"
