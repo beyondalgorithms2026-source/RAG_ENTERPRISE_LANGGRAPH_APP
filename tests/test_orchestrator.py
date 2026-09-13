@@ -67,6 +67,12 @@ def test_phrase_bias_does_not_replace_full_query_with_generic_first_anchor():
     assert exact_phrase_bias(question, anchors) is None
 
 
+def test_phrase_bias_prefers_section_topic_over_generic_document_title():
+    question = "In the Operations Manual's Whistleblowing section, is a deadline stated?"
+
+    assert exact_phrase_bias(question, extract_anchor_terms(question)) == "Whistleblowing"
+
+
 def test_orchestrator_returns_structured_tool_error_when_tool_call_raises():
     orchestrator = EnterpriseRagOrchestrator(quiet_mcp=False)
 
@@ -239,6 +245,43 @@ def test_explicit_not_found_stays_refusal_when_recovery_is_only_partial():
     assert result.recovery_attempted is True
     assert result.recovery_successful is False
     assert result.failure_reason is None
+    assert result.evidence == []
+    assert result.rejected_evidence
+
+
+def test_high_risk_partial_recovery_is_safe_no_answer():
+    orchestrator = EnterpriseRagOrchestrator(quiet_mcp=False)
+
+    async def fake_tool_call(name, arguments):
+        if name == "ask_grounded":
+            return {"answer": "A salary range may exist.", "citations": []}, {
+                "tool_name": name,
+                "tool_call_id": None,
+                "content": {},
+            }
+        if name == "search_documents":
+            return {
+                "results": [
+                    {
+                        "source_id": 5,
+                        "source_part_id": 9,
+                        "file_name": "job-bands.md",
+                        "snippet": "Band 6 is the senior manager level.",
+                    }
+                ]
+            }, {"tool_name": name, "tool_call_id": None, "content": {}}
+        return {
+            "matched": True,
+            "excerpt": "Band 6 is the senior manager level.",
+            "result": {"source_id": 5, "source_part_id": 9, "file_name": "job-bands.md"},
+        }, {"tool_name": name, "tool_call_id": None, "content": {}}
+
+    orchestrator._call_tool = fake_tool_call  # type: ignore[method-assign]
+
+    result = asyncio.run(orchestrator.run("What is the Band 6 salary range?"))
+
+    assert result.grounding_status == "not_grounded"
+    assert result.answer == "No grounded answer could be produced from the available MCP evidence."
     assert result.evidence == []
     assert result.rejected_evidence
 
