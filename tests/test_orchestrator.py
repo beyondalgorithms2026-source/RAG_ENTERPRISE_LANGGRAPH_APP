@@ -112,11 +112,9 @@ def test_orchestration_step_summarizes_nested_backend_errors_without_traceback()
 def test_orchestrator_unwraps_mcp_text_blocks_before_classification():
     orchestrator = EnterpriseRagOrchestrator(quiet_mcp=False)
     calls: list[str] = []
-    call_arguments: list[dict] = []
 
     async def fake_tool_call(name, arguments):
         calls.append(name)
-        call_arguments.append(arguments)
         if name == "ask_grounded":
             raw = [
                 {
@@ -149,8 +147,55 @@ def test_orchestrator_unwraps_mcp_text_blocks_before_classification():
     assert result.grounding_status == "recovered"
     assert result.recovery_attempted is True
     assert result.evidence_count == 1
-    assert calls == ["ask_grounded", "ask_grounded", "search_documents", "get_document_excerpt"]
-    assert call_arguments[-1]["locator_filter"] == "section:annual-leave"
+    assert calls == ["ask_grounded", "ask_grounded", "search_documents"]
+
+
+def test_partial_search_result_preserves_locator_for_excerpt_lookup():
+    orchestrator = EnterpriseRagOrchestrator(quiet_mcp=False)
+    call_arguments: list[tuple[str, dict]] = []
+
+    async def fake_tool_call(name, arguments):
+        call_arguments.append((name, arguments))
+        if name == "ask_grounded":
+            return {
+                "answer": "Not found in provided sources.",
+                "citations": [],
+                "debug_info": {
+                    "retrieval_trace": {
+                        "score_diagnostics": [{"chunk_id": 4, "keyword_score": 1.0}]
+                    }
+                },
+            }, {"tool_name": name, "tool_call_id": None, "content": {}}
+        if name == "search_documents":
+            return {
+                "results": [
+                    {
+                        "source_id": 3,
+                        "source_part_id": 655,
+                        "chunk_id": 4,
+                        "file_name": "annual-leave-policy.md",
+                        "locator": "section:annual-leave",
+                        "snippet": "Annual leave details are provided in this policy.",
+                    }
+                ]
+            }, {"tool_name": name, "tool_call_id": None, "content": {}}
+        return {"matched": False, "excerpt": None, "result": None}, {
+            "tool_name": name,
+            "tool_call_id": None,
+            "content": {},
+        }
+
+    orchestrator._call_tool = fake_tool_call  # type: ignore[method-assign]
+
+    asyncio.run(
+        orchestrator.run(
+            "How many days of annual leave do full-time employees receive?",
+            expected_answer="26 days",
+        )
+    )
+
+    excerpt_args = next(args for name, args in call_arguments if name == "get_document_excerpt")
+    assert excerpt_args["locator_filter"] == "section:annual-leave"
 
 
 def test_orchestrator_returns_not_grounded_for_answer_without_evidence():
@@ -290,10 +335,12 @@ def test_high_risk_partial_recovery_is_safe_no_answer():
     assert result.rejected_evidence
 
 
-def test_excerpt_from_different_chunk_cannot_replace_selected_support():
+def test_supporting_search_result_does_not_fetch_broader_excerpt():
     orchestrator = EnterpriseRagOrchestrator(quiet_mcp=False)
+    calls = []
 
     async def fake_tool_call(name, arguments):
+        calls.append(name)
         if name == "ask_grounded":
             return {
                 "answer": "Not found in provided sources.",
@@ -350,6 +397,7 @@ def test_excerpt_from_different_chunk_cannot_replace_selected_support():
     assert "GOV-POL-006" in result.answer
     assert "standard operating requirements" not in result.answer
     assert result.evidence[0]["chunk_id"] == 81
+    assert calls == ["ask_grounded", "ask_grounded", "search_documents"]
 
 
 def test_evidence_gate_rejects_a_snippet_without_the_expected_answer():

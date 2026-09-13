@@ -1793,9 +1793,13 @@ class EnterpriseRagOrchestrator:
 
             if max_recovery_steps >= 3 and selected_evidence and selected_verdict:
                 recovery_attempted = True
-                should_fetch_excerpt = selected_evidence.get("source_part_id") is not None or (
-                    selected_verdict.status == "supports"
-                    and selected_evidence.get("source_id") is not None
+                # A search result that already passes the evidence gate is the
+                # narrowest verified unit we have. Fetching a broader document-
+                # part excerpt can replace it with unrelated text from the same
+                # part, so expand only evidence that is incomplete or visibly
+                # truncated.
+                should_fetch_excerpt = selected_verdict.status != "supports" or bool(
+                    selected_verdict.needs_neighbor_expansion
                 )
                 if should_fetch_excerpt:
                     excerpt_args: dict[str, Any] = {
