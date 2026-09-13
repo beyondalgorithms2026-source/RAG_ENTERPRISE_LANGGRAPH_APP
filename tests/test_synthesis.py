@@ -113,7 +113,7 @@ def _rocket_orchestrator(*, enable_synthesis: bool, model=None) -> EnterpriseRag
 
     async def fake(name, arguments):
         if name == "ask_grounded":
-            return {"answer": "Not found in provided sources.", "citations": []}, {
+            return {"answer": "The materials cost about 2%.", "citations": []}, {
                 "tool_name": name,
                 "content": {},
             }

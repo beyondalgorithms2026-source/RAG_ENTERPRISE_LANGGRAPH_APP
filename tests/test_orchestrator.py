@@ -169,6 +169,80 @@ def test_orchestrator_returns_not_grounded_for_answer_without_evidence():
     assert result.error == "answer_without_citations_or_evidence"
 
 
+def test_explicit_not_found_without_candidates_is_terminal_safe_refusal():
+    orchestrator = EnterpriseRagOrchestrator(quiet_mcp=False)
+    calls: list[str] = []
+
+    async def fake_tool_call(name, arguments):
+        calls.append(name)
+        return {"answer": "Not found in provided sources.", "citations": []}, {
+            "tool_name": name,
+            "tool_call_id": None,
+            "content": {},
+        }
+
+    orchestrator._call_tool = fake_tool_call  # type: ignore[method-assign]
+
+    result = asyncio.run(orchestrator.run("Which external auditor is named?"))
+
+    assert result.grounding_status == "not_found"
+    assert result.answer == "Not found in provided sources."
+    assert result.recovery_attempted is False
+    assert result.failure_reason is None
+    assert result.evidence == []
+    assert calls == ["ask_grounded"]
+
+
+def test_explicit_not_found_stays_refusal_when_recovery_is_only_partial():
+    orchestrator = EnterpriseRagOrchestrator(quiet_mcp=False)
+
+    async def fake_tool_call(name, arguments):
+        if name == "ask_grounded":
+            return {
+                "answer": "Not found in provided sources.",
+                "citations": [],
+                "debug_info": {
+                    "retrieval_trace": {
+                        "score_diagnostics": [{"chunk_id": 3, "keyword_score": 0.4}]
+                    }
+                },
+            }, {"tool_name": name, "tool_call_id": None, "content": {}}
+        if name == "search_documents":
+            return {
+                "results": [
+                    {
+                        "source_id": 3,
+                        "source_part_id": 8,
+                        "file_name": "operations-manual.md",
+                        "snippet": "The organization maintains ISO 9001 and ISO 14001 systems.",
+                    }
+                ]
+            }, {"tool_name": name, "tool_call_id": None, "content": {}}
+        return {
+            "matched": True,
+            "excerpt": "The organization maintains ISO 9001 and ISO 14001 systems.",
+            "result": {
+                "source_id": 3,
+                "source_part_id": 8,
+                "file_name": "operations-manual.md",
+            },
+        }, {"tool_name": name, "tool_call_id": None, "content": {}}
+
+    orchestrator._call_tool = fake_tool_call  # type: ignore[method-assign]
+
+    result = asyncio.run(
+        orchestrator.run("Which external ISO certification body audits the organization?")
+    )
+
+    assert result.grounding_status == "not_found"
+    assert result.answer == "No grounded answer could be produced from the available MCP evidence."
+    assert result.recovery_attempted is True
+    assert result.recovery_successful is False
+    assert result.failure_reason is None
+    assert result.evidence == []
+    assert result.rejected_evidence
+
+
 def test_evidence_gate_rejects_a_snippet_without_the_expected_answer():
     evidence, verdict, rejected = _select_evidence_candidate(
         question="How many days of annual leave do full-time employees receive?",
@@ -294,7 +368,15 @@ def test_irrelevant_recovery_evidence_ends_in_safe_refusal():
 
     async def fake_tool_call(name, arguments):
         if name == "ask_grounded":
-            return {"answer": "Not found in provided sources.", "citations": []}, {
+            return {
+                "answer": "Not found in provided sources.",
+                "citations": [],
+                "debug_info": {
+                    "retrieval_trace": {
+                        "score_diagnostics": [{"chunk_id": 9, "keyword_score": 0.2}]
+                    }
+                },
+            }, {
                 "tool_name": name,
                 "tool_call_id": None,
                 "content": {},
@@ -444,7 +526,7 @@ def test_needs_review_answer_uses_full_snippet_not_preview_truncation():
 
     async def fake_tool_call(name, arguments):
         if name == "ask_grounded":
-            return {"answer": "Not found in provided sources.", "citations": []}, {
+            return {"answer": "The cost may be about two percent.", "citations": []}, {
                 "tool_name": name,
                 "tool_call_id": None,
                 "content": {},
