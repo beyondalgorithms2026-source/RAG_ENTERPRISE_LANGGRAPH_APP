@@ -1531,6 +1531,39 @@ class EnterpriseRagOrchestrator:
                 )
                 initial_review = None
 
+            # A backend refusal with no candidate evidence is already the safest
+            # and most precise terminal result. Retrying cannot strengthen it and
+            # needlessly raises recovery cost/latency for must-refuse questions.
+            if initial_quality.status == "not_found" and _is_not_found(initial.get("answer")):
+                decision_trail.append(
+                    _decision_step(
+                        len(decision_trail) + 1,
+                        "Finalized",
+                        "not_found: backend found no candidate evidence",
+                    )
+                )
+                return finish(
+                    OrchestratedRunResult(
+                        question=question,
+                        answer=str(initial.get("answer") or "").strip()
+                        or "No grounded answer could be produced from the available MCP evidence.",
+                        grounding_status="not_found",
+                        tools_used=_dedupe(tools_used),
+                        execution_timeline=[step.to_dict() for step in timeline],
+                        tool_outputs=tool_outputs,
+                        recovery_attempted=False,
+                        recovery_successful=False,
+                        portfolio_safe=True,
+                        validation_summary=_validation_summary(
+                            "not_found", None, evidence_support="missing"
+                        ),
+                        decision_trail=decision_trail,
+                        attempts=attempts,
+                        review_guidance=review_guidance("not_found"),
+                        review_note=review_note(),
+                    )
+                )
+
             if initial_quality.status == "grounded":
                 decision_trail.append(
                     _decision_step(
@@ -1902,7 +1935,12 @@ class EnterpriseRagOrchestrator:
             # it under needs_review can make an unsupported question look partly
             # answered and leaks unrelated retrieved text. Retain human review
             # only for evidence that is genuinely partial; otherwise refuse.
-            if rejected_evidence and final_verdict and final_verdict.status == "partial":
+            if (
+                rejected_evidence
+                and final_verdict
+                and final_verdict.status == "partial"
+                and not _is_not_found(initial.get("answer"))
+            ):
                 final_status = "needs_review"
                 failure_reason = "human_review_required"
             review_evidence = list(evidence)
