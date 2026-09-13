@@ -42,7 +42,8 @@ and the backend decides what that means, using its own alpha and candidate count
 ## Capability status
 
 Honest status per feature. "Implemented" means the code exists and runs.
-"Evaluated" means it was measured on the published 25-question evaluation.
+"Evaluated" means it was measured by the published approved 25-question v1 baseline;
+the 90-case v2 result remains a calibration artifact until separately approved.
 
 | Capability | Implemented | Evaluated | Default |
 |---|---|---|---|
@@ -68,9 +69,10 @@ first measurement of what enabling them buys on this corpus. Both configurations
 published, whichever way the numbers went - and on this corpus they went nowhere, which
 is reported as plainly as a favourable result would have been.
 
-On the ACL row: the evaluation exercises retrieval with ACL active, but the red-team
-scenario that specifically tests ACL bypass (RT-06) is labelled `requires_backend` and
-is not simulated. See the red-team report.
+On the ACL row: the offline red-team command honestly labels RT-06 as backend-dependent.
+P11/P12B separately run the denied and authorized controls through the real STARTER
+retrieval SQL and the APP → MCP → STARTER tool path; a missing database, seed, or service
+is classified as infrastructure failure rather than a security result.
 
 ## Considered and not built: intent-level retrieval presets
 

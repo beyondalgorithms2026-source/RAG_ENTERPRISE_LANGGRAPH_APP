@@ -67,7 +67,8 @@ architecture advice is not a reason to expand this proof of concept.
 - **P12** is the fast mocked evaluation-harness smoke test. It proves deterministic
   harness behaviour, not live answer quality.
 - **P12B** is the authoritative real APP → MCP → STARTER → PostgreSQL/pgvector
-  25-question regression gate.
+  regression gate. Approved v1 has 25 cases; v2 runs isolated 25- and 65-case phases
+  and requires calibration before approval.
 - Never automatically overwrite a baseline after a regression. Every P12B baseline
   change must be explicit, justified in its pull request, and approved by an eligible
   owner/CODEOWNER. Do not claim CODEOWNERS enforcement while no second eligible reviewer

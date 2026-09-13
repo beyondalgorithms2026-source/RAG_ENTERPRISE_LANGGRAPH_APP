@@ -8,6 +8,7 @@ from langchain_core.messages import AIMessage, BaseMessage, ToolMessage
 
 from rag_enterprise_langgraph.config import Settings
 from rag_enterprise_langgraph.graph import build_agent_graph
+from rag_enterprise_langgraph.input_security import SAFE_PROMPT_REFUSAL, assess_prompt_safety
 from rag_enterprise_langgraph.mcp_client import load_mcp_tools
 from rag_enterprise_langgraph.tool_guard import reset_current_question, set_current_question
 
@@ -102,6 +103,14 @@ class RagEnterpriseAgent:
         }
 
     async def run(self, question: str) -> AgentRunResult:
+        safety = assess_prompt_safety(question)
+        if safety.blocked:
+            return AgentRunResult(
+                question=question,
+                answer=SAFE_PROMPT_REFUSAL,
+                tool_outputs=[],
+                message_count=0,
+            )
         graph = await self._get_graph()
         token = set_current_question(question)
         try:

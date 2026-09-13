@@ -1,0 +1,1540 @@
+<!-- GENERATED FILE. Source: STARTER/corpus/source_documents/northwind-operations-manual-v3.2.md -->
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Northwind Operations Manual v3.2 — Synthetic Demo</title>
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--ink:#14161f;--muted:#586373;--line:#d9dde8;--accent:#0e11d8}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Inter,system-ui,sans-serif}
+main{max-width:76rem;margin:auto;padding:2rem 1rem 5rem}.notice{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:1rem;margin-bottom:2rem}
+h1{font-size:2.4rem}h2{margin-top:2.5rem;border-top:1px solid var(--line);padding-top:1rem}h3{margin-top:2rem}p,li{max-width:78ch}
+.table-scroll{overflow:auto;margin:1rem 0}table{border-collapse:collapse;width:100%;background:var(--card)}th,td{border:1px solid var(--line);padding:.55rem;text-align:left;vertical-align:top}th{background:#eceef5}code{overflow-wrap:anywhere}a{color:var(--accent)}
+</style></head><body><main>
+<div class="notice"><strong>Public synthetic demonstration content.</strong> This fictional manual contains no real company, employee, customer, or private data. Effective 1 September 2026. Canonical-source SHA-256: <code>9219e17d74452ceb8eb0bd73f4767a622b6e9cf58810fb3f01f03ac2038ab412</code>. <a href="../evaluation/">View approved evaluation evidence</a>.</div>
+<h1>Northwind Logistics Operations Manual</h1>
+<h2>Version 3.2</h2>
+<p>&gt; Public synthetic demonstration content. Northwind Logistics NV, its registration</p>
+<p>&gt; number, address, people, policies, customers, and operations are fictional. This</p>
+<p>&gt; document contains no real company, employee, customer, or private data.</p>
+<ul>
+<li>Document owner: Chief Operating Officer</li>
+<li>Effective date: 1 September 2026</li>
+<li>Supersedes: Operations Manual Version 3.1</li>
+<li>Classification: Public — synthetic demonstration content</li>
+<li>Fictional registered office: Northwind House, Harbour Gate District, Antwerp, Belgium</li>
+<li>Fictional company number: NW-0847291</li>
+</ul>
+<p>Important: This manual is the binding operational reference for Northwind Logistics NV and all controlled subsidiaries. Where this manual conflicts with local informal practice, this manual prevails unless a written legal exception has been approved under Section 1.3.4.</p>
+<h1>1. Governance and Scope</h1>
+<h2>1.1 Purpose and Scope</h2>
+<p>This Operations Manual, Version 3.2, establishes the standard operating requirements for Northwind Logistics NV, a fictional European logistics company operating 14 warehouses, 380 vehicles, and employing approximately 1,200 employees across the European region. The manual applies to permanent employees, fixed-term employees, temporary staff, agency workers, contractors, visiting auditors, and third-party service providers working under Northwind operational control.</p>
+<p>The purpose of this manual is to ensure that daily operations are conducted consistently, lawfully, safely and auditable across all sites. It covers financial controls, incident management, warehouse operations, fleet and transport, people conduct, information control and record retention. For disciplinary procedure details, see Section 6.4. For whistleblowing channels, see Section 6.5.</p>
+<p>This manual applies to all Northwind-controlled operations, including warehousing, cross-docking, cold chain handling, hazardous materials handling, transport planning, vehicle inspection, contractor management, customer contract execution, and operational support functions. Activities performed by third parties remain subject to this manual when those activities are performed on a Northwind site, using Northwind systems, under a Northwind customer contract, or under Northwind transport documentation.</p>
+<p>If a customer contract imposes stricter operational requirements than this manual, the stricter customer requirement applies — except when the customer requirement conflicts with statutory law, ISO certification requirements, GDP obligations, or an approved safety control. Contractual conflicts must be escalated under Section 2.5.4 within 2 Working Days of discovery.</p>
+<h2>1.2 Definitions</h2>
+<p>For this manual, the following terms have the specific meanings below. These definitions apply even where local usage differs.</p>
+<div class="table-scroll"><table><thead><tr>
+<th>Term</th>
+<th>Defined meaning</th>
+</tr></thead><tbody>
+<tr>
+<td>Board</td>
+<td>The fictional Board of Directors of Northwind Logistics NV or a formally constituted Board committee with delegated authority.</td>
+</tr>
+<tr>
+<td>Band 1–3</td>
+<td>Employees in operational, administrative, junior supervisory or specialist roles below middle management grade.</td>
+</tr>
+<tr>
+<td>Band 4–5</td>
+<td>Employees in middle management, site management, functional management or senior specialist roles below Senior Manager level.</td>
+</tr>
+<tr>
+<td>Band 6+</td>
+<td>Senior Manager level and above, regardless of job title.</td>
+</tr>
+<tr>
+<td>Senior Manager</td>
+<td>Any employee at Band 6 or above, regardless of whether their title includes “Senior”, “Head”, “Director” or “Manager”.</td>
+</tr>
+<tr>
+<td>Working Day</td>
+<td>Monday to Friday, excluding Belgian public holidays, not the employee’s local public holidays.</td>
+</tr>
+<tr>
+<td>Immediately</td>
+<td>Within 4 hours of discovery, including outside normal office hours, and not within 4 hours of the start of the next shift.</td>
+</tr>
+<tr>
+<td>Critical Incident</td>
+<td>An incident meeting the Critical criteria in Section 3.1 or Appendix B, including life-threatening injury, actual regulatory enforcement action, financial exposure above €250,000, or confirmed cold chain failure affecting released stock.</td>
+</tr>
+<tr>
+<td>Major Incident</td>
+<td>An incident meeting the Major criteria in Section 3.1 or Appendix B, including reportable injury, financial exposure from €50,001 to €250,000, or customer service disruption exceeding 12 hours.</td>
+</tr>
+<tr>
+<td>Minor Incident</td>
+<td>An incident requiring local corrective action but not meeting Major or Critical thresholds, including damage below €50,000 and delay below 12 hours.</td>
+</tr>
+<tr>
+<td>Observation</td>
+<td>A weakness, unsafe condition or compliance gap that has not yet caused harm, loss, regulatory breach or customer impact.</td>
+</tr>
+<tr>
+<td>Incident Commander</td>
+<td>The person currently certified under the Northwind Incident Command programme and assigned to lead the incident response, not necessarily the most senior person present.</td>
+</tr>
+<tr>
+<td>Fleet Vehicle</td>
+<td>Any owned, leased, hired, substituted or employee-provided vehicle used for Northwind business, including leased personal vehicles used for more than 5,000 business kilometres per year.</td>
+</tr>
+</tbody></table></div>
+<div class="table-scroll"><table><thead><tr>
+<th>Term</th>
+<th>Defined meaning</th>
+</tr></thead><tbody>
+<tr>
+<td>Cold Chain Product</td>
+<td>Any product requiring controlled temperature storage or transport within a specified range in Section 4.3.1.</td>
+</tr>
+<tr>
+<td>Temperature Excursion</td>
+<td>Any recorded, observed or suspected temperature outside the required range for a Cold Chain Product for more than 5 consecutive minutes.</td>
+</tr>
+<tr>
+<td>Quarantine</td>
+<td>Physical or system-based restriction preventing stock from being picked, moved, dispatched, returned to saleable stock, or destroyed without documented release.</td>
+</tr>
+<tr>
+<td>Controlled Document</td>
+<td>A document listed in the document register and subject to version control, approval, retention and withdrawal requirements under Section 1.3.</td>
+</tr>
+<tr>
+<td>Restricted Information</td>
+<td>Information whose unauthorised disclosure may cause contractual, regulatory, commercial or personal data harm, as classified in Section 7.1.</td>
+</tr>
+<tr>
+<td>Confidential Information</td>
+<td>The highest internal classification covering personal data, pricing strategy, Board papers, disciplinary material, regulated product data, security incidents and customer-specific contract terms.</td>
+</tr>
+<tr>
+<td>Two-Person Verification</td>
+<td>Independent verification by two authorised individuals, where the second verifier must not be the person who performed the original action.</td>
+</tr>
+<tr>
+<td>Framework Agreement</td>
+<td>A Board-approved or Band 6+ approved master agreement under which individual orders may be placed without renegotiating core terms.</td>
+</tr>
+<tr>
+<td>Emergency Purchase</td>
+<td>A purchase necessary to prevent immediate safety risk, Critical or Major Incident escalation, regulatory breach, vehicle immobilisation, cold chain failure or customer contract default.</td>
+</tr>
+<tr>
+<td>Local Legal Addendum</td>
+<td>A country-specific annex approved by Legal and Compliance to address mandatory local law that differs from this manual.</td>
+</tr>
+</tbody></table></div>
+<div class="table-scroll"><table><thead><tr>
+<th>Term</th>
+<th>Defined meaning</th>
+</tr></thead><tbody>
+<tr>
+<td>DSAR</td>
+<td>Data Subject Access Request under applicable data protection law, including requests for access, correction, deletion, restriction or portability.</td>
+</tr>
+<tr>
+<td>GDP</td>
+<td>Good Distribution Practice requirements applicable to pharmaceutical logistics, including temperature control, traceability, qualification, deviation handling and record retention.</td>
+</tr>
+<tr>
+<td>Northwind Site</td>
+<td>Any warehouse, transport yard, administrative office, cross-dock, temporary logistics location, customer-embedded operation or controlled vehicle parking location operated by Northwind.</td>
+</tr>
+<tr>
+<td>Released Stock</td>
+<td>Stock available in the warehouse management system for picking, loading, dispatch, customer collection or transfer.</td>
+</tr>
+<tr>
+<td>Stop-Work Authority</td>
+<td>The right and duty of any worker to halt an unsafe task without retaliation where there is a reasonable belief of imminent harm or material compliance breach.</td>
+</tr>
+</tbody></table></div>
+<p>The definitions of Immediately, Working Day, Senior Manager, Fleet Vehicle, and Incident Commander are deliberately narrower or broader than ordinary usage. These terms must not be interpreted informally. For example, an employee in Spain cannot delay a Section 3.2 incident report because the following day is a Spanish public holiday if it is not a Belgian public holiday.</p>
+<h2>1.3 Document Control and Amendment Procedure</h2>
+<h3>1.3.1 Document ownership</h3>
+<p>The Chief Operating Officer owns this manual. The Head of Quality maintains the controlled version. The Legal, Finance, HR, Fleet, Warehouse Operations, Information Security and Compliance functions each own the content of their respective sections.</p>
+<p>Only the controlled electronic version stored in the Northwind document control system is authoritative. Printed copies are uncontrolled after 24 hours unless stamped “Controlled Printed Copy” by Quality. For document classification rules, see Section 7.1.</p>
+<h3>1.3.2 Review frequency</h3>
+<p>This manual must be reviewed at least once every 12 months. An extraordinary review must be initiated within 10 Working Days following any of the following:</p>
+<ol>
+<li>A Critical Incident.</li>
+</ol>
+<ol>
+<li>A regulatory inspection finding rated Major or Critical.</li>
+</ol>
+<ol>
+<li>A Board-approved change to financial delegation.</li>
+</ol>
+<ol>
+<li>A merger, acquisition or site closure affecting more than 50 employees.</li>
+</ol>
+<ol>
+<li>A change to GDP, ISO 9001, ISO 14001 or applicable transport compliance obligations.</li>
+</ol>
+<ol>
+<li>A repeated process failure occurring at 3 or more sites within a rolling 90-day period.</li>
+</ol>
+<p>If a change is required by law, the manual must be amended by the legal effective date — except when Legal issues a written interim control notice under Section 1.3.5.</p>
+<h3>1.3.3 Approval route</h3>
+<p>Manual amendments follow this approval path:</p>
+<ol>
+<li>Section owner drafts the proposed amendment.</li>
+</ol>
+<ol>
+<li>Quality reviews format, version control, cross-references and record impact.</li>
+</ol>
+<ol>
+<li>Legal reviews statutory, contractual and liability implications.</li>
+</ol>
+<ol>
+<li>Finance reviews changes affecting Table 2.1 or Table 2.2.</li>
+</ol>
+<ol>
+<li>COO approves operational implementation.</li>
+</ol>
+<ol>
+<li>Board approval is required where the amendment changes Board authority, safety policy, whistleblowing arrangements, disciplinary escalation, or capital commitment above €250,000.</li>
+</ol>
+<h3>1.3.4 Exception approval</h3>
+<p>A site may not create a local exception to this manual unless the exception is approved in writing. The minimum approval authority is Band 6+, but Board approval is required where the exception affects safety, GDP, regulatory reporting, financial delegation, contract signing or data protection.</p>
+<p>If a local legal requirement conflicts with this manual, then the Local Legal Addendum applies — except when the addendum has expired, lacks Legal approval, or is older than 18 months without review.</p>
+<h3>1.3.5 Interim control notices</h3>
+<p>Where immediate amendment is not practical, the Head of Quality may issue an interim control notice valid for a maximum of 60 calendar days. The notice must state the affected section, temporary rule, owner, start date, expiry date and mandatory communication method.</p>
+<p>An interim control notice may not increase spending authority, waive incident reporting, reduce PPE requirements, shorten record retention, or authorise unqualified drivers.</p>
+<h2>1.4 Compliance Obligations</h2>
+<p>Northwind operates a management system aligned to ISO 9001 for quality management and ISO 14001 for environmental management. Sites handling pharmaceutical products must follow GDP controls, including validated storage, transport qualification, deviation handling, traceability and staff training.</p>
+<p>Compliance obligations include:</p>
+<ol>
+<li>Maintaining auditable records under Section 7.2.</li>
+</ol>
+<ol>
+<li>Applying incident classification and escalation under Section 3.1 and Appendix B.</li>
+</ol>
+<ol>
+<li>Keeping financial commitments within Table 2.1.</li>
+</ol>
+<ol>
+<li>Maintaining vehicle inspections under Section 5.1.</li>
+</ol>
+<ol>
+<li>Protecting employee, customer and driver data under Section 7.3.</li>
+</ol>
+<ol>
+<li>Completing corrective actions within the timeframes in Section 3.5.3.</li>
+</ol>
+<p>Compliance with ISO 9001 does not mean every local process may be customised. A site process may vary only where the process map, risk assessment and local work instruction have been approved by Quality. Compliance with ISO 14001 requires documented waste segregation, spill response and environmental incident reporting. Hazardous materials handling requirements are in Section 4.4.</p>
+<h1>2. Financial Controls and Delegation</h1>
+<h2>2.1 Delegation of Authority</h2>
+<p>All spending, commitments, hiring, contracts and asset disposals must comply with Table 2.1. Values are stated in EUR excluding VAT, unless the contract or invoice is legally VAT-inclusive and cannot be separated.</p>
+<p>Table 2.1 — Delegation of Authority Matrix</p>
+<div class="table-scroll"><table><thead><tr>
+<th>Decision Type</th>
+<th>Band 1–3 max EUR amount</th>
+<th>Band 4–5 max EUR amount</th>
+<th>Band 6+ max EUR amount</th>
+<th>Board</th>
+</tr></thead><tbody>
+<tr>
+<td>Capital expenditure</td>
+<td>€0</td>
+<td>€18,750</td>
+<td>€247,500</td>
+<td>Above €247,500</td>
+</tr>
+<tr>
+<td>Operating expenditure</td>
+<td>€2,950</td>
+<td>€28,600</td>
+<td>€186,400</td>
+<td>Above €186,400</td>
+</tr>
+<tr>
+<td>Contract signing</td>
+<td>€0</td>
+<td>€24,999</td>
+<td>€312,750</td>
+<td>Above €312,750</td>
+</tr>
+<tr>
+<td>Headcount approval</td>
+<td>€0</td>
+<td>1 role up to €54,500 annual cost</td>
+<td>6 roles up to €486,000 annual cost</td>
+<td>Above 6 roles or €486,000</td>
+</tr>
+<tr>
+<td>IT procurement</td>
+<td>€1,200</td>
+<td>€15,000</td>
+<td>€124,800</td>
+<td>Above €124,800</td>
+</tr>
+<tr>
+<td>Fleet acquisition</td>
+<td>€0</td>
+<td>€41,250</td>
+<td>€598,000</td>
+<td>Above €598,000</td>
+</tr>
+<tr>
+<td>Lease commitment</td>
+<td>€0</td>
+<td>€36,800 total term value</td>
+<td>€428,500 total term value</td>
+<td>Above €428,500</td>
+</tr>
+<tr>
+<td>Marketing spend</td>
+<td>€750</td>
+<td>€11,400</td>
+<td>€76,250</td>
+<td>Above €76,250</td>
+</tr>
+<tr>
+<td>Emergency purchase</td>
+<td>€6,500</td>
+<td>€39,750</td>
+<td>€155,000</td>
+<td>Above €155,000 or retrospective ratification</td>
+</tr>
+<tr>
+<td>Asset disposal</td>
+<td>€500 book value</td>
+<td>€12,250 book value</td>
+<td>€95,500 book value</td>
+<td>Above €95,500</td>
+</tr>
+</tbody></table></div>
+<p>All approvals must be obtained before commitment — except when the purchase is an Emergency Purchase as defined in Section 1.2 and documented within 24 hours under Section 2.2.5.</p>
+<p>The financial delegation limits in Table 2.1 apply to the total commitment value, not the monthly invoice amount. A 36-month lease at €9,000 per month is a €324,000 lease commitment, subject to Band 6+ approval and possibly Board approval. For contract signing controls, see Section 2.5.</p>
+<h2>2.2 Purchase Order Procedure</h2>
+<h3>2.2.1 Mandatory purchase orders</h3>
+<p>A purchase order is required before any supplier begins work or dispatches goods where the value exceeds €1,000, or where the purchase relates to IT, fleet, temporary labour, legal services, property works, regulated products, hazardous materials, or customer-billable subcontracting.</p>
+<p>If the supplier refuses to accept a purchase order, then Procurement must approve an alternative written commitment — except when the purchase relates to legal services, vehicle hire, temporary labour or IT systems, where a purchase order remains mandatory.</p>
+<h3>2.2.2 Purchase request steps</h3>
+<p>The requester must complete the following steps:</p>
+<ol>
+<li>Confirm the business need and budget code.</li>
+</ol>
+<ol>
+<li>Check whether an approved supplier exists.</li>
+</ol>
+<ol>
+<li>Obtain at least 3 written quotes for purchases above €7,500.</li>
+</ol>
+<ol>
+<li>Attach the specification, quote comparison and risk assessment where required.</li>
+</ol>
+<ol>
+<li>Route the purchase request to the approval authority in Table 2.1.</li>
+</ol>
+<ol>
+<li>Wait for purchase order release before instructing the supplier.</li>
+</ol>
+<ol>
+<li>Confirm goods receipt or service completion within 3 Working Days of delivery.</li>
+</ol>
+<ol>
+<li>Resolve invoice mismatch within 5 Working Days of Finance notification.</li>
+</ol>
+<p>For IT procurement, the Information Security review in Section 7.4.5 applies before approval. For fleet acquisitions, the inspection and qualification requirements in Section 5.1 apply before operational use.</p>
+<h3>2.2.3 Quote requirements</h3>
+<p>Three quotes are required above €7,500 — except when the item is purchased under a Framework Agreement, the supplier is the original equipment manufacturer for a safety-critical component, or the purchase is an Emergency Purchase.</p>
+<p>A single-source justification must be approved by Procurement for values above €12,500 and by Band 6+ for values above €50,000. The justification must include price reasonableness evidence, supplier risk, contract term and exit options.</p>
+<h3>2.2.4 Goods receipt</h3>
+<p>Goods receipt must be recorded in the finance system within 3 Working Days. For warehouse equipment, the receiving site must also record serial number, inspection status and asset tag within 5 Working Days. For cold chain equipment, calibration evidence must be checked before the equipment is released for use; see Section 4.3.5.</p>
+<h3>2.2.5 Emergency purchases</h3>
+<p>Emergency Purchases may proceed without prior purchase order only where delay would create immediate operational harm. The requester must document:</p>
+<ol>
+<li>Incident or risk reference.</li>
+</ol>
+<ol>
+<li>Supplier selected.</li>
+</ol>
+<ol>
+<li>Estimated cost.</li>
+</ol>
+<ol>
+<li>Reason normal procurement could not be followed.</li>
+</ol>
+<ol>
+<li>Retrospective approval under Table 2.1 within 24 hours.</li>
+</ol>
+<ol>
+<li>Purchase order conversion within 2 Working Days.</li>
+</ol>
+<p>Emergency Purchase status must not be used to avoid competitive quote requirements for predictable maintenance, recurring temporary labour, planned IT renewal or late budget planning.</p>
+<h2>2.3 Budget Management and Variance Reporting</h2>
+<p>Budget owners must review actual expenditure against budget at least monthly. Variances must be assessed using Table 2.2.</p>
+<h3>Table 2.2 — Budget Variance Escalation</h3>
+<div class="table-scroll"><table><thead><tr>
+<th>Variance percentage range</th>
+<th>Required action</th>
+<th>Approval authority</th>
+<th>Reporting deadline</th>
+</tr></thead><tbody>
+<tr>
+<td>0.0% to 2.4%</td>
+<td>Record explanation in monthly budget commentary</td>
+<td>Budget owner</td>
+<td>Month-end + 5 Working Days</td>
+</tr>
+<tr>
+<td>2.5% to 4.9%</td>
+<td>Submit recovery note with cause, forecast and corrective action</td>
+<td>Band 4–5 manager</td>
+<td>Month-end + 5 Working Days</td>
+</tr>
+<tr>
+<td>5.0% to 7.9%</td>
+<td>Submit revised forecast and spending freeze proposal for discretionary costs</td>
+<td>Band 6+</td>
+<td>Month-end + 3 Working Days</td>
+</tr>
+<tr>
+<td>8.0% to 11.9%</td>
+<td>Formal variance review with Finance Business Partner and COO notification</td>
+<td>COO or delegate</td>
+<td>Within 48 hours of month-end close</td>
+</tr>
+<tr>
+<td>12.0% to 17.4%</td>
+<td>Corrective action plan and Board Finance Committee notification</td>
+<td>COO and CFO</td>
+<td>Within 24 hours of confirmation</td>
+</tr>
+<tr>
+<td>17.5% or above</td>
+<td>Board review and approval of revised operating plan</td>
+<td>Board</td>
+<td>Within 5 calendar days</td>
+</tr>
+</tbody></table></div>
+<p>If a favourable variance exceeds 8.0%, the budget owner must still explain the cause — except when the variance relates to a Board-approved deferral already recorded in the forecast pack.</p>
+<p>A budget underspend may not be transferred to another cost centre without Finance approval. A site manager may not use maintenance underspend to fund marketing, furniture, entertainment or discretionary travel.</p>
+<h2>2.4 Expense Claims and Advances</h2>
+<p>Expense claims must be submitted within 30 calendar days of the expense date. Claims submitted after 30 days require Band 4–5 approval. Claims submitted after 90 calendar days require Band 6+ approval and may be rejected unless local law requires reimbursement.</p>
+<p>Receipts are required for all claims above €15. Card slips alone are not acceptable where itemised receipts are reasonably available. Alcohol is not reimbursable — except when pre-approved as part of a customer hospitality event with a named host, named customer attendees, and total hospitality cost below €85 per external attendee.</p>
+<p>Cash advances are limited to €300 per employee and must be cleared within 10 Working Days of trip completion. No second advance may be issued while an earlier advance remains uncleared.</p>
+<h2>2.5 Contract Management</h2>
+<h3>2.5.1 Contract review</h3>
+<p>All contracts above €25,000 require Legal review before signature. All contracts above €25,000 require two signatories — except when the document is an order under a Board pre-approved Framework Agreement and the order value is within Table 2.1.</p>
+<p>Contracts involving personal data, hazardous materials, subcontracted transport, pharmaceuticals, IT systems, property lease, vehicle lease, or customer liability caps must be reviewed by Legal regardless of value.</p>
+<h3>2.5.2 Contract signing</h3>
+<p>Only employees with authority under Table 2.1 may sign contracts. Digital signatures are valid where configured through the approved contract management system. A typed name in an email is not a contract signature for commitments above €5,000.</p>
+<p>If a customer asks for urgent service before contract signature, then Operations may perform only a risk-assessed emergency movement approved by Band 6+ — except when the movement involves pharmaceuticals, hazardous materials, cross-border customs documentation or subcontracted transport, in which case Legal approval is mandatory before service begins.</p>
+<h3>2.5.3 Contract storage</h3>
+<p>All signed contracts must be stored in the contract repository within 2 Working Days of signature. Contract owners must enter start date, end date, notice period, liability cap, renewal type, price indexation and responsible manager.</p>
+<p>Contracts must not be stored only in email inboxes, local drives, shared chat channels or personal cloud folders. For document classification, see Section 7.1. For retention, see Section 7.2.</p>
+<h3>2.5.4 Contract conflicts</h3>
+<p>Where a contract conflicts with this manual, the employee identifying the conflict must notify Legal and the relevant Section Owner within 2 Working Days. Until Legal issues a written instruction, the stricter operational rule applies.</p>
+<h1>3. Incident Management and Escalation</h1>
+<h2>3.1 Incident Classification</h2>
+<p>Incidents must be classified using the highest applicable severity across safety, financial, regulatory and reputational impact. Where uncertainty exists, classify one level higher until reviewed by the Incident Commander.</p>
+<h3>Table 3.1 — Incident Severity Classification Matrix</h3>
+<div class="table-scroll"><table><thead><tr>
+<th>Severity</th>
+<th>Safety impact response time</th>
+<th>Financial impact response time</th>
+<th>Regulatory impact response time</th>
+<th>Reputational impact response time</th>
+</tr></thead><tbody>
+<tr>
+<td>Critical</td>
+<td>1 hour</td>
+<td>2 hours</td>
+<td>1 hour</td>
+<td>2 hours</td>
+</tr>
+<tr>
+<td>Major</td>
+<td>2 hours</td>
+<td>4 hours</td>
+<td>2 hours</td>
+<td>4 hours</td>
+</tr>
+<tr>
+<td>Minor</td>
+<td>24 hours</td>
+<td>24 hours</td>
+<td>12 hours</td>
+<td>72 hours</td>
+</tr>
+<tr>
+<td>Observation</td>
+<td>72 hours</td>
+<td>96 hours</td>
+<td>48 hours</td>
+<td>120 hours</td>
+</tr>
+</tbody></table></div>
+<p>The response time is measured from discovery, not from confirmation. “Discovery” includes credible reports by employees, drivers, customers, regulators, neighbours, police, insurers, suppliers or system alerts.</p>
+<p>The most senior person on site is not automatically the Incident Commander. The Incident Commander is the person holding current Incident Command certification and assigned under Section 3.4.2. This rule applies even where a Band 6+ manager is present.</p>
+<h2>3.2 Reporting Procedure</h2>
+<h3>3.2.1 Immediate reporting</h3>
+<p>Critical Incidents must be reported within 1 hour of discovery. Major Incidents must be reported within 2 hours of discovery. Minor Incidents must be reported within 24 hours. Observations must be logged within 72 hours, unless the Observation relates to security, data protection, cold chain, hazardous materials or fire controls, in which case it must be logged within 24 hours.</p>
+<p>Reports must be entered into the incident management system and, for Critical or Major Incidents, also communicated by phone to the escalation chain in Section 3.4.</p>
+<h3>3.2.2 Minimum report content</h3>
+<p>The initial incident report must include:</p>
+<ol>
+<li>Site, vehicle, route or customer location.</li>
+</ol>
+<ol>
+<li>Date and time of discovery.</li>
+</ol>
+<ol>
+<li>Reporter name and contact.</li>
+</ol>
+<ol>
+<li>Initial severity classification.</li>
+</ol>
+<ol>
+<li>People injured or potentially exposed.</li>
+</ol>
+<ol>
+<li>Product, vehicle or asset affected.</li>
+</ol>
+<ol>
+<li>Immediate containment action.</li>
+</ol>
+<ol>
+<li>Photographs where safe and lawful.</li>
+</ol>
+<ol>
+<li>Regulatory or customer reporting deadline, if known. 10. Incident Commander assigned, if already known.</li>
+</ol>
+<p>A report must not be delayed because all facts are not yet known. Initial reports may state “unknown” for unresolved fields and must be updated within 4 hours for Critical Incidents and 8 hours for Major Incidents.</p>
+<h2>3.3 Investigation Requirements</h2>
+<p>Every Critical and Major Incident requires a formal investigation. Minor Incidents require investigation where repeated 3 times within 60 days, where requested by Quality, or where involving safety, regulatory, cold chain or hazardous material controls.</p>
+<p>Investigation must begin within:</p>
+<ol>
+<li>4 hours for Critical Incidents.</li>
+</ol>
+<ol>
+<li>1 Working Day for Major Incidents.</li>
+</ol>
+<ol>
+<li>5 Working Days for Minor Incidents requiring investigation.</li>
+</ol>
+<ol>
+<li>10 Working Days for Observations selected for trend review.</li>
+</ol>
+<p>Investigation teams must include at least one person independent of the site or function involved for Critical Incidents. For cold chain investigations, the Quality representative must review temperature data, release status and customer notification requirements; see Section 4.3.2.</p>
+<h2>3.4 Escalation Path</h2>
+<h3>3.4.1 Escalation sequence</h3>
+<p>For Critical and Major Incidents, the escalation sequence is:</p>
+<ol>
+<li>Reporter notifies Shift Lead or Site Duty Manager.</li>
+</ol>
+<ol>
+<li>Site Duty Manager ensures immediate safety containment.</li>
+</ol>
+<ol>
+<li>Certified Incident Commander is appointed.</li>
+</ol>
+<ol>
+<li>Incident Commander notifies Regional Operations Director.</li>
+</ol>
+<ol>
+<li>Regional Operations Director notifies COO.</li>
+</ol>
+<ol>
+<li>COO notifies CEO, Legal and Communications if Critical.</li>
+</ol>
+<ol>
+<li>Quality notifies customer quality contact where product integrity is affected.</li>
+</ol>
+<ol>
+<li>Legal determines regulator notification requirements.</li>
+</ol>
+<ol>
+<li>Communications prepares external holding statement if reputational impact is Major or Critical.</li>
+</ol>
+<p>If the Site Duty Manager is unavailable for more than 15 minutes, the reporter must contact the Regional Operations Control Desk directly — except when doing so would delay emergency medical response, evacuation, spill containment or fire alarm activation.</p>
+<h3>3.4.2 Incident Commander assignment</h3>
+<p>The Incident Commander must hold current certification issued within the previous 24 months. If no certified Incident Commander is on site, the Regional Operations Control Desk</p>
+<p>must assign one remotely within 30 minutes for Critical Incidents and 60 minutes for Major Incidents.</p>
+<p>The most senior person present supports the Incident Commander but does not overrule incident decisions unless immediate life safety is at risk. This contradicts common hierarchy assumptions and is mandatory.</p>
+<h3>3.4.3 Escalation calls</h3>
+<p>Escalation calls must follow this order:</p>
+<ol>
+<li>State incident classification.</li>
+</ol>
+<ol>
+<li>State whether people are injured or missing.</li>
+</ol>
+<ol>
+<li>State whether emergency services are present.</li>
+</ol>
+<ol>
+<li>State whether operations are stopped.</li>
+</ol>
+<ol>
+<li>State customer or product impact.</li>
+</ol>
+<ol>
+<li>State regulatory notification risk.</li>
+</ol>
+<ol>
+<li>State next update time.</li>
+</ol>
+<p>For Critical Incidents, update calls occur every 60 minutes until stabilised. For Major Incidents, update calls occur every 4 hours during the first day. The escalation path described in this section applies to Section 5.5 accidents and breakdowns, modified by the vehiclespecific requirements in Section 5.5.2.</p>
+<h2>3.5 Post-Incident Review and Corrective Action</h2>
+<h3>3.5.1 Review timing</h3>
+<p>A post-incident review must occur within:</p>
+<ol>
+<li>5 Working Days for Critical Incidents.</li>
+</ol>
+<ol>
+<li>10 Working Days for Major Incidents.</li>
+</ol>
+<ol>
+<li>20 Working Days for selected Minor Incidents.</li>
+</ol>
+<ol>
+<li>30 Working Days for recurring Observations.</li>
+</ol>
+<p>The review must include timeline, root cause, failed controls, working controls, customer impact, regulatory exposure, financial exposure, corrective actions, owner, due date and effectiveness check.</p>
+<h3>3.5.2 Root cause method</h3>
+<p>Root cause analysis must use at least 5-Why, cause-and-effect analysis, or barrier analysis. For incidents involving injury, cold chain failure, vehicle collision, data breach or hazardous material release, barrier analysis is mandatory.</p>
+<h3>3.5.3 Corrective action timing</h3>
+<p>Corrective actions must be categorised as follows:</p>
+<div class="table-scroll"><table><thead><tr>
+<th>Action priority</th>
+<th>Example</th>
+<th>Maximum due date</th>
+<th>Closure evidence required</th>
+</tr></thead><tbody>
+<tr>
+<td>Immediate containment</td>
+<td>Quarantine affected stock</td>
+<td>4 hours</td>
+<td>Screenshot, photograph or system log</td>
+</tr>
+<tr>
+<td>Short-term correction</td>
+<td>Replace damaged dock barrier</td>
+<td>5 Working Days</td>
+<td>Work order and photo</td>
+</tr>
+<tr>
+<td>System corrective action</td>
+<td>Revise SOP or retrain team</td>
+<td>30 calendar days</td>
+<td>Approved document and training record</td>
+</tr>
+<tr>
+<td>Preventive action</td>
+<td>Install sensor, alarm or engineering control</td>
+<td>90 calendar days</td>
+<td>Commissioning certificate</td>
+</tr>
+<tr>
+<td>Effectiveness check</td>
+<td>Confirm no recurrence</td>
+<td>120 calendar days</td>
+<td>Trend report</td>
+</tr>
+</tbody></table></div>
+<p>A corrective action may be extended once by the approving manager for up to 15 calendar days — except when the action relates to a regulatory commitment, life-safety control, GDP release decision, or Board-agreed remediation.</p>
+<h2>3.6 Near-Miss Reporting</h2>
+<p>A near miss is an event that could reasonably have caused injury, loss, regulatory breach, vehicle accident, product damage or customer service failure but did not. All employees must report near misses within 72 hours. Safety-related near misses involving forklifts, loading bays, pedestrians, vehicle manoeuvring, chemical spills or racking impact must be reported before the end of the shift.</p>
+<p>Near-miss reporting is non-punitive unless the report reveals intentional misconduct, substance abuse, falsification of records or repeated refusal to follow mandatory controls. For disciplinary framework references, see Section 6.4.</p>
+<h1>4. Warehouse Operations</h1>
+<h2>4.1 Goods Receiving Procedure</h2>
+<h3>4.1.1 Pre-arrival controls</h3>
+<p>Inbound deliveries must be booked at least 24 hours before arrival for standard goods and 48 hours before arrival for cold chain, hazardous materials or high-value goods above €100,000 declared value. Unbooked vehicles may be accepted only with Site Duty Manager approval.</p>
+<p>If a delivery arrives without booking, then receiving may proceed after risk assessment — except when the load contains pharmaceuticals, hazardous materials, excise goods, controlled customer returns, or temperature-controlled stock, where Quality or Compliance must approve before unloading.</p>
+<h3>4.1.2 Receiving steps</h3>
+<p>The receiving team must follow these steps:</p>
+<ol>
+<li>Confirm booking reference, supplier, vehicle registration and driver identity.</li>
+</ol>
+<ol>
+<li>Check seal number against transport document.</li>
+</ol>
+<ol>
+<li>Record arrival time to the nearest minute.</li>
+</ol>
+<ol>
+<li>Direct vehicle to assigned bay.</li>
+</ol>
+<ol>
+<li>Inspect trailer condition before opening doors.</li>
+</ol>
+<ol>
+<li>Confirm goods count against delivery note.</li>
+</ol>
+<ol>
+<li>Record visible damage before unloading.</li>
+</ol>
+<ol>
+<li>Scan pallets or cartons into the warehouse management system.</li>
+</ol>
+<ol>
+<li>Apply Quarantine status where required.</li>
+</ol>
+<ol>
+<li>Move goods to assigned storage location within 2 hours of unloading.</li>
+</ol>
+<p>For cold chain receiving, temperature must be checked before unloading unless unloading delay would increase product risk. Temperature procedures are in Section 4.3.2. For hazardous materials, segregation rules in Section 4.4 apply before put-away.</p>
+<h3>4.1.3 Branching exceptions</h3>
+<p>If the seal is broken, then the receiving team must stop unloading and notify the Site Duty Manager — except when the delivery is an internal shuttle transfer with electronic seal verification and no customer chain-of-custody requirement.</p>
+<p>If pallet count differs from documentation, then the discrepancy must be recorded before driver departure — except when safety or traffic control requires immediate bay clearance, in which case photographs and driver acknowledgement must be obtained within 30 minutes.</p>
+<p>If visible damage affects more than 3% of units or any regulated product, the stock must be placed in Quarantine pending Quality decision.</p>
+<h2>4.2 Stock Management and Cycle Counting</h2>
+<p>Each warehouse must maintain location accuracy of at least 99.2% and stock accuracy of at least 98.7% measured monthly. Cycle counts must follow risk-based frequency:</p>
+<div class="table-scroll"><table><thead><tr>
+<th>Stock category</th>
+<th>Minimum count frequency</th>
+<th>Required accuracy</th>
+<th>Escalation trigger</th>
+</tr></thead><tbody>
+<tr>
+<td>High-value stock above €500/unit</td>
+<td>Weekly</td>
+<td>99.7%</td>
+<td>Any variance above €1,000</td>
+</tr>
+<tr>
+<td>Pharmaceuticals</td>
+<td>Weekly</td>
+<td>99.9%</td>
+<td>Any unexplained variance</td>
+</tr>
+</tbody></table></div>
+<div class="table-scroll"><table><thead><tr>
+<th>Stock category</th>
+<th>Minimum count frequency</th>
+<th>Required accuracy</th>
+<th>Escalation trigger</th>
+</tr></thead><tbody>
+<tr>
+<td>Customer critical SKUs</td>
+<td>Fortnightly</td>
+<td>99.5%</td>
+<td>Two variances in 30 days</td>
+</tr>
+<tr>
+<td>Standard stock</td>
+<td>Quarterly</td>
+<td>98.7%</td>
+<td>Variance above €5,000</td>
+</tr>
+<tr>
+<td>Obsolete or slow- moving stock</td>
+<td>Semi-annually</td>
+<td>97.5%</td>
+<td>Negative stock or aged stock over 365 days</td>
+</tr>
+</tbody></table></div>
+<p>Stock adjustments above €2,500 require Band 4–5 approval. Adjustments above €25,000 require Band 6+ approval. Any adjustment involving pharmaceuticals, hazardous materials or suspected theft must be escalated under Section 3.1 regardless of value.</p>
+<h2>4.3 Cold Chain Management</h2>
+<h3>4.3.1 Temperature thresholds</h3>
+<p>Cold Chain Product categories must be stored, handled and transported within Table 4.1. These thresholds apply unless the customer contract, product licence or Quality-approved lane validation requires stricter limits.</p>
+<p>Table 4.1 — Cold Chain Temperature Thresholds</p>
+<div class="table-scroll"><table><thead><tr>
+<th>Product category</th>
+<th>Required temperature range</th>
+<th>Maximum excursion time</th>
+<th>Escalation action</th>
+</tr></thead><tbody>
+<tr>
+<td>Category A — frozen biologics</td>
+<td>-25°C to -15°C</td>
+<td>15 minutes</td>
+<td>Immediate Quarantine; Quality call within 1 hour</td>
+</tr>
+<tr>
+<td>Category B — chilled pharmaceuticals</td>
+<td>+2°C to +8°C</td>
+<td>30 minutes</td>
+<td>Quarantine; deviation opened within 2 hours</td>
+</tr>
+<tr>
+<td>Category C — clinical trial kits</td>
+<td>+2°C to +8°C</td>
+<td>20 minutes</td>
+<td>Quarantine; sponsor notified within 4 hours</td>
+</tr>
+<tr>
+<td>Category D — fresh premium food</td>
+<td>0°C to +4°C</td>
+<td>45 minutes</td>
+<td>Site review; customer notice within 8 hours if released stock affected</td>
+</tr>
+<tr>
+<td>Category E — controlled ambient medicines</td>
+<td>+15°C to +25°C</td>
+<td>120 minutes</td>
+<td>Quality review within 24 hours</td>
+</tr>
+<tr>
+<td>Category F — chocolate and confectionery</td>
+<td>+12°C to +18°C</td>
+<td>180 minutes</td>
+<td>Operations review; hold if visible bloom or melt risk</td>
+</tr>
+<tr>
+<td>Category G — temperature-sensitive electronics</td>
+<td>+5°C to +30°C</td>
+<td>240 minutes</td>
+<td>Engineering review if condensation observed</td>
+</tr>
+<tr>
+<td>Category H — cosmetics with stability limits</td>
+<td>+10°C to +25°C</td>
+<td>180 minutes</td>
+<td>Customer approval before dispatch if excursion repeated</td>
+</tr>
+</tbody></table></div>
+<p>For temperature excursion procedures, see Section 4.3.2. For incident classification, see Section 3.1 and Appendix B.</p>
+<h3>4.3.2 Temperature excursion procedure</h3>
+<p>When a Temperature Excursion is detected or suspected:</p>
+<ol>
+<li>Stop picking, loading or dispatch of affected stock.</li>
+</ol>
+<ol>
+<li>Place affected stock in Quarantine within 15 minutes.</li>
+</ol>
+<ol>
+<li>Capture temperature graph, alarm log, location, product batch and time range.</li>
+</ol>
+<ol>
+<li>Notify Quality within the response time in Table 4.1.</li>
+</ol>
+<ol>
+<li>Check whether stock was Released Stock at the time of excursion.</li>
+</ol>
+<ol>
+<li>Determine whether customer notification is required.</li>
+</ol>
+<ol>
+<li>Record deviation in the quality system.</li>
+</ol>
+<ol>
+<li>Await written Quality release before stock movement.</li>
+</ol>
+<p>If the excursion affects Category B chilled pharmaceuticals, then maximum excursion time is 30 minutes — except when lane validation documentation approved by Quality permits a named product-specific exposure limit and the product has not exceeded that validated limit.</p>
+<p>Stock must not be released based only on visual inspection. A normal-looking pharmaceutical product may still be non-compliant. This rule applies even when the customer requests urgent shipment.</p>
+<h3>4.3.3 Cold chain loading</h3>
+<p>Cold chain vehicles must be pre-cooled before loading. Required pre-cooling duration is:</p>
+<ol>
+<li>Frozen vehicles: minimum 45 minutes.</li>
+</ol>
+<ol>
+<li>Chilled vehicles: minimum 30 minutes.</li>
+</ol>
+<ol>
+<li>Controlled ambient vehicles: minimum 20 minutes.</li>
+</ol>
+<ol>
+<li>Dual-temperature vehicles: each compartment must reach set point before first pallet enters.</li>
+</ol>
+<p>Dock doors may remain open for a maximum of 7 minutes during cold chain loading unless protected by active air curtain or sealed dock shelter. If loading exceeds 20 minutes, temperature must be checked every 10 minutes.</p>
+<h3>4.3.4 Temperature monitoring</h3>
+<p>All cold rooms must have continuous calibrated monitoring. Alarm set points must be tighter than product limits by at least 1°C for chilled and ambient categories and 2°C for frozen categories. Manual checks must be performed at least twice per shift where automated monitoring is active and hourly where automated monitoring is unavailable.</p>
+<p>If automated monitoring fails, then manual checks must begin within 30 minutes — except when a validated backup logger is active, visible and configured to alert Quality.</p>
+<h3>4.3.5 Calibration</h3>
+<p>Temperature probes, handheld thermometers, vehicle sensors and data loggers must be calibrated at least every 12 months. Devices used for Category A, B or C products require calibration every 6 months. Calibration certificates must be retained under Section 7.2.</p>
+<h2>4.4 Hazardous Materials Handling</h2>
+<p>Hazardous materials may be received, stored, handled or dispatched only at sites authorised for the relevant class. Site authorisation must identify storage zone, maximum quantity, segregation requirement, spill kit type, PPE and emergency contact.</p>
+<p>Hazardous materials must never be stored above food, pharmaceuticals or absorbent packaging. Flammable liquids must be stored in approved cabinets where aggregate quantity exceeds 50 litres. Corrosives must be stored below shoulder height unless the racking has mechanical containment.</p>
+<p>If hazardous material packaging is damaged, then unloading must stop and the spill response plan must be activated — except when the damage is limited to outer shrink-wrap and the inner certified packaging remains intact, dry and legible.</p>
+<p>Spill kits must be inspected monthly. Used spill kit components must be replaced within 24 hours. Environmental incidents must be reported under Section 3.1 and ISO 14001 controls referenced in Section 1.4.</p>
+<h2>4.5 Loading and Dispatch</h2>
+<p>Outbound dispatch must follow route, customer, temperature, security and load-restraint requirements. The dispatch team must:</p>
+<ol>
+<li>Confirm order release status.</li>
+</ol>
+<ol>
+<li>Verify customer, destination and carrier.</li>
+</ol>
+<ol>
+<li>Check vehicle condition and cleanliness.</li>
+</ol>
+<ol>
+<li>Confirm load sequence against route plan.</li>
+</ol>
+<ol>
+<li>Apply load restraint appropriate to vehicle type.</li>
+</ol>
+<ol>
+<li>Record seal number where required.</li>
+</ol>
+<ol>
+<li>Capture dispatch time.</li>
+</ol>
+<ol>
+<li>Confirm electronic proof of dispatch.</li>
+</ol>
+<p>Loading must not begin until the vehicle has passed the daily vehicle check in Section 5.1 — except when the vehicle is a sealed customer trailer already accepted under a documented customer-controlled process.</p>
+<p>For mixed loads, hazardous materials, food, pharmaceuticals and high-value goods must be segregated according to the stricter of customer requirement, legal requirement or Northwind site rule.</p>
+<h1>5. Fleet and Transport</h1>
+<h2>5.1 Vehicle Inspection Requirements</h2>
+<p>Every Fleet Vehicle must meet inspection requirements in Table 5.1. Drivers must not operate a vehicle with a safety-critical defect.</p>
+<p>Table 5.1 — Vehicle Inspection Schedule</p>
+<div class="table-scroll"><table><thead><tr>
+<th>Vehicle type</th>
+<th>Daily check items</th>
+<th>Weekly check items</th>
+<th>Monthly check items</th>
+<th>Quarterly check items</th>
+</tr></thead><tbody>
+<tr>
+<td>3.5t delivery van</td>
+<td>Tyres, lights, mirrors, horn, fluid leaks, load area cleanliness</td>
+<td>Wiper blades, first-aid kit, fire extinguisher, reversing alarm</td>
+<td>Brake wear indicator, battery condition, telematics unit, spare wheel kit</td>
+<td>Workshop safety inspection, emissions check, door seals</td>
+</tr>
+<tr>
+<td>7.5t rigid truck</td>
+<td>Tyres, lights, tachograph, tail lift, load restraint, AdBlue level</td>
+<td>Tail-lift lubrication, wheel nut indicators, reflective markings</td>
+<td>Brake system, suspension, refrigeration standby plug if fitted</td>
+<td>Preventive maintenance inspection, tachograph calibration check</td>
+</tr>
+<tr>
+<td>18t refrigerated rigid</td>
+<td>Tyres, lights, refrigeration set point, fuel level, door seals, temperature printer</td>
+<td>Drain lines, evaporator guards, bulkhead seals, emergency release</td>
+<td>Refrigeration service status, sensor accuracy check, insulation damage</td>
+<td>Temperature mapping verification, compressor inspection</td>
+</tr>
+<tr>
+<td>44t articulated unit and trailer</td>
+<td>Coupling, air lines, tyres, lights, ABS, fifth wheel, trailer brake test</td>
+<td>Landing legs, curtain tension, load straps, wheel nut indicators</td>
+<td>Brake balance report, tachograph download, tyre tread audit</td>
+<td>Full fleet compliance inspection and trailer structural inspection</td>
+</tr>
+<tr>
+<td>Electric urban van</td>
+<td>Tyres, lights, charging cable, battery state, pedestrian alert sound</td>
+<td>Charging port condition, cable insulation, regenerative braking report</td>
+<td>Battery health report, telematics fault codes, software update status</td>
+<td>High-voltage safety inspection and range variance review</td>
+</tr>
+</tbody></table></div>
+<p>Daily checks must be completed before first use and recorded electronically. A paper fallback may be used only during system outage and must be uploaded within 24 hours.</p>
+<p>If a driver identifies a safety-critical defect, then the vehicle must be immobilised — except when moving the vehicle less than 500 metres is necessary to remove it from live traffic or immediate danger and can be done safely.</p>
+<h2>5.2 Driver Qualification and Licence Checks</h2>
+<p>Drivers must hold a valid licence for the vehicle category, completed Northwind driver induction, route-specific training where required, and applicable CPC or equivalent professional qualification.</p>
+<p>Licence checks must be performed:</p>
+<ol>
+<li>Before first assignment.</li>
+</ol>
+<ol>
+<li>Every 6 months for standard drivers.</li>
+</ol>
+<ol>
+<li>Every 3 months for drivers with penalty points, prior suspension or high-risk routes.</li>
+</ol>
+<ol>
+<li>Immediately following any accident, licence notification, substance test failure or credible report of unsafe driving.</li>
+</ol>
+<p>Temporary drivers may operate Fleet Vehicles only after licence validation, induction and vehicle familiarisation. Temporary staff may not operate forklifts — except holders of a valid RTITB certificate who have completed the Northwind induction module NWFLT-02 within the previous 90 days and passed the site practical assessment.</p>
+<h2>5.3 Route Planning and Load Optimisation</h2>
+<p>Route planners must use the transport management system for all planned routes exceeding 50 kilometres or involving more than 4 delivery points. Manual route planning is permitted for emergency local moves below 50 kilometres but must be entered retrospectively by end of shift.</p>
+<p>Routes must consider:</p>
+<ol>
+<li>Delivery window.</li>
+</ol>
+<ol>
+<li>Driver hours.</li>
+</ol>
+<ol>
+<li>Vehicle capacity.</li>
+</ol>
+<ol>
+<li>Vehicle temperature capability.</li>
+</ol>
+<ol>
+<li>Low-emission zone restrictions.</li>
+</ol>
+<ol>
+<li>Toll and ferry costs.</li>
+</ol>
+<ol>
+<li>Customer unloading constraints.</li>
+</ol>
+<ol>
+<li>Hazardous materials restrictions.</li>
+</ol>
+<ol>
+<li>Vehicle height, weight and access limits.</li>
+</ol>
+<p>If route optimisation reduces cost but increases estimated delay beyond 45 minutes, then customer service approval is required — except when the delay avoids a driver-hours breach, bridge restriction, regulatory road closure or safety risk.</p>
+<h2>5.4 Tachograph Compliance</h2>
+<p>Tachograph data must be downloaded at least every 21 days for driver cards and every 60 days for vehicles. Any missing data period above 24 hours must be investigated.</p>
+<p>Drivers must follow applicable driving time, rest break and working time rules. A planned route must not rely on “expected tolerance” for tachograph breaches. Dispatchers must amend routes before departure where projected driving time exceeds legal limits by more than 10 minutes.</p>
+<p>If a tachograph device fails during a journey, the driver must notify Fleet Control within 30 minutes and complete manual records — except when the driver is dealing with an accident, police stop or immediate roadside safety issue, in which case notification must occur as soon as safe and no later than 2 hours.</p>
+<h2>5.5 Accident and Breakdown Procedure</h2>
+<h3>5.5.1 Accident response</h3>
+<p>Following an accident, the driver must:</p>
+<ol>
+<li>Stop safely.</li>
+</ol>
+<ol>
+<li>Protect life and call emergency services if required.</li>
+</ol>
+<ol>
+<li>Activate hazard warning equipment.</li>
+</ol>
+<ol>
+<li>Notify Fleet Control within 30 minutes if safe.</li>
+</ol>
+<ol>
+<li>Avoid admitting liability.</li>
+</ol>
+<ol>
+<li>Record location, time, parties, vehicle registrations and witness details.</li>
+</ol>
+<ol>
+<li>Photograph damage, road position and signage where lawful and safe.</li>
+</ol>
+<ol>
+<li>Follow drug and alcohol testing instructions under Section 6.3 where applicable.</li>
+</ol>
+<p>Any accident involving injury, hazardous materials, pharmaceuticals, temperature-controlled products, police attendance, public road closure, or projected loss above €25,000 must be classified under Section 3.1.</p>
+<h3>5.5.2 Breakdown response</h3>
+<p>For breakdowns, Fleet Control must determine whether to repair, recover, tranship or replace the vehicle. For Cold Chain Product, maximum decision time is 30 minutes from driver report. If product temperature cannot be maintained, Section 4.3.2 applies.</p>
+<p>A driver may remain with a broken-down vehicle only where safe parking, welfare and legal waiting conditions exist. Drivers must not wait on motorway hard shoulders beyond emergency necessity.</p>
+<h1>6. People and Conduct</h1>
+<h2>6.1 Working Hours and Overtime</h2>
+<p>Standard full-time working hours are 37.5 hours per week, excluding unpaid meal breaks. Site rosters must be published at least 14 calendar days in advance.</p>
+<p>Overtime requires pre-approval by the line manager — except when responding to a Critical or Major Incident, preventing cold chain failure, completing emergency vehicle recovery, or maintaining legal minimum staffing during evacuation or fire watch. Retrospective approval must be recorded within 24 hours.</p>
+<p>Weekend warehouse shifts follow a different overtime rate than weekday overtime. Weekday overtime is paid at 1.35× base hourly rate after contracted hours. Saturday scheduled warehouse overtime is paid at 1.20× for the first 6 hours and 1.45× thereafter. Sunday warehouse overtime is paid at 1.60×. These rates are subject to local legal minimums and approved Local Legal Addenda.</p>
+<p>Working a weekend does not automatically create a day-off entitlement in the following week unless required by local law, contract, or roster agreement. This differs from common informal practice and must be explained during induction.</p>
+<h2>6.2 Personal Protective Equipment</h2>
+<p>Minimum PPE in operational warehouse zones is high-visibility vest, safety footwear and site ID. Additional PPE applies by zone:</p>
+<div class="table-scroll"><table><thead><tr>
+<th>Zone or task</th>
+<th>Mandatory PPE</th>
+</tr></thead><tbody>
+<tr>
+<td>Loading bay</td>
+<td>High-visibility vest, safety footwear, gloves where handling pallets</td>
+</tr>
+<tr>
+<td>Forklift operating area</td>
+<td>High-visibility vest, safety footwear, pedestrian exclusion compliance</td>
+</tr>
+<tr>
+<td>Cold room below 5°C</td>
+<td>Thermal jacket, thermal gloves for exposure above 15 minutes</td>
+</tr>
+</tbody></table></div>
+<div class="table-scroll"><table><thead><tr>
+<th>Zone or task</th>
+<th>Mandatory PPE</th>
+</tr></thead><tbody>
+<tr>
+<td>Freezer below -15°C</td>
+<td>Freezer suit, freezer gloves, face protection for exposure above 10 minutes</td>
+</tr>
+<tr>
+<td>Battery charging</td>
+<td>Eye protection, chemical gloves, apron where lead-acid batteries are present</td>
+</tr>
+<tr>
+<td>Hazardous materials handling</td>
+<td>PPE stated in safety data sheet and site risk assessment</td>
+</tr>
+</tbody></table></div>
+<p>Failure to wear mandatory PPE is a safety violation. “Zero tolerance” for safety violations does not mean automatic dismissal. It means mandatory investigation within 24 hours, documented corrective action, and disciplinary review where intent, repetition or serious risk is established.</p>
+<h2>6.3 Substance Testing</h2>
+<p>Substance testing may be conducted following accidents, near misses, reasonable suspicion, customer site requirement, safety-sensitive role assignment, or random testing where permitted by local law.</p>
+<p>Refusal to undertake a lawful substance test is treated as a serious conduct matter — except when the employee has a documented medical reason, language barrier, legal representation right, or local law restriction requiring HR review before the test proceeds.</p>
+<p>Employees taking prescribed medication that may impair driving or machinery operation must notify Occupational Health or HR before performing safety-sensitive work. The employee need not disclose diagnosis to the line manager.</p>
+<h2>6.4 Disciplinary Framework</h2>
+<p>The full disciplinary procedure is maintained as a separate Controlled Document, HRPOL-014 Disciplinary and Corrective Conduct Procedure. This manual does not replace that procedure.</p>
+<p>Operational managers must preserve evidence, record facts, protect safety and consult HR before disciplinary action. Immediate suspension from safety-sensitive duties may be imposed where there is credible risk of harm, record falsification, substance impairment, violence, theft, deliberate equipment misuse, or repeated refusal to follow mandatory controls.</p>
+<p>For near-miss reporting protections, see Section 3.6. For whistleblowing, see Section 6.5.</p>
+<h2>6.5 Whistleblowing</h2>
+<p>The full whistleblowing procedure is maintained as GOV-POL-006 Speak-Up and Protected Disclosure Procedure. Northwind prohibits retaliation against any person making a good-faith report.</p>
+<p>Reports may concern fraud, bribery, safety concealment, regulatory breach, harassment, discrimination, data misuse, environmental harm, falsified records, conflict of interest, or deliberate breach of this manual.</p>
+<p>Anonymous reports are accepted where legally permitted. Anonymous reporting does not prevent investigation, but it may limit the ability to obtain additional evidence. Whistleblowing records are Confidential Information under Section 7.1 and retained under Section 7.2.</p>
+<h1>7. Information and Records</h1>
+<h2>7.1 Document Classification</h2>
+<p>All documents, records, reports, emails, dashboards and exports must be classified as Public, Internal, Restricted or Confidential.</p>
+<div class="table-scroll"><table><thead><tr>
+<th>Classification</th>
+<th>Meaning</th>
+<th>Examples</th>
+<th>Minimum control</th>
+</tr></thead><tbody>
+<tr>
+<td>Public</td>
+<td>Approved for external release</td>
+<td>Public website text, approved brochures</td>
+<td>Communications approval</td>
+</tr>
+<tr>
+<td>Internal</td>
+<td>For Northwind employees and authorised contractors</td>
+<td>Standard work instructions, roster templates</td>
+<td>Northwind account access</td>
+</tr>
+<tr>
+<td>Restricted</td>
+<td>Limited to specific roles or teams</td>
+<td>Customer rate cards, audit findings, site security plans</td>
+<td>Role-based access</td>
+</tr>
+<tr>
+<td>Confidential</td>
+<td>Highest sensitivity</td>
+<td>Personal data, Board papers, disciplinary records, legal advice, security incidents</td>
+<td>Named access, encryption, access review</td>
+</tr>
+</tbody></table></div>
+<p>Documents must not be downgraded without owner approval. A Confidential document may not be sent to a shared warehouse email inbox — except when the inbox is access-restricted, monitored, encrypted and approved by Information Security for that process.</p>
+<h2>7.2 Retention Schedule</h2>
+<p>Records must be retained according to Table 7.1. Where local law requires longer retention, the longer period applies. Where customer contract requires shorter retention, Northwind retention still applies unless Legal approves otherwise.</p>
+<h3>Table 7.1 — Document Retention Schedule</h3>
+<div class="table-scroll"><table><thead><tr>
+<th>Document category</th>
+<th>Retention period</th>
+<th>Disposal method</th>
+<th>Legal or control basis</th>
+</tr></thead><tbody>
+<tr>
+<td>Signed customer contracts</td>
+<td>Contract term + 7 years</td>
+<td>Secure deletion or confidential shredding</td>
+<td>Contract limitation and audit defence</td>
+</tr>
+<tr>
+<td>Supplier contracts</td>
+<td>Contract term + 6 years</td>
+<td>Secure deletion or confidential shredding</td>
+<td>Commercial limitation period</td>
+</tr>
+<tr>
+<td>Purchase orders and invoices</td>
+<td>10 years</td>
+<td>Finance-system purge with audit log</td>
+<td>Tax and accounting control</td>
+</tr>
+<tr>
+<td>Payroll records</td>
+<td>7 years</td>
+<td>HR secure deletion</td>
+<td>Employment and tax audit</td>
+</tr>
+<tr>
+<td>Driver licence checks</td>
+<td>3 years after last driving assignment</td>
+<td>HR/fleet secure deletion</td>
+<td>Fleet compliance evidence</td>
+</tr>
+<tr>
+<td>Tachograph records</td>
+<td>2 years</td>
+<td>Fleet-system purge</td>
+<td>Transport compliance</td>
+</tr>
+<tr>
+<td>Vehicle inspection records</td>
+<td>5 years</td>
+<td>Fleet-system purge with export log</td>
+<td>Safety and maintenance defence</td>
+</tr>
+<tr>
+<td>Cold chain temperature records</td>
+<td>10 years</td>
+<td>Quality archive destruction approval</td>
+<td>GDP and product integrity</td>
+</tr>
+<tr>
+<td>Incident investigation files</td>
+<td>8 years; Critical Incidents 12 years</td>
+<td>Legal hold review before disposal</td>
+<td>Litigation and corrective action evidence</td>
+</tr>
+<tr>
+<td>Training records</td>
+<td>Employment + 5 years</td>
+<td>Learning-system deletion</td>
+<td>Competence evidence</td>
+</tr>
+<tr>
+<td>DSAR files</td>
+<td>3 years from closure</td>
+<td>Privacy-team secure deletion</td>
+<td>Data protection accountability</td>
+</tr>
+<tr>
+<td>CCTV operational footage</td>
+<td>30 days unless held</td>
+<td>Automatic overwrite</td>
+<td>Security and proportionality</td>
+</tr>
+<tr>
+<td>Whistleblowing files</td>
+<td>7 years from closure</td>
+<td>Legal-approved secure deletion</td>
+<td>Protected disclosure control</td>
+</tr>
+<tr>
+<td>Board papers</td>
+<td>15 years</td>
+<td>Board Secretariat</td>
+<td>Governance record</td>
+</tr>
+</tbody></table></div>
+<div class="table-scroll"><table><thead><tr>
+<th>Document category</th>
+<th>Retention period</th>
+<th>Disposal method</th>
+<th>Legal or control basis</th>
+</tr></thead><tbody>
+<tr>
+<td>archive purge</td>
+</tr>
+<tr>
+<td>Environmental waste transfer notes</td>
+<td>6 years</td>
+<td>Compliance archive deletion</td>
+<td>ISO 14001 and waste compliance</td>
+</tr>
+</tbody></table></div>
+<p>No document subject to legal hold may be destroyed, even if the standard retention period has expired. For DSAR handling, see Section 7.3. For contract storage, see Section 2.5.3.</p>
+<h2>7.3 Data Subject Access Requests</h2>
+<p>Any employee receiving a DSAR must forward it to the Privacy Team Immediately. A DSAR may arrive by email, letter, web form, verbal request, customer ticket, employee grievance, driver message or regulator referral.</p>
+<p>The employee must not ask the requester to “use the correct form” before forwarding. Identity verification is handled by the Privacy Team.</p>
+<p>The Privacy Team must log the DSAR within 1 Working Day, confirm scope within 5 Working Days, and coordinate response by the statutory deadline. Operational teams must provide requested records within 7 calendar days of Privacy Team request unless Legal approves a narrower search.</p>
+<p>If a DSAR includes CCTV, tachograph, HR, disciplinary or incident records, then Legal must review disclosure — except when the requested record contains only the requester’s own routine attendance data and no third-party information.</p>
+<h2>7.4 System Access and Password Policy</h2>
+<h3>7.4.1 Access principles</h3>
+<p>System access is granted on least privilege. Managers may request access, but system owners approve access. Access must be removed within 24 hours for terminated employees and within 2 Working Days for role changes.</p>
+<p>Shared user accounts are prohibited. A system-controlled operational kiosk identity is</p>
+<p>not a shared user account and may be approved only when it has no personal-data access,</p>
+<p>no transaction-approval authority, named device ownership, and Information Security</p>
+<p>approval.</p>
+<h3>7.4.2 Password rules</h3>
+<p>Passwords must meet current Information Security settings, including minimum 14 characters, blocked common passwords, and multi-factor authentication for all remote access, finance, HR, transport management and warehouse management systems.</p>
+<p>Passwords must not be written on whiteboards, stored in browser notes, shared by email, or placed in shift handover books.</p>
+<h3>7.4.3 Access review</h3>
+<p>User access reviews must be performed:</p>
+<ol>
+<li>Quarterly for finance, HR, IT admin and contract systems.</li>
+</ol>
+<ol>
+<li>Quarterly for warehouse management administrator roles.</li>
+</ol>
+<ol>
+<li>Semi-annually for standard warehouse users.</li>
+</ol>
+<ol>
+<li>Monthly for privileged IT accounts.</li>
+</ol>
+<ol>
+<li>Within 5 Working Days after a Major or Critical security incident.</li>
+</ol>
+<h3>7.4.4 Password reset</h3>
+<p>Password resets require identity verification using approved factors. A manager’s verbal confirmation alone is not sufficient for finance, HR, contract, transport or warehouse management systems.</p>
+<h3>7.4.5 IT procurement security review</h3>
+<p>All IT procurement requires Information Security review where the tool stores, processes, transmits or integrates with Northwind data. This applies even if the cost is below the Table 2.1 IT procurement threshold.</p>
+<p>If a team wants to pilot free software, then Security review is still required — except when the tool is used only with synthetic test data, no employee or customer information, no operational route data, and no connection to Northwind systems.</p>
+<h1>Appendix A: Amendment Log — Version 3.1 to Version 3.2</h1>
+<div class="table-scroll"><table><thead><tr>
+<th>Amendment ID</th>
+<th>Section or table changed</th>
+<th>Version 3.1 position</th>
+<th>Version 3.2 change</th>
+<th>Reason and reference</th>
+</tr></thead><tbody>
+<tr>
+<td>AM-3.2-001</td>
+<td>Section 4.3.2</td>
+<td>Category B excursion permitted 45 minutes</td>
+<td>Revised to 30 minutes</td>
+<td>Following incident INV-2025-0847 involving chilled pharmaceutical deviation</td>
+</tr>
+<tr>
+<td>AM-3.2-002</td>
+<td>Table 2.1</td>
+<td>IT procurement Band 4–5 limit €12,000</td>
+<td>Increased to €15,000</td>
+<td>Board decision BD-2026-012</td>
+</tr>
+<tr>
+<td>AM-3.2-003</td>
+<td>Section 1.2</td>
+<td>“Immediately” undefined</td>
+<td>Defined as within 4 hours of discovery</td>
+<td>Audit finding QA-2026-031</td>
+</tr>
+<tr>
+<td>AM-3.2-004</td>
+<td>Section 3.4.2</td>
+<td>Senior site person normally led incident response</td>
+<td>Incident Commander must hold current IC certification</td>
+<td>Post-incident review PIR-2026-006</td>
+</tr>
+<tr>
+<td>AM-3.2-005</td>
+<td>Section 6.1</td>
+<td>Weekend overtime followed standard 1.5× rate</td>
+<td>Saturday and Sunday warehouse overtime rates separated</td>
+<td>Payroll harmonisation decision HR-2026-019</td>
+</tr>
+<tr>
+<td>AM-3.2-006</td>
+<td>Table 7.1</td>
+<td>Cold chain records retained 7 years</td>
+<td>Increased to 10 years</td>
+<td>GDP customer audit CAPA GDP-2026-044</td>
+</tr>
+<tr>
+<td>AM-3.2-007</td>
+<td>Section 5.1</td>
+<td>Electric vans covered under standard van checks</td>
+<td>Added electric urban van inspection requirements</td>
+<td>Fleet electrification programme FE-2026-002</td>
+</tr>
+<tr>
+<td>AM-3.2-008</td>
+<td>Section 2.3</td>
+<td>Variance escalation started at 5%</td>
+<td>Added 2.5% to 4.9% recovery note tier</td>
+<td>Finance control review FIN-2026-027</td>
+</tr>
+<tr>
+<td>AM-3.2-009</td>
+<td>Section 7.4.5</td>
+<td>Free software pilots not expressly controlled</td>
+<td>Security review required unless synthetic data only</td>
+<td>Security incident SEC-2026-011</td>
+</tr>
+<tr>
+<td>AM-3.2-010</td>
+<td>Section 6.2</td>
+<td>Zero tolerance wording ambiguous</td>
+<td>Clarified that zero tolerance means mandatory investigation, not automatic dismissal</td>
+<td>HR/legal review LEG-2026-015</td>
+</tr>
+</tbody></table></div>
+<h1>Appendix B: Incident Classification Matrix — Full Version</h1>
+<p>Use this appendix with Section 3.1. Where more than one criterion applies, use the highest severity.</p>
+<div class="table-scroll"><table><thead><tr>
+<th>Impact area</th>
+<th>Critical</th>
+<th>Major</th>
+<th>Minor</th>
+<th>Observation</th>
+</tr></thead><tbody>
+<tr>
+<td>Safety</td>
+<td>Fatality, life-threatening injury, multiple hospitalisations, uncontrolled fire, structural collapse, chemical exposure requiring emergency services</td>
+<td>Reportable injury, single hospitalisation, forklift-pedestrian contact without fatality, controlled fire, evacuation under 2 hours</td>
+<td>First-aid injury, minor vehicle contact, slip without lost time, PPE breach with no harm</td>
+<td>Unsafe condition, blocked walkway, missing sign, worn PPE identified before use</td>
+</tr>
+<tr>
+<td>Financial</td>
+<td>Expected loss above €250,000</td>
+<td>Expected loss €50,001 to €250,000</td>
+<td>Expected loss €1,001 to €50,000</td>
+<td>Potential loss below €1,000 or control weakness</td>
+</tr>
+<tr>
+<td>Regulatory</td>
+<td>Regulator enforcement action, licence suspension risk, confirmed GDP failure affecting released stock, notifiable data breach</td>
+<td>Likely regulator notification, serious audit finding, repeated tachograph breach, controlled substance documentation gap</td>
+<td>Local compliance deviation, late record, isolated procedural breach</td>
+<td>Potential gap found before breach</td>
+</tr>
+<tr>
+<td>Reputational</td>
+<td>National media, major customer executive complaint, public authority statement, viral social media above 50,000 views</td>
+<td>Regional media, customer escalation to procurement director, social media above 5,000 views</td>
+<td>Customer complaint resolved locally, social media below 5,000 views</td>
+<td>Internal concern, no external awareness</td>
+</tr>
+<tr>
+<td>Operational continuity</td>
+<td>Site closure above 24 hours, network outage above 12 hours, loss of cold chain room with released stock</td>
+<td>Site disruption 4 to 24 hours, transport lane failure, WMS outage below 12 hours</td>
+<td>Local delay below 4 hours, single route failure</td>
+<td>Weakness with no current disruption</td>
+</tr>
+<tr>
+<td>Product integrity</td>
+<td>Confirmed release of compromised product, unknown status for pharma batch, hazardous contamination</td>
+<td>Quarantine of customer-critical stock, suspected contamination, cold chain excursion pending assessment</td>
+<td>Damaged non-regulated stock, labelling defect caught before dispatch</td>
+<td>Storage risk identified before product affected</td>
+</tr>
+<tr>
+<td>Data protection</td>
+<td>Confirmed unauthorised disclosure of sensitive personal data to external party</td>
+<td>Mis-sent restricted file, lost device with possible data, unauthorised access to HR or payroll</td>
+<td>Internal misrouting corrected within 24 hours</td>
+<td>Access permission weakness found in review</td>
+</tr>
+</tbody></table></div>
+<h1>Appendix C: Quick Reference — Emergency Contacts and Escalation</h1>
+<p>All contacts below are fictional role-based contacts. Employees must use the current internal directory for live numbers.</p>
+<div class="table-scroll"><table><thead><tr>
+<th>Situation</th>
+<th>First contact</th>
+<th>Second contact</th>
+<th>Maximum first notification time</th>
+</tr></thead><tbody>
+<tr>
+<td>Life-threatening injury</td>
+<td>Emergency services, then Site Duty Manager</td>
+<td>Incident Commander</td>
+<td>Immediate emergency call; internal within 30 minutes</td>
+</tr>
+<tr>
+<td>Critical Incident</td>
+<td>Site Duty Manager</td>
+<td>Regional Operations Control Desk</td>
+<td>1 hour</td>
+</tr>
+<tr>
+<td>Major Incident</td>
+<td>Site Duty Manager</td>
+<td>Regional Operations Director</td>
+<td>2 hours</td>
+</tr>
+<tr>
+<td>Cold chain excursion</td>
+<td>Quality Duty Manager</td>
+<td>Incident Commander</td>
+<td>1 hour</td>
+</tr>
+</tbody></table></div>
+<div class="table-scroll"><table><thead><tr>
+<th>Situation</th>
+<th>First contact</th>
+<th>Second contact</th>
+<th>Maximum first notification time</th>
+</tr></thead><tbody>
+<tr>
+<td>Category A</td>
+</tr>
+<tr>
+<td>Cold chain excursion Category B</td>
+<td>Quality Duty Manager</td>
+<td>Site Duty Manager</td>
+<td>2 hours</td>
+</tr>
+<tr>
+<td>Hazardous material spill</td>
+<td>Site Duty Manager</td>
+<td>HSE Manager</td>
+<td>1 hour if Major/Critical</td>
+</tr>
+<tr>
+<td>Vehicle accident with injury</td>
+<td>Emergency services, then Fleet Control</td>
+<td>Incident Commander</td>
+<td>Internal within 30 minutes if safe</td>
+</tr>
+<tr>
+<td>Vehicle breakdown with cold chain stock</td>
+<td>Fleet Control</td>
+<td>Quality Duty Manager</td>
+<td>30 minutes</td>
+</tr>
+<tr>
+<td>Suspected data breach</td>
+<td>Information Security Duty Lead</td>
+<td>Privacy Team</td>
+<td>Immediately</td>
+</tr>
+<tr>
+<td>DSAR received</td>
+<td>Privacy Team</td>
+<td>Legal</td>
+<td>Immediately</td>
+</tr>
+<tr>
+<td>Media enquiry</td>
+<td>Communications Duty Lead</td>
+<td>COO Office</td>
+<td>Immediately</td>
+</tr>
+<tr>
+<td>Regulator visit</td>
+<td>Site Duty Manager</td>
+<td>Legal and Compliance</td>
+<td>Immediately</td>
+</tr>
+</tbody></table></div>
+<h2>C.1 Escalation call script</h2>
+<p>Use the following sequence for Critical and Major Incidents:</p>
+<ol>
+<li>“This is a [Critical/Major] incident at [site/vehicle/route].”</li>
+</ol>
+<ol>
+<li>“The incident was discovered at [time] on [date].”</li>
+</ol>
+<ol>
+<li>“People injured or at risk: [yes/no/unknown].”</li>
+</ol>
+<ol>
+<li>“Emergency services: [called/on site/not required/unknown].”</li>
+</ol>
+<ol>
+<li>“Operational status: [stopped/partial/continuing].”</li>
+</ol>
+<ol>
+<li>“Product or customer affected: [details].”</li>
+</ol>
+<ol>
+<li>“Regulatory risk: [known/suspected/none/unknown].”</li>
+</ol>
+<ol>
+<li>“Containment action taken: [details].”</li>
+</ol>
+<ol>
+<li>“Incident Commander: [name or pending assignment].”</li>
+</ol>
+<ol>
+<li>“Next update will be at [time].”</li>
+</ol>
+<h2>C.2 Emergency operating principles</h2>
+<p>The following principles apply before normal commercial priorities:</p>
+<ol>
+<li>Protect life.</li>
+</ol>
+<ol>
+<li>Stop unsafe work.</li>
+</ol>
+<ol>
+<li>Contain the incident.</li>
+</ol>
+<ol>
+<li>Preserve evidence.</li>
+</ol>
+<ol>
+<li>Quarantine affected product.</li>
+</ol>
+<ol>
+<li>Notify through Section 3.4.</li>
+</ol>
+<ol>
+<li>Record decisions.</li>
+</ol>
+<ol>
+<li>Resume only after authorised release.</li>
+</ol>
+<p>Final control note: No manager may instruct an employee to ignore this manual for speed, customer pressure, cost saving or convenience. Any such instruction must be reported under Section 6.5 and, where safety or compliance is affected, treated as at least a Major Incident under Section 3.1.</p>
+</main></body></html>

@@ -57,7 +57,8 @@ Never weaken evidence thresholds, change public response shapes, add a dependenc
 move responsibilities across repository boundaries without prior approval.
 
 P12 is the fast fake-driven evaluation-harness smoke test. P12B is the authoritative
-real APP → MCP → STARTER → PostgreSQL/pgvector 25-question quality gate. Do not claim
+real APP → MCP → STARTER → PostgreSQL/pgvector full-stack quality gate (25-case approved
+v1 and the isolated 25 + 65 case v2 suite during calibration). Do not claim
 that P12 or another mocked test proves live retrieval or SQL authorization. A P12B
 baseline change must be explicit, justified, and owner/CODEOWNER-reviewed; it must never
 be automatically overwritten after a regression.

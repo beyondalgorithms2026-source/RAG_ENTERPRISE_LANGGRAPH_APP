@@ -10,6 +10,44 @@ _current_question: contextvars.ContextVar[str] = contextvars.ContextVar(
     "rag_agent_current_question", default=""
 )
 
+_ALLOWED_ARGUMENTS = {
+    "ask_grounded": {
+        "question",
+        "k_chunks",
+        "mode",
+        "filters",
+        "deep_research",
+        "custom_query",
+        "anchor_terms",
+        "exact_phrase_bias",
+        "expand_neighbors",
+        "dry_run",
+        "force_rare_keyword_scan",
+    },
+    "search_documents": {
+        "question",
+        "k",
+        "mode",
+        "filters",
+        "deep_research",
+        "custom_query",
+        "anchor_terms",
+        "exact_phrase_bias",
+        "expand_neighbors",
+        "force_rare_keyword_scan",
+        "debug",
+    },
+    "get_document_excerpt": {
+        "question",
+        "source_id",
+        "source_part_id",
+        "locator_filter",
+        "metadata_filters",
+        "mode",
+        "max_chars",
+    },
+}
+
 
 def set_current_question(question: str):
     return _current_question.set(question)
@@ -32,7 +70,12 @@ def _optional_int(value: Any, default: int, minimum: int, maximum: int) -> int:
 def normalize_tool_arguments(
     tool_name: str, arguments: dict[str, Any], fallback_question: str = ""
 ) -> dict[str, Any]:
-    normalized = {key: value for key, value in dict(arguments).items() if value is not None}
+    allowed = _ALLOWED_ARGUMENTS.get(tool_name, set())
+    normalized = {
+        key: value
+        for key, value in dict(arguments).items()
+        if value is not None and key in allowed
+    }
 
     if not str(normalized.get("question") or "").strip() and fallback_question:
         normalized["question"] = fallback_question
@@ -46,6 +89,11 @@ def normalize_tool_arguments(
         normalized["k"] = _optional_int(normalized.get("k", 8), 8, 1, 50)
     elif tool_name == "ask_grounded":
         normalized["k_chunks"] = _optional_int(normalized.get("k_chunks", 6), 6, 1, 20)
+    elif tool_name == "get_document_excerpt":
+        normalized["max_chars"] = _optional_int(normalized.get("max_chars", 1200), 1200, 100, 4000)
+
+    if tool_name == "search_documents":
+        normalized["debug"] = False
 
     return normalized
 

@@ -1,0 +1,2314 @@
+{
+  "schema_version": "1.1",
+  "eval_set": "northwind-operations-manual-v3.2",
+  "note": "Curated public-synthetic Operations Manual cases. Strict refusals require no grounded answer; safe-boundary cases require the cited pointer without invented procedure detail.",
+  "questions": [
+    {
+      "case_id": "OM-002",
+      "question": "When does Operations Manual Version 3.2 take effect, and which version does it supersede?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "effective_date",
+          "any_of": [
+            "1 September 2026",
+            "September 1 2026"
+          ]
+        },
+        {
+          "id": "superseded_version",
+          "any_of": [
+            "Version 3.1",
+            "v3.1"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "direct factual lookup",
+      "difficulty": "easy",
+      "rationale": "Basic header retrieval; failure here indicates the chunker dropped the front-matter.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-003",
+      "question": "How many warehouses, vehicles and employees does Northwind operate according to the manual?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "warehouses",
+          "any_of": [
+            "14 warehouses"
+          ]
+        },
+        {
+          "id": "vehicles",
+          "any_of": [
+            "380 vehicles"
+          ]
+        },
+        {
+          "id": "employees",
+          "any_of": [
+            "1,200 employees",
+            "1200 employees"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "direct factual lookup",
+      "difficulty": "easy",
+      "rationale": "Three co-located numbers in one sentence; systems often return only one of the three figures.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-004",
+      "question": "After how long does a printed copy of the Operations Manual become uncontrolled unless Quality stamps it as a Controlled Printed Copy?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "24_hours",
+          "any_of": [
+            "24 hours"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "direct factual lookup",
+      "difficulty": "easy",
+      "rationale": "A short rule buried in document-control prose that is easy to miss if only the version header is retrieved.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-006",
+      "question": "What is the maximum validity period of an interim control notice issued by the Head of Quality?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "60_calendar_days",
+          "any_of": [
+            "60 calendar days"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "direct factual lookup",
+      "difficulty": "easy",
+      "rationale": "Tests retrieval of a calendar-day (not Working Day) limit that sits in a short subsection.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-007",
+      "question": "Within how many calendar days of the expense date must an expense claim normally be submitted?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "30_calendar_days",
+          "any_of": [
+            "30 calendar days"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "direct factual lookup",
+      "difficulty": "easy",
+      "rationale": "Straightforward figure that is easy to confuse with the 90-day Band 6+ late-claim threshold.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-008",
+      "question": "What is the cash-advance limit per employee and by when must an advance be cleared after trip completion?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "advance_limit",
+          "any_of": [
+            "€300",
+            "EUR 300"
+          ]
+        },
+        {
+          "id": "clearance_deadline",
+          "any_of": [
+            "10 Working Days",
+            "10 working days"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "direct factual lookup",
+      "difficulty": "easy",
+      "rationale": "Two related numbers in one paragraph; a weak retriever may return only the amount or only the clearance window.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-011",
+      "question": "What is the maximum capital expenditure a Band 4–5 manager can approve?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "18_750",
+          "any_of": [
+            "€18,750"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "table cell extraction",
+      "difficulty": "medium",
+      "rationale": "The value sits in Table 2.1 at the intersection of Capital expenditure and Band 4–5; poor table chunking often splits the header from the cell.",
+      "source_sections": [
+        "Table 2.1"
+      ]
+    },
+    {
+      "case_id": "OM-012",
+      "question": "What is the Band 6+ maximum for operating expenditure before Board approval is required?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "186_400",
+          "any_of": [
+            "€186,400"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "table cell extraction",
+      "difficulty": "medium",
+      "rationale": "Must pick the Opex row, not Capex (€247,500) or Contract signing (€312,750), from a multi-row authority matrix.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-013",
+      "question": "What IT procurement amount can a Band 4–5 manager approve under Version 3.2?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "15_000",
+          "any_of": [
+            "€15,000"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "table cell extraction",
+      "difficulty": "medium",
+      "rationale": "The live table cell is €15,000; the amendment log still mentions the old €12,000 limit, so naive retrieval can return the superseded figure.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-015",
+      "question": "For a budget variance between 5.0% and 7.9%, who is the approval authority and what is the reporting deadline?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "authority",
+          "any_of": [
+            "Band 6+",
+            "Band 6"
+          ]
+        },
+        {
+          "id": "deadline",
+          "any_of": [
+            "Month-end + 3 Working Days",
+            "month end plus 3 working days"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "table cell extraction",
+      "difficulty": "medium",
+      "rationale": "Table 2.2 has six adjacent percentage bands with different authorities and deadlines; off-by-one row errors are common.",
+      "source_sections": [
+        "Table 2.2"
+      ]
+    },
+    {
+      "case_id": "OM-016",
+      "question": "What is the required response time for a Major incident with financial impact?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "4_hours",
+          "any_of": [
+            "4 hours"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "table cell extraction",
+      "difficulty": "medium",
+      "rationale": "Table 3.1 intersects severity with impact type; a chunk that has only the Major row or only the Financial column will miss the cell.",
+      "source_sections": [
+        "Table 3.1"
+      ]
+    },
+    {
+      "case_id": "OM-017",
+      "question": "What safety-impact response time applies to a Critical incident?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "1_hour",
+          "any_of": [
+            "1 hour"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "table cell extraction",
+      "difficulty": "medium",
+      "rationale": "Must distinguish Critical safety (1 hour) from Critical financial (2 hours) in the same table row.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-018",
+      "question": "How often must pharmaceuticals be cycle-counted and what accuracy is required?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "frequency",
+          "any_of": [
+            "Weekly"
+          ]
+        },
+        {
+          "id": "accuracy",
+          "any_of": [
+            "99.9%",
+            "99.9 percent"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "table cell extraction",
+      "difficulty": "medium",
+      "rationale": "The cycle-count table has five stock categories with similar weekly/fortnightly frequencies; the 99.9% pharma cell is easy to swap with 99.7% high-value stock.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-019",
+      "question": "What temperature range and maximum excursion time apply to Category A frozen biologics?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "temperature_range",
+          "any_of": [
+            "-25°C to -15°C",
+            "-25 C to -15 C"
+          ]
+        },
+        {
+          "id": "excursion",
+          "any_of": [
+            "15 minutes"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "table cell extraction",
+      "difficulty": "medium",
+      "rationale": "Table 4.1 is long and wrapped; Category A numbers can be mixed with Category B (+2°C to +8°C / 30 minutes).",
+      "source_sections": [
+        "Table 4.1"
+      ]
+    },
+    {
+      "case_id": "OM-021",
+      "question": "How long must cold chain temperature records be retained?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "10_years",
+          "any_of": [
+            "10 years"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "table cell extraction",
+      "difficulty": "medium",
+      "rationale": "Table 7.1 lists many retention periods; the live value is 10 years but Appendix A still records the old 7-year period.",
+      "source_sections": [
+        "Table 7.1",
+        "Appendix A"
+      ]
+    },
+    {
+      "case_id": "OM-022",
+      "question": "What is the retention period for Critical Incident investigation files compared with ordinary incident files?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "ordinary_retention",
+          "any_of": [
+            "8 years"
+          ]
+        },
+        {
+          "id": "critical_retention",
+          "any_of": [
+            "12 years"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "table cell extraction",
+      "difficulty": "medium",
+      "rationale": "A single table cell contains two periods (8 years; Critical Incidents 12 years); chunkers often keep only one.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-023",
+      "question": "Can temporary staff operate forklifts?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "certificate",
+          "any_of": [
+            "RTITB certificate"
+          ]
+        },
+        {
+          "id": "induction",
+          "any_of": [
+            "NWFLT-02"
+          ]
+        },
+        {
+          "id": "recency",
+          "any_of": [
+            "previous 90 days",
+            "within 90 days"
+          ]
+        },
+        {
+          "id": "assessment",
+          "any_of": [
+            "site practical assessment"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "conditional / exception",
+      "difficulty": "hard",
+      "rationale": "The default rule is no; the exception requires a valid RTITB certificate, module NWFLT-02 within 90 days, and a passed site practical assessment, which may live in a different sentence or chunk.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-025",
+      "question": "Do contracts above €25,000 always need two signatories?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "exception",
+          "any_of": [
+            "Framework Agreement"
+          ]
+        },
+        {
+          "id": "approval",
+          "any_of": [
+            "Board preapproved",
+            "Board pre-approved"
+          ]
+        },
+        {
+          "id": "limit",
+          "any_of": [
+            "within Table 2.1"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "conditional / exception",
+      "difficulty": "hard",
+      "rationale": "The two-signatory rule and the Board-pre-approved Framework Agreement exception are in the same subsection but can be split across chunks.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-026",
+      "question": "Must a buyer obtain three written quotes for an €9,000 spare part bought from the original equipment manufacturer of a safety-critical component?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "exception",
+          "any_of": [
+            "original equipment manufacturer"
+          ]
+        },
+        {
+          "id": "scope",
+          "any_of": [
+            "safety-critical component",
+            "safety critical component"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "conditional / exception",
+      "difficulty": "hard",
+      "rationale": "€9,000 is above the €7,500 three-quote threshold, but OEM safety-critical parts are an exception alongside Framework Agreements and Emergency Purchases.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-027",
+      "question": "If an inbound seal is broken on an internal shuttle transfer that has electronic seal verification and no customer chain-of-custody requirement, must unloading stop?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "transfer",
+          "any_of": [
+            "internal shuttle transfer"
+          ]
+        },
+        {
+          "id": "verification",
+          "any_of": [
+            "electronic seal verification"
+          ]
+        },
+        {
+          "id": "custody",
+          "any_of": [
+            "no customer chain-of-custody requirement",
+            "no customer chain of custody requirement"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "conditional / exception",
+      "difficulty": "hard",
+      "rationale": "The default broken-seal rule is stop-and-notify; the internalshuttle exception is a trailing clause that is often chunked away from the rule.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-029",
+      "question": "Can alcohol ever be claimed on expenses?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "preapproval",
+          "any_of": [
+            "preapproved",
+            "pre-approved"
+          ]
+        },
+        {
+          "id": "hospitality",
+          "any_of": [
+            "customer hospitality event"
+          ]
+        },
+        {
+          "id": "host",
+          "any_of": [
+            "named host"
+          ]
+        },
+        {
+          "id": "attendees",
+          "any_of": [
+            "named customer attendees"
+          ]
+        },
+        {
+          "id": "limit",
+          "any_of": [
+            "€85 per external attendee",
+            "EUR 85 per external attendee"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "conditional / exception",
+      "difficulty": "hard",
+      "rationale": "The headline rule is 'Alcohol is not reimbursable' and the hospitality exception with the €85 cap is in the same sentence after an em-dash.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-030",
+      "question": "If a driver finds a safety-critical defect, may they move the vehicle at all?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "distance",
+          "any_of": [
+            "less than 500 metres",
+            "under 500 metres"
+          ]
+        },
+        {
+          "id": "reason",
+          "any_of": [
+            "live traffic",
+            "immediate danger"
+          ]
+        },
+        {
+          "id": "safety",
+          "any_of": [
+            "done safely",
+            "can be done safely"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "conditional / exception",
+      "difficulty": "hard",
+      "rationale": "Default is immobilise; the only exception is a move of less than 500 metres to leave live traffic or immediate danger.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-031",
+      "question": "Does a Local Legal Addendum automatically override the manual if the addendum is 20 months old and has not been reviewed?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "review_limit",
+          "any_of": [
+            "18 months"
+          ]
+        },
+        {
+          "id": "expired_review",
+          "any_of": [
+            "older than 18 months without review",
+            "20 months old"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "conditional / exception",
+      "difficulty": "hard",
+      "rationale": "The addendum applies except when it has expired, lacks Legal approval, or is older than 18 months without review — three negative conditions that must all be checked.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-032",
+      "question": "If the Site Duty Manager is unreachable for 20 minutes during a Critical Incident, must the reporter wait, or contact the Regional Operations Control Desk?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "wait_limit",
+          "any_of": [
+            "15 minutes"
+          ]
+        },
+        {
+          "id": "contact",
+          "any_of": [
+            "Regional Operations Control Desk"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "conditional / exception",
+      "difficulty": "hard",
+      "rationale": "The 15-minute bypass rule itself has a further exception if calling the desk would delay medical response, evacuation, spill containment or firealarm activation.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-033",
+      "question": "A 12.5% adverse budget variance is confirmed at month-end close. Who must be notified and by when?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "authority",
+          "any_of": [
+            "COO and CFO"
+          ]
+        },
+        {
+          "id": "notification",
+          "any_of": [
+            "Board Finance Committee"
+          ]
+        },
+        {
+          "id": "deadline",
+          "any_of": [
+            "Within 24 hours",
+            "24 hours"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "cross-reference resolution",
+      "difficulty": "hard",
+      "rationale": "Table 2.2 (12.0%–17.4% band) must be combined with the COO-and-CFO / within-24-hours-of-confirmation rule in the same table, not the 17.5% Board-within-5-calendar-days row.",
+      "source_sections": [
+        "Table 2.2"
+      ]
+    },
+    {
+      "case_id": "OM-034",
+      "question": "A vehicle accident involves injury and projected loss of €30,000. Which incident framework must be used to classify it?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "section_3_1",
+          "any_of": [
+            "Section 3.1"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "cross-reference resolution",
+      "difficulty": "hard",
+      "rationale": "Section 5.5.1 sends the reader to Section 3.1 / Appendix B; the system must follow that cross-reference rather than inventing a fleet-only severity.",
+      "source_sections": [
+        "Section 5.5.1",
+        "Section 3.1",
+        "Appendix B"
+      ]
+    },
+    {
+      "case_id": "OM-035",
+      "question": "When newly received cold-chain equipment arrives, what must be checked before it is released for use, and which section governs that check?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "check",
+          "any_of": [
+            "calibration evidence"
+          ]
+        },
+        {
+          "id": "section",
+          "any_of": [
+            "Section 4.3.5"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "cross-reference resolution",
+      "difficulty": "hard",
+      "rationale": "Goods-receipt (2.2.4) only points to calibration evidence in 4.3.5; both chunks must be retrieved to state that calibration certificates are required before release.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-036",
+      "question": "If a customer contract conflicts with this manual, what rule applies until Legal issues a written instruction, and how quickly must the conflict be notified?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "interim_rule",
+          "any_of": [
+            "stricter operational rule"
+          ]
+        },
+        {
+          "id": "deadline",
+          "any_of": [
+            "2 Working Days",
+            "2 working days"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "cross-reference resolution",
+      "difficulty": "hard",
+      "rationale": "Section 1.1 and Section 2.5.4 both discuss contract conflicts; the operational default is the stricter rule and notification is due within 2 Working Days.",
+      "source_sections": [
+        "Section 1.1",
+        "Section 2.5.4"
+      ]
+    },
+    {
+      "case_id": "OM-038",
+      "question": "A Category B chilled-pharmaceutical excursion is detected. After quarantining stock, which incident-classification appendix should Quality use if released stock may have been affected?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "appendix_b",
+          "any_of": [
+            "Appendix B"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "cross-reference resolution",
+      "difficulty": "hard",
+      "rationale": "Section 4.3.2 points to Section 3.1 and Appendix B for classification; product-integrity rows in Appendix B must be joined with the 30-minute Category B limit in Table 4.1.",
+      "source_sections": [
+        "Section 4.3.2",
+        "Section 3.1",
+        "Appendix B",
+        "Table 4.1"
+      ]
+    },
+    {
+      "case_id": "OM-039",
+      "question": "Does an IT tool that costs €800 and will store customer route data still need Information Security review before purchase?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "review",
+          "any_of": [
+            "Information Security review",
+            "Security review"
+          ]
+        },
+        {
+          "id": "section",
+          "any_of": [
+            "Section 7.4.5"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "cross-reference resolution",
+      "difficulty": "hard",
+      "rationale": "Table 2.1 Band 1–3 IT limit is €1,200 so cost alone would pass, but 2.2.2 and 7.4.5 require Security review whenever Northwind data is stored, regardless of the Table 2.1 threshold.",
+      "source_sections": [
+        "Table 2.1"
+      ]
+    },
+    {
+      "case_id": "OM-040",
+      "question": "How does the fleet accident-and-breakdown escalation path relate to the general incident path?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "general_path",
+          "any_of": [
+            "Section 3.4"
+          ]
+        },
+        {
+          "id": "fleet_modification",
+          "any_of": [
+            "Section 5.5.2"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "cross-reference resolution",
+      "difficulty": "hard",
+      "rationale": "Section 3.4.3 states that the Section 3.4 path applies to 5.5 accidents as modified by 5.5.2; both sections must be retrieved together.",
+      "source_sections": [
+        "Section 3.4.3",
+        "Section 3.4"
+      ]
+    },
+    {
+      "case_id": "OM-041",
+      "question": "A supervisor in Madrid discovers a data-protection observation at 21:00 on a Spanish public holiday that is not a Belgian public holiday. By when must it be logged?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "deadline",
+          "any_of": [
+            "24 hours"
+          ]
+        },
+        {
+          "id": "calendar",
+          "any_of": [
+            "Belgian public holidays"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "definition-dependent",
+      "difficulty": "hard",
+      "rationale": "Observations are normally 72 hours, but security/dataprotection observations must be logged within 24 hours, and Working Day is defined on Belgian — not local — holidays.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-042",
+      "question": "An employee reports an equipment malfunction at 16:00. The manual says the matter must be handled Immediately. What is the latest clock time that still complies?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "definition",
+          "any_of": [
+            "4 hours"
+          ]
+        },
+        {
+          "id": "latest_time",
+          "evidence_required": false,
+          "any_of": [
+            "20:00",
+            "8 pm",
+            "8:00 pm"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "definition-dependent",
+      "difficulty": "hard",
+      "rationale": "Immediately is a defined term meaning within 4 hours of discovery, including outside office hours, and not 4 hours after the next shift starts.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-044",
+      "question": "A chilled room briefly reads +9°C for four minutes then returns to +6°C. Is that a Temperature Excursion?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "threshold",
+          "any_of": [
+            "5 consecutive minutes"
+          ]
+        },
+        {
+          "id": "duration",
+          "evidence_required": false,
+          "any_of": [
+            "four minutes",
+            "4 minutes"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "definition-dependent",
+      "difficulty": "medium",
+      "rationale": "The defined threshold is more than 5 consecutive minutes outside range; four minutes is not an excursion even though +9°C is outside the +2°C to +8°C Category B band.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-045",
+      "question": "A person titled 'Operations Manager' at Band 6 is on site during an incident. Are they automatically the Incident Commander?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "certification",
+          "any_of": [
+            "Incident Command certification"
+          ]
+        },
+        {
+          "id": "assignment",
+          "any_of": [
+            "assigned under Section 3.4.2",
+            "assigned Incident Commander"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "definition-dependent",
+      "difficulty": "hard",
+      "rationale": "Senior Manager means any Band 6+ employee regardless of title, but Incident Commander is defined as the currently certified assignee, not the most senior person present.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-046",
+      "question": "Expected financial exposure is €260,000 with no injuries. Does this meet the definition of a Critical Incident?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "threshold",
+          "any_of": [
+            "above €250,000",
+            "above EUR 250,000"
+          ]
+        },
+        {
+          "id": "exposure",
+          "evidence_required": false,
+          "any_of": [
+            "€260,000",
+            "EUR 260,000"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "definition-dependent",
+      "difficulty": "medium",
+      "rationale": "Critical is defined in Section 1.2 as including financial exposure above €250,000; Appendix B uses the same threshold and the system must apply the definition rather than treat it as Major (€50,001–€250,000).",
+      "source_sections": [
+        "Section 1.2",
+        "Appendix B"
+      ]
+    },
+    {
+      "case_id": "OM-050",
+      "question": "What is the maximum permitted excursion time for Category B chilled pharmaceuticals under Version 3.2?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "30_minutes",
+          "any_of": [
+            "30 minutes"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "numerical precision",
+      "difficulty": "medium",
+      "rationale": "Version 3.1 allowed 45 minutes; returning 45 minutes is a precise but obsolete number that the amendment log still contains.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-051",
+      "question": "What overtime multipliers apply to scheduled Saturday warehouse work versus Sunday warehouse work?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "saturday_first",
+          "any_of": [
+            "1.20×",
+            "1.20x"
+          ]
+        },
+        {
+          "id": "saturday_later",
+          "any_of": [
+            "1.45×",
+            "1.45x"
+          ]
+        },
+        {
+          "id": "sunday",
+          "any_of": [
+            "1.60×",
+            "1.60x"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "numerical precision",
+      "difficulty": "medium",
+      "rationale": "Common assumption is a flat 1.5× weekend rate (the Version 3.1 rule); the live rates are 1.20× for the first 6 Saturday hours, 1.45× thereafter, and 1.60× on Sunday.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-053",
+      "question": "For how long may dock doors remain open during cold-chain loading if there is no air curtain or sealed dock shelter?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "7_minutes",
+          "any_of": [
+            "7 minutes"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "numerical precision",
+      "difficulty": "medium",
+      "rationale": "Nearby numbers include 10-minute re-checks, 20-minute loading trigger, and 15/30/20-minute pre-cool times; only 7 minutes is the open-door cap.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-054",
+      "question": "What are the minimum pre-cooling times for frozen, chilled and controlled-ambient vehicles before loading?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "frozen",
+          "any_of": [
+            "45 minutes"
+          ]
+        },
+        {
+          "id": "chilled",
+          "any_of": [
+            "30 minutes"
+          ]
+        },
+        {
+          "id": "ambient",
+          "any_of": [
+            "20 minutes"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "numerical precision",
+      "difficulty": "medium",
+      "rationale": "Three different minute values (45 / 30 / 20) must be paired with the correct vehicle class; mixing them is a common numerical error.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-055",
+      "question": "What is the minimum password length required by the information-security settings in this manual?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "14_characters",
+          "any_of": [
+            "14 characters"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "numerical precision",
+      "difficulty": "medium",
+      "rationale": "Generic password knowledge (8 or 12 characters) will override the manual's explicit 14-character rule if the chunk is missed.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-056",
+      "question": "What was the permitted Category B cold-chain excursion time before the Version 3.2 update?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "45_minutes",
+          "any_of": [
+            "45 minutes"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "what changed",
+      "difficulty": "hard",
+      "rationale": "The current body states 30 minutes; the old 45-minute value lives only in Appendix A amendment AM-3.2-001 and is easy to overwrite with the live rule.",
+      "source_sections": [
+        "Appendix A"
+      ]
+    },
+    {
+      "case_id": "OM-057",
+      "question": "Which Board decision authorised the increase in the Band 4–5 IT procurement limit?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "bd_2026_012",
+          "any_of": [
+            "BD-2026-012"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "what changed",
+      "difficulty": "hard",
+      "rationale": "The authorising reference exists only in the amendment-log Reason column, not in Table 2.1 itself.",
+      "source_sections": [
+        "Table 2.1"
+      ]
+    },
+    {
+      "case_id": "OM-058",
+      "question": "Why was the term Immediately given a definition in Version 3.2, and what audit finding drove that change?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "reason",
+          "any_of": [
+            "Immediately undefined",
+            "ambiguity"
+          ]
+        },
+        {
+          "id": "finding",
+          "any_of": [
+            "QA-2026-031"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "what changed",
+      "difficulty": "hard",
+      "rationale": "Requires retrieving AM-3.2-003 from Appendix A rather than restating the current 4-hour definition from Section 1.2.",
+      "source_sections": [
+        "Appendix A",
+        "Section 1.2"
+      ]
+    },
+    {
+      "case_id": "OM-059",
+      "question": "How long were cold-chain temperature records retained under Version 3.1, and what CAPA reference justified extending that period?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "old_retention",
+          "any_of": [
+            "7 years"
+          ]
+        },
+        {
+          "id": "capa",
+          "any_of": [
+            "GDP-2026-044"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "what changed",
+      "difficulty": "hard",
+      "rationale": "The live Table 7.1 says 10 years; the prior 7-year period and CAPA GDP-2026-044 appear only in AM-3.2-006.",
+      "source_sections": [
+        "Table 7.1"
+      ]
+    },
+    {
+      "case_id": "OM-060",
+      "question": "What new budget-variance tier did Version 3.2 add below the previous 5% escalation starting point?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "range",
+          "any_of": [
+            "2.5% to 4.9%",
+            "2.5 percent to 4.9 percent"
+          ]
+        },
+        {
+          "id": "action",
+          "any_of": [
+            "recovery note"
+          ]
+        },
+        {
+          "id": "authority",
+          "any_of": [
+            "Band 4–5 manager",
+            "Band 4-5 manager"
+          ]
+        },
+        {
+          "id": "deadline",
+          "any_of": [
+            "Month-end + 5 Working Days",
+            "month end plus 5 working days"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "what changed",
+      "difficulty": "hard",
+      "rationale": "AM-3.2-008 / FIN-2026-027 must be read against Table 2.2; a system that only reads the current table will not know what was added.",
+      "source_sections": [
+        "Table 2.2"
+      ]
+    },
+    {
+      "case_id": "OM-061",
+      "question": "Which types of decision have a Band 1–3 maximum of €0 in the delegation matrix?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "capital",
+          "any_of": [
+            "Capital expenditure"
+          ]
+        },
+        {
+          "id": "contract",
+          "any_of": [
+            "Contract signing"
+          ]
+        },
+        {
+          "id": "headcount",
+          "any_of": [
+            "Headcount approval"
+          ]
+        },
+        {
+          "id": "fleet",
+          "any_of": [
+            "Fleet acquisition"
+          ]
+        },
+        {
+          "id": "lease",
+          "any_of": [
+            "Lease commitment"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "negation / what is NOT",
+      "difficulty": "hard",
+      "rationale": "RAG prefers positive permissions; the question asks what Band 1–3 may NOT approve (capital expenditure, contract signing, headcount, fleet acquisition, lease commitment).",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-064",
+      "question": "May Quality release chilled pharmaceuticals after a temperature excursion based only on the product looking normal?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "visual_only",
+          "any_of": [
+            "must not be released based only on visual inspection",
+            "not released based only on visual inspection"
+          ]
+        },
+        {
+          "id": "release",
+          "any_of": [
+            "written Quality release"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "negation / what is NOT",
+      "difficulty": "hard",
+      "rationale": "Section 4.3.2 forbids release on visual inspection alone even if the customer requests urgent shipment; the negation is easy to drop.",
+      "source_sections": [
+        "Section 4.3.2"
+      ]
+    },
+    {
+      "case_id": "OM-065",
+      "question": "Does working a weekend warehouse shift automatically create a day-off entitlement the following week?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "does_not_automatically_create",
+          "any_of": [
+            "does not automatically create"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "negation / what is NOT",
+      "difficulty": "hard",
+      "rationale": "The manual calls out that this differs from common informal practice; a model using prior HR knowledge will answer yes.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-066",
+      "question": "Which five things may an interim control notice not do?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "spending",
+          "any_of": [
+            "increase spending authority"
+          ]
+        },
+        {
+          "id": "reporting",
+          "any_of": [
+            "waive incident reporting"
+          ]
+        },
+        {
+          "id": "ppe",
+          "any_of": [
+            "reduce PPE requirements"
+          ]
+        },
+        {
+          "id": "retention",
+          "any_of": [
+            "shorten record retention"
+          ]
+        },
+        {
+          "id": "drivers",
+          "any_of": [
+            "authorise unqualified drivers",
+            "authorize unqualified drivers"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "negation / what is NOT",
+      "difficulty": "hard",
+      "rationale": "The prohibition list (increase spending authority, waive incident reporting, reduce PPE, shorten retention, authorise unqualified drivers) is a negative constraint that chunkers often omit.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-067",
+      "question": "List in order the eight purchase-request steps a requester must complete before a supplier is instructed.",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "need",
+          "any_of": [
+            "Confirm the business need and budget code"
+          ]
+        },
+        {
+          "id": "supplier",
+          "any_of": [
+            "approved supplier"
+          ]
+        },
+        {
+          "id": "quotes",
+          "any_of": [
+            "3 written quotes",
+            "three written quotes"
+          ]
+        },
+        {
+          "id": "attachments",
+          "any_of": [
+            "specification, quote comparison and risk assessment"
+          ]
+        },
+        {
+          "id": "approval",
+          "any_of": [
+            "approval authority in Table 2.1"
+          ]
+        },
+        {
+          "id": "po",
+          "any_of": [
+            "Wait for purchase order release"
+          ]
+        },
+        {
+          "id": "receipt",
+          "any_of": [
+            "Confirm goods receipt or service completion"
+          ]
+        },
+        {
+          "id": "mismatch",
+          "any_of": [
+            "Resolve invoice mismatch"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [
+        "need",
+        "supplier",
+        "quotes",
+        "attachments",
+        "approval",
+        "po",
+        "receipt",
+        "mismatch"
+      ],
+      "question_type": "multi-step procedural",
+      "difficulty": "hard",
+      "rationale": "Section 2.2.2 is an ordered eight-step list; dropping, reordering or merging steps (especially the wait-for-PO-release step) is a typical RAG failure.",
+      "source_sections": [
+        "Section 2.2.2"
+      ]
+    },
+    {
+      "case_id": "OM-068",
+      "question": "When a Temperature Excursion is detected, what is the ordered sequence of actions starting with stopping pick/load/dispatch?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "stop",
+          "any_of": [
+            "Stop picking, loading or dispatch"
+          ]
+        },
+        {
+          "id": "quarantine",
+          "any_of": [
+            "Quarantine within 15 minutes"
+          ]
+        },
+        {
+          "id": "capture",
+          "any_of": [
+            "Capture temperature graph"
+          ]
+        },
+        {
+          "id": "quality",
+          "any_of": [
+            "Notify Quality"
+          ]
+        },
+        {
+          "id": "release_status",
+          "any_of": [
+            "Released Stock"
+          ]
+        },
+        {
+          "id": "customer",
+          "any_of": [
+            "customer notification"
+          ]
+        },
+        {
+          "id": "deviation",
+          "any_of": [
+            "Record deviation"
+          ]
+        },
+        {
+          "id": "written_release",
+          "any_of": [
+            "Await written Quality release"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [
+        "stop",
+        "quarantine",
+        "capture",
+        "quality",
+        "release_status",
+        "customer",
+        "deviation",
+        "written_release"
+      ],
+      "question_type": "multi-step procedural",
+      "difficulty": "hard",
+      "rationale": "Eight numbered steps in 4.3.2 include a 15-minute quarantine SLA; retrieving a summary without order or the quarantine deadline fails the procedure.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-069",
+      "question": "What is the complete escalation sequence for a Critical or Major incident, from the reporter through Communications?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "reporter",
+          "any_of": [
+            "Reporter notifies Shift Lead or Site Duty Manager"
+          ]
+        },
+        {
+          "id": "containment",
+          "any_of": [
+            "immediate safety containment"
+          ]
+        },
+        {
+          "id": "commander",
+          "any_of": [
+            "Certified Incident Commander is appointed"
+          ]
+        },
+        {
+          "id": "regional",
+          "any_of": [
+            "Regional Operations Director"
+          ]
+        },
+        {
+          "id": "coo",
+          "any_of": [
+            "notifies COO"
+          ]
+        },
+        {
+          "id": "critical",
+          "any_of": [
+            "CEO, Legal and Communications"
+          ]
+        },
+        {
+          "id": "quality",
+          "any_of": [
+            "customer quality contact"
+          ]
+        },
+        {
+          "id": "legal",
+          "any_of": [
+            "regulator notification requirements"
+          ]
+        },
+        {
+          "id": "communications",
+          "any_of": [
+            "external holding statement"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [
+        "reporter",
+        "containment",
+        "commander",
+        "regional",
+        "coo",
+        "critical",
+        "quality",
+        "legal",
+        "communications"
+      ],
+      "question_type": "multi-step procedural",
+      "difficulty": "hard",
+      "rationale": "Section 3.4.1 has nine ordered steps; skipping the certified Incident Commander appointment or swapping COO/CEO order is a common merge error.",
+      "source_sections": [
+        "Section 3.4.1"
+      ]
+    },
+    {
+      "case_id": "OM-070",
+      "question": "Walk through the receiving team's required steps from confirming the booking reference through moving goods to storage.",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "booking",
+          "any_of": [
+            "Confirm booking reference"
+          ]
+        },
+        {
+          "id": "seal",
+          "any_of": [
+            "Check seal number"
+          ]
+        },
+        {
+          "id": "arrival",
+          "any_of": [
+            "Record arrival time"
+          ]
+        },
+        {
+          "id": "bay",
+          "any_of": [
+            "assigned bay"
+          ]
+        },
+        {
+          "id": "trailer",
+          "any_of": [
+            "Inspect trailer condition"
+          ]
+        },
+        {
+          "id": "count",
+          "any_of": [
+            "Confirm goods count"
+          ]
+        },
+        {
+          "id": "damage",
+          "any_of": [
+            "Record visible damage"
+          ]
+        },
+        {
+          "id": "scan",
+          "any_of": [
+            "Scan pallets or cartons"
+          ]
+        },
+        {
+          "id": "quarantine",
+          "any_of": [
+            "Apply Quarantine status"
+          ]
+        },
+        {
+          "id": "storage",
+          "any_of": [
+            "assigned storage location within 2 hours",
+            "storage location within 2 hours"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [
+        "booking",
+        "seal",
+        "arrival",
+        "bay",
+        "trailer",
+        "count",
+        "damage",
+        "scan",
+        "quarantine",
+        "storage"
+      ],
+      "question_type": "multi-step procedural",
+      "difficulty": "hard",
+      "rationale": "Ten numbered receiving steps end with a 2-hour put-away SLA; partial retrieval that omits seal check or quarantine status is insufficient.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-071",
+      "question": "After a road accident, what ordered actions must the driver take before considering liability statements?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "stop",
+          "any_of": [
+            "Stop safely"
+          ]
+        },
+        {
+          "id": "life",
+          "any_of": [
+            "Protect life"
+          ]
+        },
+        {
+          "id": "hazards",
+          "any_of": [
+            "Activate hazard warning equipment"
+          ]
+        },
+        {
+          "id": "notify",
+          "any_of": [
+            "Notify Fleet Control within 30 minutes"
+          ]
+        },
+        {
+          "id": "liability",
+          "any_of": [
+            "Avoid admitting liability"
+          ]
+        },
+        {
+          "id": "details",
+          "any_of": [
+            "Record location, time, parties, vehicle registrations and witness details"
+          ]
+        },
+        {
+          "id": "photos",
+          "any_of": [
+            "Photograph damage, road position and signage"
+          ]
+        },
+        {
+          "id": "testing",
+          "any_of": [
+            "Section 6.3"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [
+        "stop",
+        "life",
+        "hazards",
+        "notify",
+        "liability",
+        "details",
+        "photos",
+        "testing"
+      ],
+      "question_type": "multi-step procedural",
+      "difficulty": "hard",
+      "rationale": "Section 5.5.1 is an eight-step list that also points to Section 6.3 testing; order matters (life first, notify Fleet Control within 30 minutes if safe, do not admit liability).",
+      "source_sections": [
+        "Section 5.5.1",
+        "Section 6.3"
+      ]
+    },
+    {
+      "case_id": "OM-072",
+      "question": "What is the mandatory sequence of points in a Critical or Major incident escalation call?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "classification",
+          "any_of": [
+            "Critical/Major incident",
+            "Critical or Major incident"
+          ]
+        },
+        {
+          "id": "discovery",
+          "any_of": [
+            "discovered at"
+          ]
+        },
+        {
+          "id": "people",
+          "any_of": [
+            "People injured or at risk"
+          ]
+        },
+        {
+          "id": "emergency",
+          "any_of": [
+            "Emergency services"
+          ]
+        },
+        {
+          "id": "operations",
+          "any_of": [
+            "Operational status"
+          ]
+        },
+        {
+          "id": "product",
+          "any_of": [
+            "Product or customer affected"
+          ]
+        },
+        {
+          "id": "regulatory",
+          "any_of": [
+            "Regulatory risk"
+          ]
+        },
+        {
+          "id": "containment",
+          "any_of": [
+            "Containment action taken"
+          ]
+        },
+        {
+          "id": "commander",
+          "any_of": [
+            "Incident Commander"
+          ]
+        },
+        {
+          "id": "update",
+          "any_of": [
+            "Next update"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [
+        "classification",
+        "discovery",
+        "people",
+        "emergency",
+        "operations",
+        "product",
+        "regulatory",
+        "containment",
+        "commander",
+        "update"
+      ],
+      "question_type": "multi-step procedural",
+      "difficulty": "hard",
+      "rationale": "Appendix C.1 is a 10-line script; a model that paraphrases 'tell them what happened' without the prescribed order fails the procedural test.",
+      "source_sections": [
+        "Appendix C"
+      ]
+    },
+    {
+      "case_id": "OM-075",
+      "question": "What is the CEO's annual salary?",
+      "expectation": "refuse",
+      "expected_documents": [],
+      "document_match_policy": "any",
+      "required_facts": [],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "must-refuse",
+      "difficulty": "adversarial",
+      "rationale": "Compensation is outside this internal operations manual; the system must refuse rather than infer from Band 6+ delegation limits.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-077",
+      "question": "What is the step-by-step disciplinary procedure for gross misconduct?",
+      "expectation": "safe_boundary",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "document",
+          "any_of": [
+            "HRPOL-014"
+          ]
+        },
+        {
+          "id": "separate",
+          "any_of": [
+            "separate Controlled Document"
+          ]
+        },
+        {
+          "id": "not_replaced",
+          "any_of": [
+            "does not replace that procedure",
+            "manual does not replace"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "must-refuse",
+      "difficulty": "adversarial",
+      "rationale": "Section 6.4 says the full procedure is a separate Controlled Document and that this manual does not replace it; answering with invented steps is a failure.",
+      "source_sections": [
+        "Section 6.4"
+      ]
+    },
+    {
+      "case_id": "OM-080",
+      "question": "What customer rate card applies to the pharmaceutical lane Antwerp–Lyon?",
+      "expectation": "refuse",
+      "expected_documents": [],
+      "document_match_policy": "any",
+      "required_facts": [],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "must-refuse",
+      "difficulty": "adversarial",
+      "rationale": "Rate cards are cited as Restricted Information examples but no actual rates or lane prices appear in the manual.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-081",
+      "question": "Under the Speak-Up procedure, exactly how many days does the investigator have to interview the accused after an anonymous report?",
+      "expectation": "safe_boundary",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "document",
+          "any_of": [
+            "GOV-POL-006"
+          ]
+        },
+        {
+          "id": "separate",
+          "any_of": [
+            "full whistleblowing procedure"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "must-refuse",
+      "difficulty": "adversarial",
+      "rationale": "Section 6.5 only points to GOV-POL-006; interview timelines are not in this manual and must not be invented.",
+      "source_sections": [
+        "Section 6.5"
+      ]
+    },
+    {
+      "case_id": "OM-082",
+      "question": "Which external ISO certification body audits Northwind's ISO 9001 and ISO 14001 systems?",
+      "expectation": "refuse",
+      "expected_documents": [],
+      "document_match_policy": "any",
+      "required_facts": [],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "must-refuse",
+      "difficulty": "adversarial",
+      "rationale": "The manual requires alignment to ISO 9001/14001 but never names an auditor, certificate number or last audit date.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-083",
+      "question": "Is it true that weekend warehouse overtime is paid at the standard 1.5× rate?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "saturday_first",
+          "any_of": [
+            "1.20×",
+            "1.20x"
+          ]
+        },
+        {
+          "id": "saturday_later",
+          "any_of": [
+            "1.45×",
+            "1.45x"
+          ]
+        },
+        {
+          "id": "sunday",
+          "any_of": [
+            "1.60×",
+            "1.60x"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "numerical precision",
+      "difficulty": "adversarial",
+      "rationale": "Trick question: Version 3.1 used a standard 1.5× weekend rate (AM-3.2-005); the live rules split Saturday 1.20×/1.45× and Sunday 1.60×.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-084",
+      "question": "The site's most senior Band 6 manager is present and certified Incident Commanders are not. Who leads the incident?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "authority",
+          "any_of": [
+            "Regional Operations Control Desk"
+          ]
+        },
+        {
+          "id": "critical_time",
+          "any_of": [
+            "30 minutes for Critical"
+          ]
+        },
+        {
+          "id": "major_time",
+          "any_of": [
+            "60 minutes for Major"
+          ]
+        },
+        {
+          "id": "method",
+          "any_of": [
+            "assign one remotely"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "conditional / exception",
+      "difficulty": "adversarial",
+      "rationale": "Trick against hierarchy: if no certified Incident Commander is on site, the Control Desk assigns one remotely within 30 minutes (Critical) or 60 minutes (Major); seniority does not fill the gap.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-085",
+      "question": "An employee in Spain wants to delay a Minor incident report until after a Spanish public holiday. Does Working Day allow that delay?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "calendar",
+          "any_of": [
+            "Belgian public holidays"
+          ]
+        },
+        {
+          "id": "not_local",
+          "any_of": [
+            "not the employee’s local public holidays",
+            "not the employee's local public holidays"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "definition-dependent",
+      "difficulty": "adversarial",
+      "rationale": "Trick question using the manual's own example: Working Day excludes Belgian public holidays, not the employee's local holidays.",
+      "source_sections": []
+    },
+    {
+      "case_id": "OM-089",
+      "question": "A driver fails a post-accident substance test. Which Operations Manual sections and which separate HR document jointly govern suspension from driving and the conduct process?",
+      "expectation": "answer",
+      "expected_documents": [
+        "northwind-operations-manual-v3.2"
+      ],
+      "document_match_policy": "any",
+      "required_facts": [
+        {
+          "id": "accident",
+          "any_of": [
+            "5.5.1 Accident response",
+            "Accident response"
+          ]
+        },
+        {
+          "id": "testing",
+          "any_of": [
+            "Section 6.3"
+          ]
+        },
+        {
+          "id": "conduct",
+          "any_of": [
+            "Section 6.4"
+          ]
+        },
+        {
+          "id": "document",
+          "any_of": [
+            "HRPOL-014"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "cross-reference resolution",
+      "difficulty": "hard",
+      "rationale": "Sections 5.5.1, 6.3 and 6.4 must be joined with HRPOL-014; the manual authorises immediate suspension from safety-sensitive duties but refuses to state the disciplinary steps.",
+      "source_sections": []
+    }
+  ]
+}

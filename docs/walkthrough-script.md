@@ -106,9 +106,10 @@ entitlement passage, then return to the app tab.
 **Say:**
 
 > The public evaluation publishes the test questions, outcomes, limitations, and generated
-> synthetic corpus so the evidence can be inspected. Its measured scope is 25 questions on
-> 27 synthetic documents. This demonstrates governance behaviour; it is not a general
-> accuracy, production-scale, or client-results claim.
+> synthetic corpus so the evidence can be inspected. The approved v1 scope is 25 questions
+> on the isolated 27-document corpus. The new two-phase 90-case, 28-source suite is labelled
+> calibration-only until approved. This demonstrates governance behaviour; it is not a
+> general accuracy, production-scale, or client-results claim.
 
 **Action:** Stop the recording.
 

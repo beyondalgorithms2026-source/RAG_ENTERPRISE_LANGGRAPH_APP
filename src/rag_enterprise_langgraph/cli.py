@@ -347,6 +347,7 @@ async def _run(args: argparse.Namespace) -> int:
             hard_failure = (
                 report["infrastructure_failures"] > 0
                 or report["refusal_passed"] != report["refusal_total"]
+                or report["safe_boundary_passed"] != report["safe_boundary_total"]
             )
             return 1 if hard_failure else 0
         return 0 if report["status"] == "pass" else 1
