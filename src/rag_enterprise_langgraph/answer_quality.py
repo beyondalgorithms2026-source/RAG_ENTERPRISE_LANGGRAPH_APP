@@ -202,11 +202,11 @@ def classify_question(question: str) -> QuestionProfile:
         for marker in ("how much", "how many", "cost", "revenue", "price", "amount")
     )
     material_cost_share = "cost" in lowered and "material" in lowered
+    # Match percentage concepts as words. Substring matching made every
+    # question containing "Operations" look like a ratio question because
+    # "operations" contains the letters "ratio".
     requires_percentage = (
-        any(
-            marker in lowered
-            for marker in ("percentage", "percent", "ratio", "%", "rent to sales")
-        )
+        bool(re.search(r"\b(?:percentage|percent|ratio)\b|%|\brent\s+to\s+sales\b", lowered))
         or material_cost_share
     )
     requires_date = any(

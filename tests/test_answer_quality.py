@@ -22,6 +22,15 @@ def test_question_classifier_detects_material_cost_share_as_percentage_shape():
     assert profile.expected_answer_shape.requires_percentage is True
 
 
+def test_operations_is_not_misclassified_as_ratio_question():
+    profile = classify_question(
+        "In the Operations Manual's Whistleblowing section, which procedure applies?"
+    )
+
+    assert profile.expected_answer_shape.requires_percentage is False
+    assert "percentage_or_ratio" not in profile.question_types
+
+
 def test_verified_list_answer_requires_each_item_to_be_citation_supported():
     question = "What are the 3 interrelated things that make Renaissance Technologies unique from other investment firms?"
     answer = (
