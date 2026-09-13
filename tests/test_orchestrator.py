@@ -112,9 +112,11 @@ def test_orchestration_step_summarizes_nested_backend_errors_without_traceback()
 def test_orchestrator_unwraps_mcp_text_blocks_before_classification():
     orchestrator = EnterpriseRagOrchestrator(quiet_mcp=False)
     calls: list[str] = []
+    call_arguments: list[dict] = []
 
     async def fake_tool_call(name, arguments):
         calls.append(name)
+        call_arguments.append(arguments)
         if name == "ask_grounded":
             raw = [
                 {
@@ -129,6 +131,7 @@ def test_orchestrator_unwraps_mcp_text_blocks_before_classification():
                     "source_id": 3,
                     "source_part_id": 655,
                     "file_name": "annual-leave-policy.md",
+                    "locator": "section:annual-leave",
                     "snippet": "Full-time employees receive 26 days of annual leave per calendar year, in addition to public holidays.",
                 }
             ]
@@ -147,6 +150,7 @@ def test_orchestrator_unwraps_mcp_text_blocks_before_classification():
     assert result.recovery_attempted is True
     assert result.evidence_count == 1
     assert calls == ["ask_grounded", "ask_grounded", "search_documents", "get_document_excerpt"]
+    assert call_arguments[-1]["locator_filter"] == "section:annual-leave"
 
 
 def test_orchestrator_returns_not_grounded_for_answer_without_evidence():
@@ -199,13 +203,13 @@ def test_explicit_not_found_without_candidates_is_terminal_safe_refusal():
     assert calls == ["ask_grounded"]
 
 
-def test_explicit_not_found_stays_refusal_when_recovery_is_only_partial():
+def test_named_entity_question_refuses_recovery_that_is_only_partial():
     orchestrator = EnterpriseRagOrchestrator(quiet_mcp=False)
 
     async def fake_tool_call(name, arguments):
         if name == "ask_grounded":
             return {
-                "answer": "Not found in provided sources.",
+                "answer": "The organization uses ISO standards.",
                 "citations": [],
                 "debug_info": {
                     "retrieval_trace": {
@@ -240,11 +244,11 @@ def test_explicit_not_found_stays_refusal_when_recovery_is_only_partial():
         orchestrator.run("Which external ISO certification body audits the organization?")
     )
 
-    assert result.grounding_status == "not_found"
+    assert result.grounding_status == "not_grounded"
     assert result.answer == "No grounded answer could be produced from the available MCP evidence."
     assert result.recovery_attempted is True
     assert result.recovery_successful is False
-    assert result.failure_reason is None
+    assert result.failure_reason == "answer_without_citations_or_evidence"
     assert result.evidence == []
     assert result.rejected_evidence
 
