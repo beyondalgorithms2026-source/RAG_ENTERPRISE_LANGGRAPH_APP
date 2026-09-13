@@ -121,7 +121,12 @@ def _full_configuration():
             "model": "pinned-embedding",
             "dimensions": "384",
         },
-        "chunking": {"policy": "default", "target_words": "320", "overlap_words": "40"},
+        "chunking": {
+            "policy": "default",
+            "target_words": "320",
+            "overlap_words": "40",
+            "answer_context_chunk_cap_chars": "2000",
+        },
         "retrieval": {"mode": "hybrid", "rerank_enabled": "false"},
         "orchestration": {
             "max_recovery_steps": 3,

@@ -19,6 +19,7 @@ REQUIRED_CONFIGURATION_PATHS = (
     ("chunking", "policy"),
     ("chunking", "target_words"),
     ("chunking", "overlap_words"),
+    ("chunking", "answer_context_chunk_cap_chars"),
     ("retrieval", "mode"),
     ("retrieval", "rerank_enabled"),
     ("orchestration", "max_recovery_steps"),
