@@ -32,6 +32,7 @@ from rag_enterprise_langgraph.evidence import (
     matching_rule,
     validate_evidence,
 )
+from rag_enterprise_langgraph.input_security import SAFE_PROMPT_REFUSAL, assess_prompt_safety
 from rag_enterprise_langgraph.journal import write_journal_entry
 from rag_enterprise_langgraph.mcp_client import load_mcp_tools, suppress_mcp_stdio_stderr
 from rag_enterprise_langgraph.synthesis import synthesize_and_verify
@@ -1417,6 +1418,32 @@ class EnterpriseRagOrchestrator:
             return content
 
         try:
+            safety = assess_prompt_safety(question)
+            if safety.blocked:
+                decision_trail.append(
+                    _decision_step(
+                        len(decision_trail) + 1,
+                        "Unsafe instruction refused",
+                        ", ".join(safety.signals),
+                    )
+                )
+                return finish(
+                    OrchestratedRunResult(
+                        question=question,
+                        answer=SAFE_PROMPT_REFUSAL,
+                        grounding_status="not_found",
+                        tools_used=[],
+                        execution_timeline=[],
+                        portfolio_safe=True,
+                        failure_reason=safety.reason,
+                        validation_summary=_validation_summary(
+                            "not_found", None, evidence_support="missing"
+                        ),
+                        decision_trail=decision_trail,
+                        review_guidance=review_guidance("not_found"),
+                        review_note=review_note(),
+                    )
+                )
             initial = await call(
                 "ask_grounded",
                 "initial_grounded_answer",

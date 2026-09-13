@@ -79,6 +79,11 @@ def redact_for_sharing(value: Any, *, include_debug: bool = False) -> Any:
                 "prompt",
                 "raw_prompt",
                 "messages",
+                "candidate_source_ids",
+                "candidate_sources",
+                "source_candidates",
+                "sql",
+                "database_error",
             }:
                 continue
             if not include_debug and key_text in {"debug_info"}:

@@ -335,11 +335,11 @@ def test_red_team_api_endpoints(app_env):
     assert empty["report"] is None
 
     findings = client.get("/red-team/findings").json()["findings"]
-    assert len(findings) == 10
+    assert len(findings) == 20
 
     report = client.post("/red-team/run").json()
-    assert report["total"] == 10
+    assert report["total"] == 20
     assert report["failed"] == 0
 
     latest = client.get("/red-team/latest").json()["report"]
-    assert latest["total"] == 10
+    assert latest["total"] == 20

@@ -6,6 +6,7 @@ import json
 import os
 import re
 import subprocess
+import time
 import zipfile
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -22,6 +23,13 @@ NS = {"main": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
 
 
 @dataclass(frozen=True)
+class EvalFact:
+    fact_id: str
+    any_of: tuple[str, ...]
+    evidence_required: bool = True
+
+
+@dataclass(frozen=True)
 class EvalCase:
     question: str
     expected_answer: str
@@ -32,6 +40,17 @@ class EvalCase:
     # failure they exist to catch.
     expect_refusal: bool = False
     case_id: str | None = None
+    schema_version: str = "1.0"
+    expectation: str = "answer"
+    expected_documents: tuple[str, ...] = ()
+    document_match_policy: str = "any"
+    required_facts: tuple[EvalFact, ...] = ()
+    forbidden_facts: tuple[str, ...] = ()
+    ordered_fact_ids: tuple[str, ...] = ()
+    question_type: str | None = None
+    difficulty: str | None = None
+    rationale: str | None = None
+    source_sections: tuple[str, ...] = ()
 
 
 class EvalSetError(ValueError):
@@ -148,13 +167,16 @@ def read_eval_json(path: str | Path) -> list[EvalCase]:
     so a reader can see exactly what was asked and what was expected.
     """
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
-    if not isinstance(payload, dict) or payload.get("schema_version") != "1.0":
-        raise EvalSetError("eval set schema_version must be '1.0'")
+    if not isinstance(payload, dict) or payload.get("schema_version") not in {"1.0", "1.1"}:
+        raise EvalSetError("eval set schema_version must be '1.0' or '1.1'")
+    schema_version = payload["schema_version"]
     questions = payload.get("questions")
     if not isinstance(questions, list) or not questions:
         raise EvalSetError("eval set questions must be a non-empty list")
     if payload.get("eval_set") == "northwind-public-demo" and len(questions) != 25:
         raise EvalSetError("northwind-public-demo must contain exactly 25 questions")
+    if payload.get("eval_set") == "northwind-operations-manual-v3.2" and len(questions) != 65:
+        raise EvalSetError("northwind-operations-manual-v3.2 must contain exactly 65 questions")
     cases: list[EvalCase] = []
     seen_ids: set[str] = set()
     for index, item in enumerate(questions, start=1):
@@ -169,16 +191,111 @@ def read_eval_json(path: str | Path) -> list[EvalCase]:
         question = str(item.get("question") or "").strip()
         if not question:
             raise EvalSetError(f"{case_id} has an empty question")
-        if not isinstance(item.get("expect_refusal"), bool):
-            raise EvalSetError(f"{case_id} must declare boolean expect_refusal")
-        expects_refusal = item["expect_refusal"]
-        expected_document = item.get("expected_document")
-        expected_fact = item.get("expected_fact")
-        if expects_refusal:
-            if expected_document is not None or expected_fact is not None:
-                raise EvalSetError(f"{case_id} refusal must have null expectations")
-        elif not str(expected_document or "").strip() or not str(expected_fact or "").strip():
-            raise EvalSetError(f"{case_id} answerable case needs document and fact")
+        if schema_version == "1.0":
+            if not isinstance(item.get("expect_refusal"), bool):
+                raise EvalSetError(f"{case_id} must declare boolean expect_refusal")
+            expects_refusal = item["expect_refusal"]
+            expectation = "refuse" if expects_refusal else "answer"
+            expected_document = item.get("expected_document")
+            expected_fact = item.get("expected_fact")
+            if expects_refusal:
+                if expected_document is not None or expected_fact is not None:
+                    raise EvalSetError(f"{case_id} refusal must have null expectations")
+            elif not str(expected_document or "").strip() or not str(expected_fact or "").strip():
+                raise EvalSetError(f"{case_id} answerable case needs document and fact")
+            expected_documents = (
+                (str(expected_document).strip(),) if expected_document is not None else ()
+            )
+            required_facts: tuple[EvalFact, ...] = ()
+            forbidden_facts: tuple[str, ...] = ()
+            ordered_fact_ids: tuple[str, ...] = ()
+            document_match_policy = "any"
+        else:
+            expectation = str(item.get("expectation") or "").strip()
+            if expectation not in {"answer", "refuse", "safe_boundary"}:
+                raise EvalSetError(f"{case_id} has invalid expectation")
+            expects_refusal = expectation == "refuse"
+            raw_documents = item.get("expected_documents")
+            if not isinstance(raw_documents, list) or any(
+                not isinstance(value, str) or not value.strip() for value in raw_documents
+            ):
+                raise EvalSetError(f"{case_id} expected_documents must be a string list")
+            expected_documents = tuple(value.strip() for value in raw_documents)
+            if len(set(expected_documents)) != len(expected_documents):
+                raise EvalSetError(f"{case_id} has duplicate expected_documents")
+            document_match_policy = str(item.get("document_match_policy") or "any").strip()
+            if document_match_policy not in {"any", "all"}:
+                raise EvalSetError(f"{case_id} has invalid document_match_policy")
+            raw_facts = item.get("required_facts")
+            if not isinstance(raw_facts, list):
+                raise EvalSetError(f"{case_id} required_facts must be a list")
+            parsed_facts: list[EvalFact] = []
+            seen_fact_ids: set[str] = set()
+            for fact in raw_facts:
+                if not isinstance(fact, dict):
+                    raise EvalSetError(f"{case_id} contains a malformed required fact")
+                fact_id = str(fact.get("id") or "").strip()
+                aliases = fact.get("any_of")
+                if (
+                    not fact_id
+                    or fact_id in seen_fact_ids
+                    or not isinstance(aliases, list)
+                    or not aliases
+                    or any(not isinstance(alias, str) or not alias.strip() for alias in aliases)
+                ):
+                    raise EvalSetError(f"{case_id} contains an invalid required fact")
+                seen_fact_ids.add(fact_id)
+                evidence_required = fact.get("evidence_required", True)
+                if not isinstance(evidence_required, bool):
+                    raise EvalSetError(
+                        f"{case_id} fact {fact_id} evidence_required must be boolean"
+                    )
+                parsed_facts.append(
+                    EvalFact(
+                        fact_id=fact_id,
+                        any_of=tuple(alias.strip() for alias in aliases),
+                        evidence_required=evidence_required,
+                    )
+                )
+            required_facts = tuple(parsed_facts)
+            raw_forbidden = item.get("forbidden_facts", [])
+            if not isinstance(raw_forbidden, list) or any(
+                not isinstance(value, str) or not value.strip() for value in raw_forbidden
+            ):
+                raise EvalSetError(f"{case_id} forbidden_facts must be a string list")
+            forbidden_facts = tuple(value.strip() for value in raw_forbidden)
+            raw_order = item.get("ordered_fact_ids", [])
+            if not isinstance(raw_order, list) or any(
+                not isinstance(value, str) or not value.strip() for value in raw_order
+            ):
+                raise EvalSetError(f"{case_id} ordered_fact_ids must be a string list")
+            ordered_fact_ids = tuple(value.strip() for value in raw_order)
+            if len(set(ordered_fact_ids)) != len(ordered_fact_ids) or not set(
+                ordered_fact_ids
+            ).issubset(seen_fact_ids):
+                raise EvalSetError(f"{case_id} ordered_fact_ids must reference unique facts")
+            aliases_normalized = {
+                _normalized_fact_text(alias) for fact in required_facts for alias in fact.any_of
+            }
+            if aliases_normalized.intersection(
+                _normalized_fact_text(value) for value in forbidden_facts
+            ):
+                raise EvalSetError(f"{case_id} has contradictory required and forbidden facts")
+            if expectation == "refuse":
+                if expected_documents or required_facts or ordered_fact_ids:
+                    raise EvalSetError(f"{case_id} refusal cannot require documents or facts")
+            elif not expected_documents or not required_facts:
+                raise EvalSetError(f"{case_id} {expectation} needs documents and required facts")
+            for field in ("question_type", "difficulty", "rationale"):
+                if not str(item.get(field) or "").strip():
+                    raise EvalSetError(f"{case_id} is missing {field}")
+            raw_sections = item.get("source_sections", [])
+            if not isinstance(raw_sections, list) or any(
+                not isinstance(value, str) or not value.strip() for value in raw_sections
+            ):
+                raise EvalSetError(f"{case_id} source_sections must be a string list")
+            expected_document = expected_documents[0] if expected_documents else None
+            expected_fact = "; ".join(fact.any_of[0] for fact in required_facts)
         cases.append(
             EvalCase(
                 question=question,
@@ -188,6 +305,19 @@ def read_eval_json(path: str | Path) -> list[EvalCase]:
                 else None,
                 expect_refusal=expects_refusal,
                 case_id=case_id,
+                schema_version=schema_version,
+                expectation=expectation,
+                expected_documents=expected_documents,
+                document_match_policy=document_match_policy,
+                required_facts=required_facts,
+                forbidden_facts=forbidden_facts,
+                ordered_fact_ids=ordered_fact_ids,
+                question_type=str(item.get("question_type") or "").strip() or None,
+                difficulty=str(item.get("difficulty") or "").strip() or None,
+                rationale=str(item.get("rationale") or "").strip() or None,
+                source_sections=tuple(
+                    str(value).strip() for value in item.get("source_sections", [])
+                ),
             )
         )
     if payload.get("eval_set") == "northwind-public-demo":
@@ -253,6 +383,66 @@ def read_eval_xlsx(path: str | Path) -> list[EvalCase]:
 # not a refusal.
 REFUSAL_STATUSES = {"not_grounded", "not_found"}
 INFRASTRUCTURE_STATUSES = {"backend_auth_failed", "backend_timeout", "tool_error"}
+BOUNDARY_MARKERS = (
+    "not in",
+    "not provided",
+    "not available",
+    "cannot provide",
+    "separate",
+    "refer to",
+    "controlled document",
+    "restricted",
+)
+
+
+def _normalized_fact_text(value: Any) -> str:
+    text = str(value or "").casefold().replace("€", " eur ")
+    text = re.sub(r"(?<=\d)[,.](?=\d)", "", text)
+    return " ".join(re.findall(r"[a-z0-9]+", text))
+
+
+def _alias_position(text: str, aliases: Sequence[str]) -> int | None:
+    normalized = _normalized_fact_text(text)
+    positions = [normalized.find(_normalized_fact_text(alias)) for alias in aliases]
+    found = [position for position in positions if position >= 0]
+    return min(found) if found else None
+
+
+def _fact_results(
+    *, answer: str, evidence: Sequence[dict[str, Any]], case: EvalCase
+) -> list[dict[str, Any]]:
+    evidence_text = " ".join(
+        str(item.get("snippet") or item.get("text") or item.get("content") or "")
+        for item in evidence
+        if isinstance(item, dict)
+    )
+    return [
+        {
+            "fact_id": fact.fact_id,
+            "answer_matched": _alias_position(answer, fact.any_of) is not None,
+            "evidence_required": fact.evidence_required,
+            "evidence_matched": (
+                _alias_position(evidence_text, fact.any_of) is not None
+                if fact.evidence_required
+                else None
+            ),
+        }
+        for fact in case.required_facts
+    ]
+
+
+def _forbidden_matches(answer: str, forbidden_facts: Sequence[str]) -> list[str]:
+    return [value for value in forbidden_facts if _alias_position(answer, (value,)) is not None]
+
+
+def _facts_in_required_order(answer: str, case: EvalCase) -> bool:
+    if not case.ordered_fact_ids:
+        return True
+    by_id = {fact.fact_id: fact for fact in case.required_facts}
+    positions = [
+        _alias_position(answer, by_id[fact_id].any_of) for fact_id in case.ordered_fact_ids
+    ]
+    return all(position is not None for position in positions) and positions == sorted(positions)
 
 
 def _normalized_document(value: Any) -> str:
@@ -260,25 +450,33 @@ def _normalized_document(value: Any) -> str:
     return re.sub(r"\.(md|txt|pdf|docx|html?)$", "", text)
 
 
-def _expected_document_matched(run: dict[str, Any], expected_document: str | None) -> bool | None:
-    if not expected_document:
+def _expected_document_matched(
+    run: dict[str, Any], expected_documents: Sequence[str], match_policy: str = "any"
+) -> bool | None:
+    if not expected_documents:
         return None
-    expected = _normalized_document(expected_document)
+    expected = {_normalized_document(value) for value in expected_documents}
     candidates: list[Any] = []
     for key in ("citations", "evidence", "source_evidence"):
         value = run.get(key) or []
         if isinstance(value, list):
             candidates.extend(value)
+    found: set[str] = set()
     for item in candidates:
         if isinstance(item, dict):
             for key in ("file_name", "source", "document", "document_name"):
-                if _normalized_document(item.get(key)) == expected:
-                    return True
-    return False
+                normalized = _normalized_document(item.get(key))
+                if normalized in expected:
+                    found.add(normalized)
+    return found == expected if match_policy == "all" else bool(found)
 
 
 def _eval_status(
-    run: dict[str, Any], expected_eval: dict[str, Any], case: EvalCase | None = None
+    run: dict[str, Any],
+    expected_eval: dict[str, Any],
+    case: EvalCase | None = None,
+    *,
+    expected_document_matched: bool | None = None,
 ) -> str:
     grounding = run.get("grounding_status")
 
@@ -286,6 +484,38 @@ def _eval_status(
         # The corpus cannot answer this. Declining is correct; producing a
         # confident grounded answer is the failure.
         return "pass" if grounding in REFUSAL_STATUSES else "fail"
+
+    if case is not None and case.schema_version == "1.1":
+        fact_results = expected_eval.get("required_facts") or []
+        facts_pass = bool(fact_results) and all(
+            item.get("answer_matched")
+            and (item.get("evidence_matched") if item.get("evidence_required", True) else True)
+            for item in fact_results
+        )
+        no_forbidden_facts = not expected_eval.get("forbidden_fact_matches")
+        order_pass = expected_eval.get("ordered_facts_matched") is not False
+        if case.expectation == "safe_boundary":
+            boundary_present = expected_eval.get("boundary_present") is True
+            if (
+                grounding in {"verified", "grounded", "recovered"}
+                and facts_pass
+                and no_forbidden_facts
+                and order_pass
+                and boundary_present
+                and expected_document_matched is True
+            ):
+                return "pass"
+        elif (
+            grounding in {"verified", "grounded", "recovered"}
+            and facts_pass
+            and no_forbidden_facts
+            and order_pass
+            and expected_document_matched is True
+        ):
+            return "pass"
+        if grounding in {"partial", "needs_review"}:
+            return "manual_review"
+        return "fail"
 
     if (
         grounding in {"verified", "grounded", "recovered"}
@@ -295,6 +525,35 @@ def _eval_status(
     if grounding in {"partial", "needs_review"}:
         return "manual_review"
     return "fail"
+
+
+def _backend_request_ids(run: dict[str, Any]) -> list[str]:
+    """Collect sanitized STARTER retrieval IDs from MCP tool responses.
+
+    One APP case can make more than one backend request during recovery.  The
+    isolated full-stack workflow uses these opaque IDs to join the case report
+    to STARTER's generation-usage table without exporting questions, prompts,
+    users, or raw traces.
+    """
+    request_ids: list[str] = []
+    seen: set[str] = set()
+    for output in run.get("tool_outputs") or []:
+        if not isinstance(output, dict):
+            continue
+        content = output.get("content")
+        if not isinstance(content, dict):
+            continue
+        debug_info = content.get("debug_info")
+        if not isinstance(debug_info, dict):
+            continue
+        retrieval_trace = debug_info.get("retrieval_trace")
+        if not isinstance(retrieval_trace, dict):
+            continue
+        request_id = str(retrieval_trace.get("request_id") or "").strip()
+        if request_id and request_id not in seen:
+            seen.add(request_id)
+            request_ids.append(request_id)
+    return request_ids
 
 
 async def run_eval(
@@ -318,22 +577,48 @@ async def run_eval(
     )
     rows: list[dict[str, Any]] = []
     for case in cases:
+        started = time.perf_counter()
         result = await runtime_orchestrator.run(
             case.question,
             max_recovery_steps=max_recovery_steps,
             expected_answer=case.expected_answer,
             journal_path=str(journal_path) if journal_path else None,
         )
+        end_to_end_latency_ms = round((time.perf_counter() - started) * 1000, 3)
         run = result.to_dict()
-        expected_eval = evaluate_expected_answer(
-            answer=str(run.get("answer") or ""),
-            evidence=run.get("evidence") or [],
-            expected_answer=case.expected_answer,
-            question=case.question,
-            rules=rules,
+        answer = str(run.get("answer") or "")
+        evidence = run.get("evidence") or []
+        if case.schema_version == "1.1":
+            expected_eval = {
+                "status": "mechanical",
+                "required_facts": _fact_results(answer=answer, evidence=evidence, case=case),
+                "forbidden_fact_matches": _forbidden_matches(answer, case.forbidden_facts),
+                "ordered_facts_matched": _facts_in_required_order(answer, case),
+                "boundary_present": (
+                    any(marker in answer.casefold() for marker in BOUNDARY_MARKERS)
+                    if case.expectation == "safe_boundary"
+                    else None
+                ),
+            }
+        else:
+            expected_eval = evaluate_expected_answer(
+                answer=answer,
+                evidence=evidence,
+                expected_answer=case.expected_answer,
+                question=case.question,
+                rules=rules,
+            )
+        expected_document_matched = _expected_document_matched(
+            run,
+            case.expected_documents or ((case.file_name,) if case.file_name else ()),
+            case.document_match_policy,
         )
-        expected_document_matched = _expected_document_matched(run, case.file_name)
-        eval_status = _eval_status(run, expected_eval, case)
+        eval_status = _eval_status(
+            run,
+            expected_eval,
+            case,
+            expected_document_matched=expected_document_matched,
+        )
         failure_class = (
             "infrastructure"
             if run.get("grounding_status") in INFRASTRUCTURE_STATUSES
@@ -350,8 +635,14 @@ async def run_eval(
                 "tools_used": run.get("tools_used") or [],
                 "eval_status": eval_status,
                 "expect_refusal": case.expect_refusal,
+                "expectation": case.expectation,
                 "refusal_passed": eval_status == "pass" if case.expect_refusal else None,
                 "expected_document_matched": expected_document_matched,
+                "expected_documents": list(case.expected_documents),
+                "document_match_policy": case.document_match_policy,
+                "question_type": case.question_type,
+                "difficulty": case.difficulty,
+                "source_sections": list(case.source_sections),
                 "expected_eval": expected_eval,
                 "failure_class": failure_class,
                 "failure_reason": run.get("failure_reason"),
@@ -359,6 +650,11 @@ async def run_eval(
                 "file_name": case.file_name,
                 "post_url": case.post_url,
                 "latency_ms": run.get("latency_ms"),
+                "end_to_end_latency_ms": end_to_end_latency_ms,
+                "recovery_attempted": bool(run.get("recovery_attempted")),
+                "recovery_successful": bool(run.get("recovery_successful")),
+                "attempt_count": len(run.get("attempts") or []),
+                "backend_request_ids": _backend_request_ids(run),
                 "run_id": run.get("run_id"),
             }
         )
@@ -369,7 +665,7 @@ async def run_eval(
     refusal_passed = sum(1 for row in rows if row["refusal_passed"] is True)
     infrastructure_failures = sum(1 for row in rows if row["failure_class"] == "infrastructure")
     return {
-        "schema_version": "1.0",
+        "schema_version": cases[0].schema_version if cases else "1.0",
         "eval_set": str(source_path),
         "total": len(rows),
         "passed": passed,
@@ -377,6 +673,12 @@ async def run_eval(
         "manual_review": manual,
         "refusal_total": refusal_total,
         "refusal_passed": refusal_passed,
+        "safe_boundary_total": sum(1 for row in rows if row["expectation"] == "safe_boundary"),
+        "safe_boundary_passed": sum(
+            1
+            for row in rows
+            if row["expectation"] == "safe_boundary" and row["eval_status"] == "pass"
+        ),
         "infrastructure_failures": infrastructure_failures,
         "configuration": {
             "app_prompts": prompt_metadata(),

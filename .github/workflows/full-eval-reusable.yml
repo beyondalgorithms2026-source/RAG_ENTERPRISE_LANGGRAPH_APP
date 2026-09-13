@@ -178,10 +178,18 @@ jobs:
           EVAL_OPENAI_API_KEY: ${{ secrets.EVAL_OPENAI_API_KEY }}
         run: python scripts/check_eval_model_access.py --model "$LLM_MODEL"
 
-      - name: Migrate and seed deterministic corpus
+      - name: Verify published manual matches canonical STARTER source
+        if: steps.secret.outputs.skip != 'true'
+        working-directory: app
+        run: |
+          python scripts/generate_manual_page.py \
+            --source ../starter/corpus/source_documents/northwind-operations-manual-v3.2.md \
+            --check
+
+      - name: Migrate and seed legacy 27-source corpus
         if: steps.secret.outputs.skip != 'true'
         run: |
-          python starter/corpus/generate_corpus.py --out "$UPLOAD_DIR"
+          python starter/corpus/generate_corpus.py --legacy-only --out "$UPLOAD_DIR"
           cd starter/backend
           python -m app.db.migrate
           python -m app.seed.public_demo
@@ -208,8 +216,8 @@ jobs:
           echo "Backend readiness failed" >&2
           exit 1
 
-      - name: Run 25-question evaluation
-        id: evaluation
+      - name: Run isolated 25-question core phase
+        id: core_evaluation
         if: steps.secret.outputs.skip != 'true'
         continue-on-error: true
         working-directory: app
@@ -222,10 +230,69 @@ jobs:
           export RAG_AGENT_MCP_SERVER_PYTHON="$(command -v python)"
           python -m rag_enterprise_langgraph.cli \
             --eval-set config/eval-set-northwind.json \
-            --eval-output "$RUNNER_TEMP/eval-report.md" \
-            --eval-json "$RUNNER_TEMP/eval-report.json" \
+            --eval-output "$RUNNER_TEMP/core-eval-report.md" \
+            --eval-json "$RUNNER_TEMP/core-eval-report.json" \
             --max-recovery-steps 3 \
             --eval-calibration
+
+      - name: Add Operations Manual with production parser and chunker
+        if: always() && steps.secret.outputs.skip != 'true'
+        run: |
+          kill "$(cat "$RUNNER_TEMP/backend.pid")" || true
+          for attempt in $(seq 1 30); do
+            if ! curl --fail --silent http://127.0.0.1:8000/health >/dev/null; then break; fi
+            sleep 1
+          done
+          if curl --fail --silent http://127.0.0.1:8000/health >/dev/null; then
+            echo "Core-phase backend did not stop before corpus expansion" >&2
+            exit 1
+          fi
+          python starter/corpus/generate_corpus.py --out "$UPLOAD_DIR"
+          cd starter/backend
+          python -m app.seed.public_demo
+
+      - name: Start document-ACL manual-phase backend
+        if: always() && steps.secret.outputs.skip != 'true'
+        working-directory: starter/backend
+        run: |
+          ACCESS_STRATEGY=document_acl_with_time_bound_grants python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 > "$RUNNER_TEMP/backend-manual.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/backend.pid"
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:8000/health >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          echo "Manual-phase backend readiness failed" >&2
+          exit 1
+
+      - name: Run isolated 65-question Operations Manual phase
+        id: manual_evaluation
+        if: always() && steps.secret.outputs.skip != 'true'
+        continue-on-error: true
+        working-directory: app
+        env:
+          RAG_AGENT_MCP_SERVER_REPO: ${{ github.workspace }}/mcp
+          RAG_EVAL_APP_REPO: ${{ github.workspace }}/app
+          RAG_EVAL_MCP_REPO: ${{ github.workspace }}/mcp
+          RAG_EVAL_STARTER_REPO: ${{ github.workspace }}/starter
+        run: |
+          export RAG_AGENT_MCP_SERVER_PYTHON="$(command -v python)"
+          python -m rag_enterprise_langgraph.cli \
+            --eval-set config/eval-set-operations-manual-v3.2.json \
+            --eval-output "$RUNNER_TEMP/manual-eval-report.md" \
+            --eval-json "$RUNNER_TEMP/manual-eval-report.json" \
+            --max-recovery-steps 3 \
+            --eval-calibration
+
+      - name: Combine the two isolated quality phases
+        id: combine
+        if: always() && steps.secret.outputs.skip != 'true'
+        continue-on-error: true
+        working-directory: app
+        run: |
+          python scripts/combine_eval_reports.py \
+            "$RUNNER_TEMP/core-eval-report.json" \
+            "$RUNNER_TEMP/manual-eval-report.json" \
+            "$RUNNER_TEMP/eval-report.json"
 
       - name: Run live unauthorized RT-06 path
         id: rt06_live
@@ -234,26 +301,31 @@ jobs:
         env:
           RAG_AGENT_MCP_SERVER_REPO: ${{ github.workspace }}/mcp
         run: |
-          kill "$(cat "$RUNNER_TEMP/backend.pid")" || true
-          for attempt in $(seq 1 30); do
-            if ! curl --fail --silent http://127.0.0.1:8000/health >/dev/null; then break; fi
-            sleep 1
-          done
-          if curl --fail --silent http://127.0.0.1:8000/health >/dev/null; then
-            echo "Quality-evaluation backend did not stop before ACL restart" >&2
-            exit 1
-          fi
-          cd starter/backend
-          ACCESS_STRATEGY=document_acl_with_time_bound_grants python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 > "$RUNNER_TEMP/backend-rt06.log" 2>&1 &
-          echo $! > "$RUNNER_TEMP/backend.pid"
-          for attempt in $(seq 1 60); do
-            if curl --fail --silent http://127.0.0.1:8000/health >/dev/null; then break; fi
-            sleep 2
-          done
           curl --fail --silent http://127.0.0.1:8000/health >/dev/null
           cd "$GITHUB_WORKSPACE/app"
           export RAG_AGENT_MCP_SERVER_PYTHON="$(command -v python)"
           python scripts/run_rt06_live.py --eval-report "$RUNNER_TEMP/eval-report.json"
+
+      - name: Export sanitized generation usage
+        id: usage
+        if: always() && steps.secret.outputs.skip != 'true'
+        continue-on-error: true
+        working-directory: starter/backend
+        run: |
+          python -m app.eval.usage_export \
+            --eval-report "$RUNNER_TEMP/eval-report.json" \
+            --output "$RUNNER_TEMP/eval-usage.json"
+
+      - name: Attach and enforce performance thresholds
+        id: performance
+        if: always() && steps.secret.outputs.skip != 'true'
+        continue-on-error: true
+        working-directory: app
+        run: |
+          python scripts/attach_eval_performance.py \
+            "$RUNNER_TEMP/eval-report.json" \
+            "$RUNNER_TEMP/eval-usage.json" \
+            "$RUNNER_TEMP/eval-report.json"
 
       - name: Compare approved baseline
         id: baseline
@@ -263,10 +335,15 @@ jobs:
         env:
           RAG_AGENT_MCP_SERVER_REPO: ${{ github.workspace }}/mcp
         run: |
-          test -f config/eval-baselines/northwind-openai-v1.json
-          python scripts/compare_eval_reports.py \
-            config/eval-baselines/northwind-openai-v1.json \
-            "$RUNNER_TEMP/eval-report.json"
+          if [ -f config/eval-baselines/northwind-openai-v2.json ]; then
+            python scripts/compare_eval_reports.py \
+              config/eval-baselines/northwind-openai-v2.json \
+              "$RUNNER_TEMP/eval-report.json"
+          else
+            python scripts/compare_eval_reports.py \
+              config/eval-baselines/northwind-openai-v1.json \
+              "$RUNNER_TEMP/core-eval-report.json"
+          fi
 
       - name: Record infrastructure failure for artifact upload
         if: failure() && steps.secret.outputs.skip != 'true'
@@ -282,24 +359,48 @@ jobs:
           name: p12b-${{ inputs.candidate }}-${{ github.run_id }}
           path: |
             ${{ runner.temp }}/eval-report.json
-            ${{ runner.temp }}/eval-report.md
+            ${{ runner.temp }}/core-eval-report.json
+            ${{ runner.temp }}/core-eval-report.md
+            ${{ runner.temp }}/manual-eval-report.json
+            ${{ runner.temp }}/manual-eval-report.md
+            ${{ runner.temp }}/eval-usage.json
           retention-days: 30
 
       - name: Enforce evaluation outcome
         if: always() && steps.secret.outputs.skip != 'true'
         env:
-          EVALUATION_OUTCOME: ${{ steps.evaluation.outcome }}
+          CORE_OUTCOME: ${{ steps.core_evaluation.outcome }}
+          MANUAL_OUTCOME: ${{ steps.manual_evaluation.outcome }}
+          COMBINE_OUTCOME: ${{ steps.combine.outcome }}
           RT06_OUTCOME: ${{ steps.rt06_live.outcome }}
+          USAGE_OUTCOME: ${{ steps.usage.outcome }}
+          PERFORMANCE_OUTCOME: ${{ steps.performance.outcome }}
           BASELINE_OUTCOME: ${{ steps.baseline.outcome }}
           EVAL_MODE: ${{ inputs.mode }}
         run: |
           failed=false
-          if [ "$EVALUATION_OUTCOME" != "success" ]; then
-            echo "The 25-question quality evaluation did not meet its acceptance criteria." >> "$GITHUB_STEP_SUMMARY"
+          if [ "$CORE_OUTCOME" != "success" ]; then
+            echo "The 25-question core phase failed its safety or infrastructure criteria." >> "$GITHUB_STEP_SUMMARY"
+            failed=true
+          fi
+          if [ "$MANUAL_OUTCOME" != "success" ]; then
+            echo "The 65-question manual phase failed its safety or infrastructure criteria." >> "$GITHUB_STEP_SUMMARY"
+            failed=true
+          fi
+          if [ "$COMBINE_OUTCOME" != "success" ]; then
+            echo "The isolated phases could not form the declared 90-case suite." >> "$GITHUB_STEP_SUMMARY"
             failed=true
           fi
           if [ "$RT06_OUTCOME" != "success" ]; then
             echo "The live RT-06 authorization path did not pass." >> "$GITHUB_STEP_SUMMARY"
+            failed=true
+          fi
+          if [ "$USAGE_OUTCOME" != "success" ]; then
+            echo "Sanitized STARTER usage telemetry could not be joined to the run." >> "$GITHUB_STEP_SUMMARY"
+            failed=true
+          fi
+          if [ "$PERFORMANCE_OUTCOME" != "success" ]; then
+            echo "The performance/cost gate was incomplete or breached." >> "$GITHUB_STEP_SUMMARY"
             failed=true
           fi
           if [ "$EVAL_MODE" = "blocking" ] && [ "$BASELINE_OUTCOME" != "success" ]; then

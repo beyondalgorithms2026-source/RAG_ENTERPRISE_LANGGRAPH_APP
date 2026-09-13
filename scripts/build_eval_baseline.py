@@ -26,8 +26,13 @@ def main() -> int:
             raise SystemExit("infrastructure-failed reports cannot enter calibration")
         if report.get("refusal_passed") != report.get("refusal_total"):
             raise SystemExit("every calibration report must pass all refusal cases")
+        if report.get("safe_boundary_passed") != report.get("safe_boundary_total"):
+            raise SystemExit("every calibration report must pass all safe-boundary cases")
         if report.get("rt06", {}).get("status") != "pass":
             raise SystemExit("every calibration report must include a passing RT-06 result")
+        performance = report.get("performance")
+        if not isinstance(performance, dict) or performance.get("status") == "breach":
+            raise SystemExit("every calibration report must include non-breaching performance")
 
     pinned_configurations = []
     for report in reports:
@@ -60,7 +65,13 @@ def main() -> int:
     median_candidates = [
         report for report in reports if int(report["passed"]) == median_pass_count
     ]
-    selected = min(median_candidates, key=lambda report: int(report["manual_review"]))
+    selected = min(
+        median_candidates,
+        key=lambda report: (
+            int(report["manual_review"]),
+            float(report["performance"]["metrics"]["p95_latency_ms"]),
+        ),
+    )
     selected["baseline_approval"] = {
         "status": "candidate",
         "justification": args.justification,

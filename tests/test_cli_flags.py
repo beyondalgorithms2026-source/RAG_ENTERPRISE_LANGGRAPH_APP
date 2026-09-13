@@ -131,5 +131,5 @@ def test_cli_red_team(tmp_path, capsys):
     assert output_md.exists()
     assert "Red-Team Findings" in output_md.read_text(encoding="utf-8")
     report = json.loads(output_json.read_text(encoding="utf-8"))
-    assert report["total"] == 10
+    assert report["total"] == 20
     assert (tmp_path / "red-team-latest.json").exists()

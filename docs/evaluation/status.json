@@ -1,0 +1,84 @@
+{
+  "baseline": {
+    "approved_at": "2026-09-12T00:56:38.099541+00:00",
+    "calibration_run_count": 10,
+    "id": "northwind-openai-v1",
+    "source_path": "config/eval-baselines/northwind-openai-v1.json",
+    "source_run_url": null
+  },
+  "configuration": {
+    "app_prompts": {
+      "app_agent": {
+        "sha256": "4d3c9705137d30a91df213e12e54d950c71a6175fd7f04f5a3e0c5303df8a8a7",
+        "version": "1.0.0"
+      },
+      "app_synthesis": {
+        "sha256": "0f234d5ceed7e988bb96511d1ddc38ad7f651283dd6eb6753201f94919d51810",
+        "version": "1.0.0"
+      }
+    },
+    "chunking": {
+      "overlap_words": "40",
+      "policy": "default",
+      "target_words": "320"
+    },
+    "corpus_manifest_sha256": "5760b4d7662b395d02b83043975a9037d0d8ba140f45fdcf3138f5d66dc6fdfe",
+    "embedding": {
+      "dimensions": "384",
+      "model": "text-embedding-3-small",
+      "provider": "openai"
+    },
+    "llm": {
+      "model": "gpt-4o-mini-2024-07-18",
+      "provider": "openai"
+    },
+    "orchestration": {
+      "expected_fact_scope": "generated_answer",
+      "max_recovery_steps": 3
+    },
+    "retrieval": {
+      "mode": "hybrid",
+      "rerank_enabled": "false"
+    },
+    "starter_prompts": {
+      "starter_answer": {
+        "sha256": "9b76a7b3c554e38c1a56b417d27625d1bce2774b2148f305ce207d461628cb03",
+        "version": "1.0.0"
+      },
+      "starter_json_repair": {
+        "sha256": "e0a2193b14da0b4841495537c4e83dab057efd22e067049a47caba216115d305",
+        "version": "1.0.0"
+      },
+      "starter_second_pass": {
+        "sha256": "7e55344f072948cf9097d3d865cf5e26326e065d2ff566c2eea96fdce1641f72",
+        "version": "1.0.0"
+      }
+    }
+  },
+  "evidence_status": "approved",
+  "generated_at": "2026-09-13T07:56:55.114347+00:00",
+  "governance": {
+    "offline_red_team": {
+      "defended": 18,
+      "failed": 0,
+      "requires_backend": 2,
+      "status": "pass",
+      "total": 20
+    },
+    "rt06": "pass"
+  },
+  "limitations": [
+    "Synthetic public-demo corpus; no client or private data.",
+    "Approved quality evidence is a fixed full-stack calibration snapshot, not live traffic.",
+    "Offline red-team checks prove deterministic governance mechanisms; RT-06 and RT-16 require live SQL authorization proof."
+  ],
+  "quality": {
+    "failed": 0,
+    "manual_review": 0,
+    "passed": 25,
+    "strict_refusal_passed": 5,
+    "strict_refusal_total": 5,
+    "total": 25
+  },
+  "schema_version": "1.0"
+}

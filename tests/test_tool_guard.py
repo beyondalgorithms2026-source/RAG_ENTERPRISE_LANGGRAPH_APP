@@ -25,7 +25,7 @@ def test_normalize_search_documents_clamps_invalid_k_and_cleans_empty_values():
         },
     )
 
-    assert normalized == {"question": "Q", "k": 8, "mode": "hybrid"}
+    assert normalized == {"question": "Q", "k": 8, "mode": "hybrid", "debug": False}
 
 
 def test_normalize_ask_grounded_clamps_invalid_k_chunks_and_injects_question():
