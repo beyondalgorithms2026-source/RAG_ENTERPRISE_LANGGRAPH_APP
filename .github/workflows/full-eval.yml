@@ -50,5 +50,7 @@ jobs:
       candidate_ref: ${{ github.event.pull_request.head.sha || github.sha }}
       mode: blocking
       run_quality: ${{ needs.scope.outputs.relevant == 'true' }}
+      # Coordinated P15-P21 rollout: remove after the STARTER companion PR merges.
+      starter_ref: codex/post-p14-corpus-performance-demo
     secrets:
       EVAL_OPENAI_API_KEY: ${{ secrets.EVAL_OPENAI_API_KEY }}
