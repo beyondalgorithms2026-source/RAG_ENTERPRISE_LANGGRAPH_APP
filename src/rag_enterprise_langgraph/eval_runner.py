@@ -654,6 +654,17 @@ async def run_eval(
                 "recovery_attempted": bool(run.get("recovery_attempted")),
                 "recovery_successful": bool(run.get("recovery_successful")),
                 "attempt_count": len(run.get("attempts") or []),
+                "attempt_diagnostics": [
+                    {
+                        "attempt": attempt.get("attempt"),
+                        "tool": attempt.get("tool"),
+                        "status": attempt.get("status"),
+                        "reason": attempt.get("reason"),
+                        "validation": attempt.get("validation"),
+                    }
+                    for attempt in run.get("attempts") or []
+                    if isinstance(attempt, dict)
+                ],
                 "backend_request_ids": _backend_request_ids(run),
                 "run_id": run.get("run_id"),
             }

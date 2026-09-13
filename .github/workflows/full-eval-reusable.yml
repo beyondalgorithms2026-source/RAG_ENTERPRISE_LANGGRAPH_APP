@@ -308,7 +308,9 @@ jobs:
           curl --fail --silent http://127.0.0.1:8000/health >/dev/null
           cd "$GITHUB_WORKSPACE/app"
           export RAG_AGENT_MCP_SERVER_PYTHON="$(command -v python)"
-          python scripts/run_rt06_live.py --eval-report "$RUNNER_TEMP/eval-report.json"
+          python scripts/run_rt06_live.py \
+            --eval-report "$RUNNER_TEMP/eval-report.json" \
+            --eval-report "$RUNNER_TEMP/core-eval-report.json"
 
       - name: Export sanitized generation usage
         id: usage

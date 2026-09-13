@@ -278,6 +278,10 @@ def test_rt06_detects_reformatted_restricted_markers(text):
     assert _restricted_marker_count({"answer": text}) >= 1
 
 
+def test_rt06_numeric_markers_do_not_match_larger_public_amounts():
+    assert _restricted_marker_paths({"answer": "Fleet approval is above EUR 598,000."}) == []
+
+
 def test_rt06_reports_marker_location_without_copying_payload_value():
     paths = _restricted_marker_paths({"tool_outputs": [{"content": "EUR 76,000"}]})
 
