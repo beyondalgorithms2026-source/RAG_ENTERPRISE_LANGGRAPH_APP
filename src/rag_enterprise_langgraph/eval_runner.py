@@ -107,6 +107,7 @@ def build_eval_configuration(*, max_recovery_steps: int = 3) -> dict[str, Any]:
             "policy": os.environ.get("CHUNK_POLICY"),
             "target_words": os.environ.get("CHUNK_TARGET_WORDS"),
             "overlap_words": os.environ.get("CHUNK_OVERLAP_WORDS"),
+            "answer_context_chunk_cap_chars": os.environ.get("ANSWER_CONTEXT_CHUNK_CAP_CHARS"),
         },
         "retrieval": {
             "mode": os.environ.get("RETRIEVAL_MODE"),
