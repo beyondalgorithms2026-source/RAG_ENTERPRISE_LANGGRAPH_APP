@@ -386,6 +386,7 @@ REFUSAL_STATUSES = {"not_grounded", "not_found"}
 INFRASTRUCTURE_STATUSES = {"backend_auth_failed", "backend_timeout", "tool_error"}
 BOUNDARY_MARKERS = (
     "not in",
+    "not stated",
     "not provided",
     "not available",
     "cannot provide",
