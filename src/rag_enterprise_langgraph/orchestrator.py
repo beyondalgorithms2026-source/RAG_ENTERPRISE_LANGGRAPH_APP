@@ -690,6 +690,36 @@ def _wants_date(question: str, shape=None) -> bool:
     return "when" in question.lower()
 
 
+def _answer_focus_terms(question: str) -> list[str]:
+    """Return meaningful terms from the final explicit answer instruction.
+
+    Multi-part questions often begin with document context and end with the
+    actual requested field (for example, "if not, identify the separate
+    controlled procedure").  Giving that final instruction extra weight keeps
+    deterministic recovery from quoting a generic document introduction.
+    """
+
+    matches = list(
+        re.finditer(
+            r"\b(?:identify|name|state|provide|list|specify|give)\b",
+            question,
+            re.IGNORECASE,
+        )
+    )
+    if not matches:
+        return []
+    tail = question[matches[-1].end() :]
+    terms: list[str] = []
+    seen: set[str] = set()
+    for token in re.findall(r"[A-Za-z0-9][A-Za-z0-9._%-]*", tail):
+        normalized = token.strip(".,;:!?()[]{}\"'").lower()
+        if normalized in _STOPWORDS or normalized in seen or len(normalized) < 4:
+            continue
+        seen.add(normalized)
+        terms.append(normalized)
+    return terms[:8]
+
+
 def _focused_evidence_text(
     *,
     question: str,
@@ -710,6 +740,8 @@ def _focused_evidence_text(
             rule_terms.extend(group)
         rule_terms.extend(rule.answer_any)
     anchor_terms = [anchor for anchor in anchors if len(anchor) >= 4]
+    anchor_keys = {anchor.casefold() for anchor in anchor_terms}
+    focus_terms = [term for term in _answer_focus_terms(question) if term not in anchor_keys]
     lowered_question = question.lower()
     wants_percentage = _wants_percentage(question, shape)
     wants_numeric = _wants_numeric(question, shape)
@@ -722,7 +754,11 @@ def _focused_evidence_text(
         # question-relevant terms is never rewarded for merely containing a number,
         # so an off-topic figure (e.g. "the stock pops 55%") can't be picked as the
         # answer to a rocket-materials question.
-        relevance = _term_hits(sentence, rule_terms) * 3 + _term_hits(sentence, anchor_terms)
+        relevance = (
+            _term_hits(sentence, rule_terms) * 3
+            + _term_hits(sentence, anchor_terms)
+            + _term_hits(sentence, focus_terms) * 2
+        )
         score = relevance
         # Question-specific relevance signals (these define on-topic-ness themselves).
         if "what seminar" in lowered_question and "seminar" in lowered_sentence:

@@ -400,6 +400,53 @@ def test_supporting_search_result_does_not_fetch_broader_excerpt():
     assert calls == ["ask_grounded", "ask_grounded", "search_documents"]
 
 
+def test_recovery_answer_prioritizes_final_identify_clause_over_document_intro():
+    orchestrator = EnterpriseRagOrchestrator(quiet_mcp=False)
+
+    async def fake_tool_call(name, arguments):
+        if name == "ask_grounded":
+            return {
+                "answer": "Not found in provided sources.",
+                "citations": [],
+                "debug_info": {
+                    "retrieval_trace": {
+                        "score_diagnostics": [{"chunk_id": 81, "keyword_score": 1.0}]
+                    }
+                },
+            }, {"tool_name": name, "tool_call_id": None, "content": {}}
+        return {
+            "results": [
+                {
+                    "source_id": 28,
+                    "source_part_id": 81,
+                    "chunk_id": 81,
+                    "file_name": "northwind-operations-manual-v3.2.md",
+                    "heading": "6.5 Whistleblowing",
+                    "snippet": (
+                        "This Operations Manual establishes standard operating requirements. "
+                        "For whistleblowing channels, see Section 6.5. "
+                        "The full whistleblowing procedure is maintained as GOV-POL-006 "
+                        "Speak-Up and Protected Disclosure Procedure."
+                    ),
+                }
+            ]
+        }, {"tool_name": name, "tool_call_id": None, "content": {}}
+
+    orchestrator._call_tool = fake_tool_call  # type: ignore[method-assign]
+    result = asyncio.run(
+        orchestrator.run(
+            "In the Operations Manual's Whistleblowing section, is an investigator "
+            "interview deadline stated? If not, identify the separate controlled "
+            "procedure to which the manual defers.",
+            expected_answer="GOV-POL-006; full whistleblowing procedure",
+        )
+    )
+
+    assert result.grounding_status == "recovered"
+    assert "GOV-POL-006" in result.answer
+    assert "standard operating requirements" not in result.answer
+
+
 def test_evidence_gate_rejects_a_snippet_without_the_expected_answer():
     evidence, verdict, rejected = _select_evidence_candidate(
         question="How many days of annual leave do full-time employees receive?",
