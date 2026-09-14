@@ -406,9 +406,11 @@ jobs:
             echo "Sanitized STARTER usage telemetry could not be joined to the run." >> "$GITHUB_STEP_SUMMARY"
             failed=true
           fi
-          if [ "$PERFORMANCE_OUTCOME" != "success" ]; then
+          if [ "$EVAL_MODE" = "blocking" ] && [ "$PERFORMANCE_OUTCOME" != "success" ]; then
             echo "The performance/cost gate was incomplete or breached." >> "$GITHUB_STEP_SUMMARY"
             failed=true
+          elif [ "$PERFORMANCE_OUTCOME" != "success" ]; then
+            echo "Calibration recorded a performance/cost breach; the run remains non-blocking and is ineligible for baseline promotion." >> "$GITHUB_STEP_SUMMARY"
           fi
           if [ "$EVAL_MODE" = "blocking" ] && [ "$BASELINE_OUTCOME" != "success" ]; then
             echo "The approved-baseline comparison did not pass." >> "$GITHUB_STEP_SUMMARY"
