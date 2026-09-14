@@ -218,6 +218,39 @@ def test_schema_11_scores_all_facts_boundary_refusal_and_metrics(tmp_path):
     assert first["end_to_end_latency_ms"] >= 0
 
 
+def test_schema_11_accepts_explicit_not_stated_boundary(tmp_path):
+    payload = _schema_11_payload()
+    payload["questions"] = [payload["questions"][1]]
+    payload["questions"][0]["required_facts"] = [{"id": "document", "any_of": ["GOV-POL-006"]}]
+
+    class NotStatedBoundary:
+        async def run(self, question: str, **_kwargs):
+            answer = (
+                "The requested deadline is not stated in the available source. "
+                "The source points to GOV-POL-006."
+            )
+            return OrchestratedRunResult(
+                question=question,
+                answer=answer,
+                grounding_status="recovered",
+                tools_used=["ask_grounded", "search_documents"],
+                execution_timeline=[],
+                evidence=[
+                    {
+                        "file_name": "northwind-operations-manual-v3.2.md",
+                        "snippet": "The source points to GOV-POL-006.",
+                    }
+                ],
+                portfolio_safe=True,
+            )
+
+    path = tmp_path / "not-stated-boundary.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    report = asyncio.run(run_eval(eval_path=path, orchestrator=NotStatedBoundary()))
+
+    assert report["safe_boundary_passed"] == report["safe_boundary_total"] == 1
+
+
 def test_schema_11_rejects_partial_multi_fact_answer(tmp_path):
     payload = _schema_11_payload()
     payload["questions"] = [payload["questions"][0]]
