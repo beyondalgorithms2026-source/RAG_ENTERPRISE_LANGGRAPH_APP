@@ -539,14 +539,23 @@ def _candidate_from_result(result: dict[str, Any]) -> dict[str, Any]:
     return _evidence_from_results([result], limit=1)[0]
 
 
-def _candidate_rank(verdict: EvidenceVerdict, result: dict[str, Any]) -> float:
+def _candidate_rank(
+    verdict: EvidenceVerdict,
+    result: dict[str, Any],
+    *,
+    question: str,
+    anchors: Sequence[str],
+) -> float:
     backend_score = max(-1.0, min(1.0, _backend_score(result)))
     source_bonus = (
         0.05
         if result.get("source_part_id") is not None or result.get("chunk_id") is not None
         else 0.0
     )
-    return verdict.score + (backend_score * 0.05) + source_bonus
+    phrase = exact_phrase_bias(question, anchors)
+    heading = str(result.get("heading") or "")
+    heading_bonus = 0.5 if phrase and phrase.casefold() in heading.casefold() else 0.0
+    return verdict.score + (backend_score * 0.05) + source_bonus + heading_bonus
 
 
 def _rejected_evidence_summary(
@@ -583,7 +592,13 @@ def _select_evidence_candidate(
             rules=rules,
             expected_answer=expected_answer,
         )
-        ranked.append((_candidate_rank(verdict, result), evidence, verdict))
+        ranked.append(
+            (
+                _candidate_rank(verdict, result, question=question, anchors=anchors),
+                evidence,
+                verdict,
+            )
+        )
         if verdict.status != "supports":
             rejected.append(_rejected_evidence_summary(evidence, verdict))
 
