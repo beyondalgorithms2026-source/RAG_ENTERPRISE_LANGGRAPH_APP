@@ -735,6 +735,18 @@ def _answer_focus_terms(question: str) -> list[str]:
     return terms[:8]
 
 
+def _with_explicit_absence_boundary(question: str, answer: str) -> str:
+    """State the unavailable half of an explicit "if not" question safely."""
+
+    lowered = question.casefold()
+    if "if not" not in lowered or "?" not in question:
+        return answer
+    boundary = "The requested detail is not stated in the available source."
+    if boundary.casefold() in answer.casefold():
+        return answer
+    return f"{boundary} {answer}".strip()
+
+
 def _focused_evidence_text(
     *,
     question: str,
@@ -1923,6 +1935,12 @@ class EnterpriseRagOrchestrator:
                     evidence=evidence,
                     anchors=anchors,
                     question_profile=question_profile,
+                )
+                composed["display"] = _with_explicit_absence_boundary(
+                    question, composed["display"]
+                )
+                composed["verbatim"] = _with_explicit_absence_boundary(
+                    question, composed["verbatim"]
                 )
                 recovered_review = review_answer(
                     question=question,

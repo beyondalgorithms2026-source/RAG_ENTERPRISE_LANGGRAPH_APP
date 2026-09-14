@@ -501,6 +501,7 @@ def test_recovery_candidate_prefers_exact_heading_over_generic_body_hit():
     )
 
     assert result.grounding_status == "recovered"
+    assert "not stated in the available source" in result.answer
     assert "GOV-POL-006" in result.answer
     assert result.evidence[0]["chunk_id"] == 81
 
