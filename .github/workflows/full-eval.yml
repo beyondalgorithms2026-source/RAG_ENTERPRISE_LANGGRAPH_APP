@@ -52,7 +52,5 @@ jobs:
       # support an explicitly approved northwind-openai-v2 baseline.
       mode: calibration
       run_quality: ${{ needs.scope.outputs.relevant == 'true' }}
-      # Coordinated P15-P21 rollout: remove after the STARTER companion PR merges.
-      starter_ref: codex/post-p14-corpus-performance-demo
     secrets:
       EVAL_OPENAI_API_KEY: ${{ secrets.EVAL_OPENAI_API_KEY }}
