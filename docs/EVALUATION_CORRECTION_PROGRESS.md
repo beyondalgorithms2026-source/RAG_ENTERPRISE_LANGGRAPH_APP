@@ -64,7 +64,7 @@ default. SQL authorization is unchanged. MCP is unchanged.
 
 | Check | Result |
 | --- | --- |
-| APP complete pytest suite | 220 passed |
+| APP complete pytest suite | 221 passed |
 | STARTER complete unittest discovery | 93 discovered: 57 passed, 36 skipped |
 | New STARTER candidate mechanism/protocol tests | 11 passed |
 | STARTER reader-clarity checks | 21 passed |
@@ -120,6 +120,17 @@ answer correctness. Offline judge calls/cost are excluded.
   actual supplied evidence; regression tests cover this failure.
 - The full 25-case STARTER candidate answer-side regrade passed 25/25 under the
   preceding judge revision. This does not prove APP grounding or replace v1.
+- All 65 saved manual answers were also graded once. That intermediate report
+  contained 46 passes, 16 failures and 3 judge infrastructure/manual-review rows.
+  It is **not a final score**: whole-list support quotes caused ordered answers
+  to be falsely marked out of order. The corrected grader treats insufficient
+  span localization as manual review and offers actual sentence quotes. Do not
+  publish or baseline the intermediate 90-case aggregate.
+- The new evidence-constrained judge passed targeted OM-015 and OM-035 checks
+  without infrastructure errors. Remaining judge uncertainty is not silently
+  accepted. OM-075 returned an approval-pending message rather than the expected
+  refusal and requires separate governance-path diagnosis, not relaxed refusal
+  criteria.
 
 Unrelated existing APP `ui.py` formatting and STARTER `main.py` duplicate-import
 lint issues remain in the user's working tree. They are excluded from this work;
@@ -129,7 +140,9 @@ whole-tree verification must distinguish them from changed-file results.
 
 1. Complete owner source-contract review of the all-90 ledger, resolve OM-067,
    and produce the independently human-labelled frozen-answer comparison.
-2. Finish final all-90 offline grading under the constrained judge; report
+2. Resolve remaining quote localization/infrastructure cases before final scoring;
+   all-90 answers have received offline grading, but the reports are provisional.
+   Report
    quality failures separately from infrastructure failures. APP actual-context
    coverage remains unavailable unless explicitly instrumented, never inferred.
 3. Obtain approval for the additional structured-claim/repair design and solve

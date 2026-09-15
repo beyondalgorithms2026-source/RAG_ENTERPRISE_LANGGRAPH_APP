@@ -53,7 +53,10 @@ def _request(payload: str) -> dict[str, Any]:
     answer_quotes = sorted(
         {"", answer}
         | {line.strip() for line in answer.splitlines() if line.strip()}
-        | {match.group().strip() for match in re.finditer(r"[^\n;!?]+[;!?]?", answer)}
+        | {
+            match.group().strip()
+            for match in re.finditer(r"\S.*?(?:[.!?;](?=\s|$)|$)", answer, re.DOTALL)
+        }
     )
     evidence_quotes = sorted(
         {""}

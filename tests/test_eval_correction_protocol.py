@@ -11,7 +11,12 @@ import pytest
 from rag_enterprise_langgraph import eval_assertions as grading
 from rag_enterprise_langgraph import eval_judge
 from rag_enterprise_langgraph.eval_calibration import CalibrationError, validate_correction_report
-from rag_enterprise_langgraph.eval_runner import EvalSetError, _eval_status, read_eval_json
+from rag_enterprise_langgraph.eval_runner import (
+    EvalSetError,
+    _eval_status,
+    _typed_order,
+    read_eval_json,
+)
 from scripts.regrade_saved_answers import regrade
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -140,6 +145,19 @@ def test_missing_order_or_forbidden_claim_cannot_pass():
         )
         == "manual_review"
     )
+
+
+def test_whole_list_quotes_do_not_prove_or_disprove_order():
+    case = next(c for c in read_eval_json(PACK) if c.case_id == "OM-072")
+    answer = "Complete list quoted by judge."
+    typed = {
+        "assertions": [
+            {"id": ident, "state": "supported", "answer_span": answer}
+            for ident in case.ordered_fact_ids
+        ]
+    }
+    assert _typed_order(answer, case, typed) is None
+    expected = {"typed": typed, "ordered_facts_matched": None}
     expected["forbidden_fact_matches"] = ["contradictory claim"]
     assert (
         _eval_status(

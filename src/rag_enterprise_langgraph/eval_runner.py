@@ -665,7 +665,11 @@ def _typed_order(answer: str, case: EvalCase, typed: dict[str, Any]) -> bool | N
         if position < 0:
             return False
         positions.append(position)
-    return positions == sorted(positions) and len(set(positions)) == len(positions)
+    if len(set(positions)) != len(positions):
+        # A judge quoting the whole list proves coverage, not relative order.
+        # Insufficient localization is manual review, never a fabricated failure.
+        return None
+    return positions == sorted(positions)
 
 
 async def run_eval(
