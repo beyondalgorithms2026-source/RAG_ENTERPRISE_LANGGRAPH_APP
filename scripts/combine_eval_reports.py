@@ -46,10 +46,14 @@ def combine_reports(core: dict[str, Any], manual: dict[str, Any]) -> dict[str, A
     configuration["evaluation_phases"] = {
         phase_id: data["configuration"] for phase_id, data in phase_metadata.items()
     }
+    revised = bool(configuration.get("grader_version"))
     return {
         "schema_version": "2.0",
-        "eval_suite": "northwind-full-stack-v2",
-        "eval_set": "config/eval-suite-northwind-v2.json",
+        "eval_suite": "northwind-correction-candidate" if revised else "northwind-full-stack-v2",
+        "eval_set": "config/eval-suite-correction-candidate.json"
+        if revised
+        else "config/eval-suite-northwind-v2.json",
+        **({"scope": "full-stack", "advisory": True} if revised else {}),
         "total": len(rows),
         "passed": passed,
         "failed": failed,
