@@ -1,6 +1,8 @@
-# Structured numeric-claim repair — proposal requiring approval
+# Structured numeric-claim repair — approved implementation candidate
 
-Status: proposed, not implemented. The context/prompt candidate remains disabled
+Status: owner approved implementation on 15 September 2026. The bounded STARTER
+implementation is opt-in; see its [implementation and verification record](https://github.com/beyondalgorithms2026-source/RAG_ENTERPRISE_STARTER/blob/codex/eval-correction/docs/NUMERIC_CLAIM_REPAIR.md).
+The context/prompt and numeric-repair candidates remain disabled
 by default and is not release-ready. Do not change models or add dependencies to
 work around this failure.
 
@@ -47,4 +49,9 @@ does not prove complete answers.
 - OM-044 and OM-046 must pass every counted calibration run. Until then, stop
   calibration, preserve the v1 gate and do not promote the revised baseline.
 
-Owner approval of this additional production design is required before coding.
+Implementation approval does not approve activation or a revised baseline.
+Targeted live checks returned No at four and exactly five minutes, Yes at six
+minutes, and Yes for €260,000 exceeding €250,000. These are STARTER-only
+diagnostics, not calibrated full-stack scores. Canonical concept grading and
+classification coverage still require verification, as does the matched latency
+and token comparison. Preserve the approved v1 gate until release criteria pass.
