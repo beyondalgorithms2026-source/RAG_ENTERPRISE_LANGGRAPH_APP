@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 from xml.etree import ElementTree as ET
 
+from rag_enterprise_langgraph import eval_assertions
 from rag_enterprise_langgraph.demo_proof import redact_for_sharing
 from rag_enterprise_langgraph.evidence import evaluate_expected_answer, load_rules
 from rag_enterprise_langgraph.orchestrator import EnterpriseRagOrchestrator
@@ -51,6 +52,9 @@ class EvalCase:
     difficulty: str | None = None
     rationale: str | None = None
     source_sections: tuple[str, ...] = ()
+    assertions: tuple[dict[str, Any], ...] = ()
+    reference_evidence: tuple[dict[str, Any], ...] = ()
+    suite_version: str | None = None
 
 
 class EvalSetError(ValueError):
@@ -74,6 +78,12 @@ def _external_prompt_metadata(repo: Path) -> dict[str, dict[str, str]]:
     registry = json.loads((root / "registry.json").read_text(encoding="utf-8"))
     output: dict[str, dict[str, str]] = {}
     for prompt_id, entry in registry.get("prompts", {}).items():
+        if prompt_id == "starter_answer" and os.environ.get(
+            "ANSWER_PROMPT_CANDIDATE", ""
+        ).lower() in {"1", "true"}:
+            entry = registry.get("candidates", {}).get(prompt_id)
+            if not isinstance(entry, dict):
+                raise EvalSetError("STARTER candidate prompt metadata is missing")
         content = (root / entry["file"]).read_text(encoding="utf-8").rstrip("\n")
         digest = hashlib.sha256(content.encode("utf-8")).hexdigest()
         if digest != entry.get("sha256"):
@@ -112,6 +122,19 @@ def build_eval_configuration(*, max_recovery_steps: int = 3) -> dict[str, Any]:
         "retrieval": {
             "mode": os.environ.get("RETRIEVAL_MODE"),
             "rerank_enabled": os.environ.get("RERANK_ENABLED"),
+            **(
+                {
+                    "context_selection_candidate": os.environ.get(
+                        "ANSWER_CONTEXT_SELECTION_ENABLED", "false"
+                    ),
+                    "answer_prompt_candidate": os.environ.get("ANSWER_PROMPT_CANDIDATE", "false"),
+                }
+                if any(
+                    os.environ.get(flag, "").lower() in {"true", "1", "yes"}
+                    for flag in ("ANSWER_CONTEXT_SELECTION_ENABLED", "ANSWER_PROMPT_CANDIDATE")
+                )
+                else {}
+            ),
         },
         "orchestration": {
             "max_recovery_steps": max_recovery_steps,
@@ -168,8 +191,8 @@ def read_eval_json(path: str | Path) -> list[EvalCase]:
     so a reader can see exactly what was asked and what was expected.
     """
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
-    if not isinstance(payload, dict) or payload.get("schema_version") not in {"1.0", "1.1"}:
-        raise EvalSetError("eval set schema_version must be '1.0' or '1.1'")
+    if not isinstance(payload, dict) or payload.get("schema_version") not in {"1.0", "1.1", "1.2"}:
+        raise EvalSetError("eval set schema_version must be '1.0', '1.1' or '1.2'")
     schema_version = payload["schema_version"]
     questions = payload.get("questions")
     if not isinstance(questions, list) or not questions:
@@ -192,6 +215,37 @@ def read_eval_json(path: str | Path) -> list[EvalCase]:
         question = str(item.get("question") or "").strip()
         if not question:
             raise EvalSetError(f"{case_id} has an empty question")
+        reference_evidence = item.get("reference_evidence", [])
+        if schema_version == "1.2":
+            if "reference_ids" in item:
+                root_references = payload.get("reference_evidence", [])
+                if not isinstance(root_references, list) or not isinstance(
+                    item["reference_ids"], list
+                ):
+                    raise EvalSetError("reference_ids and shared reference_evidence must be lists")
+                if any(not isinstance(r, dict) for r in root_references):
+                    raise EvalSetError("shared reference evidence must contain objects")
+                requested = item["reference_ids"]
+                if any(not isinstance(r, str) for r in requested) or len(set(requested)) != len(
+                    requested
+                ):
+                    raise EvalSetError("reference_ids must be unique strings")
+                available = {r.get("id") for r in root_references if isinstance(r.get("id"), str)}
+                if any(r not in available for r in requested):
+                    raise EvalSetError("unknown shared reference id")
+                reference_evidence = [
+                    r for r in root_references if r.get("id") in item["reference_ids"]
+                ]
+            try:
+                eval_assertions.validate(item.get("assertions"), reference_evidence)
+            except eval_assertions.AssertionError as exc:
+                raise EvalSetError(f"{case_id}: {exc}") from exc
+            if not str(payload.get("suite_version") or "").strip():
+                raise EvalSetError("typed pack requires suite_version")
+            if item.get("expectation") != "refuse" and not item["assertions"]:
+                raise EvalSetError(f"{case_id} typed answer requires assertions")
+            if item.get("expectation") == "refuse" and item["assertions"]:
+                raise EvalSetError(f"{case_id} refusal cannot require assertions")
         if schema_version == "1.0":
             if not isinstance(item.get("expect_refusal"), bool):
                 raise EvalSetError(f"{case_id} must declare boolean expect_refusal")
@@ -275,6 +329,10 @@ def read_eval_json(path: str | Path) -> list[EvalCase]:
                 ordered_fact_ids
             ).issubset(seen_fact_ids):
                 raise EvalSetError(f"{case_id} ordered_fact_ids must reference unique facts")
+            if schema_version == "1.2" and not set(ordered_fact_ids).issubset(
+                a["id"] for a in item["assertions"]
+            ):
+                raise EvalSetError(f"{case_id} ordered ids must reference typed assertions")
             aliases_normalized = {
                 _normalized_fact_text(alias) for fact in required_facts for alias in fact.any_of
             }
@@ -319,6 +377,9 @@ def read_eval_json(path: str | Path) -> list[EvalCase]:
                 source_sections=tuple(
                     str(value).strip() for value in item.get("source_sections", [])
                 ),
+                assertions=tuple(item.get("assertions", [])),
+                reference_evidence=tuple(reference_evidence),
+                suite_version=payload.get("suite_version"),
             )
         )
     if payload.get("eval_set") == "northwind-public-demo":
@@ -487,6 +548,35 @@ def _eval_status(
         # confident grounded answer is the failure.
         return "pass" if grounding in REFUSAL_STATUSES else "fail"
 
+    if case is not None and case.schema_version == "1.2":
+        typed = expected_eval.get("typed") or {}
+        if expected_eval.get("judge_error"):
+            return "fail"
+        if expected_eval.get("forbidden_fact_matches"):
+            return "fail"
+        required = [r for r in typed.get("assertions", []) if r.get("required", True)]
+        if any(r["state"] == "contradicted" for r in typed.get("assertions", [])):
+            return "fail"
+        if typed.get("hard_failure") or any(
+            r["state"] in {"missing", "contradicted"} for r in required
+        ):
+            return "fail"
+        if any(r["state"] == "uncertain" for r in required):
+            return "manual_review"
+        if expected_eval.get("ordered_facts_matched") is False:
+            return "fail"
+        if case.ordered_fact_ids and expected_eval.get("ordered_facts_matched") is None:
+            return "manual_review"
+        if case.expectation == "safe_boundary" and not expected_eval.get("boundary_present"):
+            return "fail"
+        if (
+            grounding in {"verified", "grounded", "recovered"}
+            and required
+            and expected_document_matched is True
+        ):
+            return "pass"
+        return "manual_review" if grounding in {"partial", "needs_review"} else "fail"
+
     if case is not None and case.schema_version == "1.1":
         fact_results = expected_eval.get("required_facts") or []
         facts_pass = bool(fact_results) and all(
@@ -558,6 +648,26 @@ def _backend_request_ids(run: dict[str, Any]) -> list[str]:
     return request_ids
 
 
+def _typed_order(answer: str, case: EvalCase, typed: dict[str, Any]) -> bool | None:
+    if not case.ordered_fact_ids:
+        return True
+    rows = {r["id"]: r for r in typed["assertions"]}
+    positions = []
+    normalized = eval_assertions.normalize(answer)
+    for fact_id in case.ordered_fact_ids:
+        row = rows[fact_id]
+        span = row.get("answer_span")
+        if row["state"] == "uncertain":
+            return None
+        if row["state"] != "supported" or not span:
+            return False
+        position = normalized.find(eval_assertions.normalize(span))
+        if position < 0:
+            return False
+        positions.append(position)
+    return positions == sorted(positions) and len(set(positions)) == len(positions)
+
+
 async def run_eval(
     *,
     xlsx_path: str | Path | None = None,
@@ -567,6 +677,7 @@ async def run_eval(
     journal_path: str | Path | None = None,
     max_recovery_steps: int = 3,
     configuration: dict[str, Any] | None = None,
+    semantic_judge: Any = None,
 ) -> dict[str, Any]:
     source_path = eval_path or xlsx_path
     if source_path is None:
@@ -590,7 +701,7 @@ async def run_eval(
         run = result.to_dict()
         answer = str(run.get("answer") or "")
         evidence = run.get("evidence") or []
-        if case.schema_version == "1.1":
+        if case.schema_version in {"1.1", "1.2"}:
             expected_eval = {
                 "status": "mechanical",
                 "required_facts": _fact_results(answer=answer, evidence=evidence, case=case),
@@ -602,6 +713,57 @@ async def run_eval(
                     else None
                 ),
             }
+            if case.schema_version == "1.2":
+                expected_eval["typed"] = eval_assertions.evaluate(
+                    answer=answer,
+                    evidence=evidence,
+                    citations=run.get("citations") or [],
+                    assertions=list(case.assertions),
+                    references=list(case.reference_evidence),
+                )
+                typed = expected_eval["typed"]
+                # Adjudicate apparent concept matches too: keyword presence can
+                # hide contradictions. Hard failures short-circuit judge calls.
+                unresolved_polarity = {
+                    a["id"]
+                    for a in typed["assertions"]
+                    if a["type"] == "polarity" and a["state"] == "uncertain"
+                }
+                concepts = [
+                    a
+                    for a in case.assertions
+                    if a["type"] == "concept" or a["id"] in unresolved_polarity
+                ]
+                if (
+                    concepts
+                    and not typed["hard_failure"]
+                    and run.get("grounding_status") not in INFRASTRUCTURE_STATUSES
+                ):
+                    from rag_enterprise_langgraph.eval_judge import judge
+
+                    try:
+                        judge_started = time.perf_counter()
+                        judged = await (semantic_judge or judge)(
+                            question=case.question,
+                            answer=answer,
+                            assertions=concepts,
+                            references=list(case.reference_evidence),
+                            citations=run.get("citations") or [],
+                        )
+                        eval_assertions.apply_judgement(
+                            typed,
+                            judged["judgement"],
+                            answer=answer,
+                            references=list(case.reference_evidence),
+                        )
+                        expected_eval["judge_metadata"] = {
+                            "model": judged.get("model"),
+                            "usage": judged.get("usage", {}),
+                            "latency_ms": round((time.perf_counter() - judge_started) * 1000, 3),
+                        }
+                    except Exception:
+                        expected_eval["judge_error"] = "offline_judge_infrastructure_failure"
+                expected_eval["ordered_facts_matched"] = _typed_order(answer, case, typed)
         else:
             expected_eval = evaluate_expected_answer(
                 answer=answer,
@@ -624,6 +786,7 @@ async def run_eval(
         failure_class = (
             "infrastructure"
             if run.get("grounding_status") in INFRASTRUCTURE_STATUSES
+            or expected_eval.get("judge_error")
             else ("quality" if eval_status != "pass" else None)
         )
         rows.append(
@@ -636,6 +799,38 @@ async def run_eval(
                 "evidence_verdict": run.get("evidence_verdict"),
                 "tools_used": run.get("tools_used") or [],
                 "eval_status": eval_status,
+                **(
+                    {
+                        "evaluation_dimensions": {
+                            "retrieval_evidence_coverage": [
+                                {"id": a["id"], "matched": a.get("evidence_matched")}
+                                for a in expected_eval["typed"]["assertions"]
+                            ],
+                            "actual_context_coverage": "unavailable",
+                            "answer_completeness": {
+                                a["id"]: a["state"] for a in expected_eval["typed"]["assertions"]
+                            },
+                            "numeric_correctness": {
+                                a["id"]: a["state"]
+                                for a in expected_eval["typed"]["assertions"]
+                                if a["type"] == "numeric"
+                            },
+                            "contradiction_polarity": {
+                                a["id"]: a["state"]
+                                for a in expected_eval["typed"]["assertions"]
+                                if a["type"] in {"polarity", "classification"}
+                            },
+                            "ordered_action_complete": expected_eval.get("ordered_facts_matched"),
+                            "citation_provenance": {
+                                a["id"]: a["state"]
+                                for a in expected_eval["typed"]["assertions"]
+                                if a["type"] == "citation"
+                            },
+                        }
+                    }
+                    if case.schema_version == "1.2"
+                    else {}
+                ),
                 "expect_refusal": case.expect_refusal,
                 "expectation": case.expectation,
                 "refusal_passed": eval_status == "pass" if case.expect_refusal else None,
@@ -694,8 +889,16 @@ async def run_eval(
         ),
         "infrastructure_failures": infrastructure_failures,
         "configuration": {
-            "app_prompts": prompt_metadata(),
             **(configuration or {}),
+            "app_prompts": prompt_metadata(),
+            **(
+                {
+                    "grader_version": eval_assertions.GRADER_VERSION,
+                    "suite_version": cases[0].suite_version,
+                }
+                if cases and cases[0].schema_version == "1.2"
+                else {}
+            ),
         },
         "status": "pass" if rows and failed == 0 and manual == 0 else "fail",
         "rows": rows,

@@ -1,0 +1,25 @@
+name: eval-correction-candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      starter_ref:
+        description: Explicit companion STARTER candidate ref for advisory verification
+        required: true
+        default: codex/eval-correction
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  candidate:
+    uses: ./.github/workflows/eval-correction-reusable.yml
+    with:
+      candidate: app
+      candidate_ref: ${{ github.sha }}
+      starter_ref: ${{ inputs.starter_ref }}
+      mode: calibration
+      run_quality: true
+    secrets:
+      EVAL_OPENAI_API_KEY: ${{ secrets.EVAL_OPENAI_API_KEY }}

@@ -9,6 +9,9 @@ from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
 
+from rag_enterprise_langgraph.eval_calibration import validate_correction_report
+from rag_enterprise_langgraph.eval_runner import read_eval_json
+
 
 def main() -> int:
     parser = argparse.ArgumentParser()
@@ -22,6 +25,17 @@ def main() -> int:
         raise SystemExit("baseline calibration requires 10 to 15 reports")
     reports = [json.loads(path.read_text(encoding="utf-8")) for path in args.runs]
     for report in reports:
+        if report.get("configuration", {}).get("grader_version"):
+            root = Path(__file__).resolve().parents[1]
+            ids = {
+                case.case_id
+                for filename in (
+                    "eval-set-northwind-candidate.json",
+                    "eval-set-operations-manual-v3.2-candidate.json",
+                )
+                for case in read_eval_json(root / "config" / filename)
+            }
+            validate_correction_report(report, ids)
         if report.get("infrastructure_failures"):
             raise SystemExit("infrastructure-failed reports cannot enter calibration")
         if report.get("refusal_passed") != report.get("refusal_total"):

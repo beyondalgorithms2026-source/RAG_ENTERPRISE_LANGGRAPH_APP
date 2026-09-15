@@ -1,0 +1,437 @@
+name: reusable-eval-correction-candidate
+
+on:
+  workflow_call:
+    inputs:
+      candidate:
+        required: true
+        type: string
+      candidate_ref:
+        required: true
+        type: string
+      app_ref:
+        required: false
+        default: main
+        type: string
+      mode:
+        required: false
+        default: calibration
+        type: string
+      run_quality:
+        required: false
+        default: true
+        type: boolean
+      starter_ref:
+        required: false
+        default: main
+        type: string
+    secrets:
+      EVAL_OPENAI_API_KEY:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  rt06-sql:
+    if: inputs.run_quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: rag_enterprise_starter
+          POSTGRES_PASSWORD: rag_enterprise_starter_dev_pass
+          POSTGRES_DB: rag_enterprise_starter
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U rag_enterprise_starter"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://rag_enterprise_starter:rag_enterprise_starter_dev_pass@127.0.0.1:55432/rag_enterprise_starter
+      ACCESS_STRATEGY: document_acl_with_time_bound_grants
+      AUTH_MODE: dev
+      APP_ENV: local
+      RAG_REQUIRE_DB: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: beyondalgorithms2026-source/RAG_ENTERPRISE_STARTER
+          ref: ${{ inputs.candidate == 'starter' && inputs.candidate_ref || inputs.starter_ref }}
+          path: starter
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: starter/backend/requirements.txt
+      - name: Install STARTER
+        run: python -m pip install -r starter/backend/requirements.txt
+      - name: Prove real SQL ACL boundary
+        working-directory: starter/backend
+        run: python -m unittest tests.test_rt06_acl_boundary_p11
+
+  full-eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: rag_enterprise_starter
+          POSTGRES_PASSWORD: rag_enterprise_starter_dev_pass
+          POSTGRES_DB: rag_enterprise_starter
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U rag_enterprise_starter"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://rag_enterprise_starter:rag_enterprise_starter_dev_pass@127.0.0.1:55432/rag_enterprise_starter
+      UPLOAD_DIR: ${{ github.workspace }}/northwind-corpus
+      APP_ENV: local
+      AUTH_ENABLED: "false"
+      AUTH_MODE: none
+      ACCESS_STRATEGY: none
+      RATE_LIMIT_ENABLED: "false"
+      EMBEDDING_PROVIDER: openai
+      EMBEDDING_MODEL: text-embedding-3-small
+      EMBEDDING_DIMENSIONS: "384"
+      CHUNK_POLICY: default
+      CHUNK_TARGET_WORDS: "320"
+      CHUNK_OVERLAP_WORDS: "40"
+      ANSWER_CONTEXT_CHUNK_CAP_CHARS: "4000"
+      ANSWER_CONTEXT_SELECTION_ENABLED: "true"
+      ANSWER_PROMPT_CANDIDATE: "true"
+      EMBEDDING_API_KEY: ${{ secrets.EVAL_OPENAI_API_KEY }}
+      EMBEDDING_BASE_URL: https://api.openai.com/v1
+      LLM_PROVIDER: openai
+      LLM_MODEL: gpt-4o-mini-2024-07-18
+      LLM_API_KEY: ${{ secrets.EVAL_OPENAI_API_KEY }}
+      LLM_BASE_URL: https://api.openai.com
+      OPENAI_API_KEY: ${{ secrets.EVAL_OPENAI_API_KEY }}
+      RAG_AGENT_MODEL_PROVIDER: openai
+      RAG_AGENT_MODEL_NAME: gpt-4o-mini-2024-07-18
+      RAG_AGENT_ENABLE_SYNTHESIS: "false"
+      RERANK_ENABLED: "false"
+      RETRIEVAL_MODE: hybrid
+      ENABLE_GRAPH: "false"
+      ENABLE_TEMPORAL: "false"
+      ENABLE_ONTOLOGY: "false"
+      EXTRACT_ENTITIES: "false"
+      EXTRACT_RELATIONS: "false"
+      EXTRACT_TEMPORAL_METADATA: "false"
+      BUILD_GRAPH_ON_INGEST: "false"
+      ALLOW_LAZY_ENRICHMENT: "false"
+      USE_QUERY_ROUTER: "false"
+      RAG_BACKEND_BASE_URL: http://127.0.0.1:8000
+      RAG_BACKEND_TIMEOUT_SECONDS: "90"
+
+    steps:
+      - name: Check evaluation secret
+        id: secret
+        env:
+          KEY: ${{ secrets.EVAL_OPENAI_API_KEY }}
+        run: |
+          if [ "${{ inputs.run_quality }}" != "true" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "P12B not applicable: this change does not touch a quality-sensitive path." >> "$GITHUB_STEP_SUMMARY"
+          elif [ -z "$KEY" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "P12B not configured: EVAL_OPENAI_API_KEY is absent." >> "$GITHUB_STEP_SUMMARY"
+            if [ "${{ inputs.mode }}" = "blocking" ]; then exit 1; fi
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.secret.outputs.skip != 'true'
+        with:
+          repository: beyondalgorithms2026-source/RAG_ENTERPRISE_LANGGRAPH_APP
+          ref: ${{ inputs.candidate == 'app' && inputs.candidate_ref || inputs.app_ref }}
+          path: app
+      - uses: actions/checkout@v4
+        if: steps.secret.outputs.skip != 'true'
+        with:
+          repository: beyondalgorithms2026-source/RAG_Langgraph_MCP_server
+          ref: ${{ inputs.candidate == 'mcp' && inputs.candidate_ref || 'main' }}
+          path: mcp
+      - uses: actions/checkout@v4
+        if: steps.secret.outputs.skip != 'true'
+        with:
+          repository: beyondalgorithms2026-source/RAG_ENTERPRISE_STARTER
+          ref: ${{ inputs.candidate == 'starter' && inputs.candidate_ref || inputs.starter_ref }}
+          path: starter
+      - uses: actions/setup-python@v5
+        if: steps.secret.outputs.skip != 'true'
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            app/pyproject.toml
+            starter/backend/requirements.txt
+
+      - name: Install the three-layer stack
+        if: steps.secret.outputs.skip != 'true'
+        run: |
+          python -m pip install -e "./app[dev]" -e ./mcp
+          python -m pip install -r starter/backend/requirements.txt
+
+      - name: Verify pinned OpenAI model access
+        if: steps.secret.outputs.skip != 'true'
+        working-directory: app
+        env:
+          EVAL_OPENAI_API_KEY: ${{ secrets.EVAL_OPENAI_API_KEY }}
+        run: python scripts/check_eval_model_access.py --model "$LLM_MODEL"
+
+      - name: Verify published manual matches canonical STARTER source
+        if: steps.secret.outputs.skip != 'true'
+        working-directory: app
+        run: |
+          python scripts/generate_manual_page.py \
+            --source ../starter/corpus/source_documents/northwind-operations-manual-v3.2.md \
+            --check
+
+      - name: Migrate and seed legacy 27-source corpus
+        if: steps.secret.outputs.skip != 'true'
+        run: |
+          python starter/corpus/generate_corpus.py --legacy-only --out "$UPLOAD_DIR"
+          cd starter/backend
+          python -m app.db.migrate
+          python -m app.seed.public_demo
+
+      - name: Prove RT-06 authorized and denied SQL retrieval
+        if: steps.secret.outputs.skip != 'true'
+        working-directory: starter/backend
+        env:
+          RAG_REQUIRE_DB: "1"
+          ACCESS_STRATEGY: document_acl_with_time_bound_grants
+          AUTH_MODE: dev
+        run: python -m unittest tests.test_rt06_acl_boundary_p11
+
+      - name: Start quality-evaluation backend
+        if: steps.secret.outputs.skip != 'true'
+        working-directory: starter/backend
+        run: |
+          python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 > "$RUNNER_TEMP/backend.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/backend.pid"
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:8000/health >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          echo "Backend readiness failed" >&2
+          exit 1
+
+      - name: Run isolated 25-question core phase
+        id: core_evaluation
+        if: steps.secret.outputs.skip != 'true'
+        continue-on-error: true
+        working-directory: app
+        env:
+          RAG_AGENT_MCP_SERVER_REPO: ${{ github.workspace }}/mcp
+          RAG_EVAL_APP_REPO: ${{ github.workspace }}/app
+          RAG_EVAL_MCP_REPO: ${{ github.workspace }}/mcp
+          RAG_EVAL_STARTER_REPO: ${{ github.workspace }}/starter
+        run: |
+          export RAG_AGENT_MCP_SERVER_PYTHON="$(command -v python)"
+          python -m rag_enterprise_langgraph.cli \
+            --eval-set config/eval-set-northwind-candidate.json \
+            --eval-output "$RUNNER_TEMP/core-eval-report.md" \
+            --eval-json "$RUNNER_TEMP/core-eval-report.json" \
+            --max-recovery-steps 3 \
+            --eval-calibration
+
+      - name: Add Operations Manual with production parser and chunker
+        if: always() && steps.secret.outputs.skip != 'true'
+        run: |
+          kill "$(cat "$RUNNER_TEMP/backend.pid")" || true
+          for attempt in $(seq 1 30); do
+            if ! curl --fail --silent http://127.0.0.1:8000/health >/dev/null; then break; fi
+            sleep 1
+          done
+          if curl --fail --silent http://127.0.0.1:8000/health >/dev/null; then
+            echo "Core-phase backend did not stop before corpus expansion" >&2
+            exit 1
+          fi
+          python starter/corpus/generate_corpus.py --out "$UPLOAD_DIR"
+          cd starter/backend
+          python -m app.seed.public_demo
+
+      - name: Start document-ACL manual-phase backend
+        if: always() && steps.secret.outputs.skip != 'true'
+        working-directory: starter/backend
+        run: |
+          ACCESS_STRATEGY=document_acl_with_time_bound_grants python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 > "$RUNNER_TEMP/backend-manual.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/backend.pid"
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:8000/health >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          echo "Manual-phase backend readiness failed" >&2
+          exit 1
+
+      - name: Run isolated 65-question Operations Manual phase
+        id: manual_evaluation
+        if: always() && steps.secret.outputs.skip != 'true'
+        continue-on-error: true
+        working-directory: app
+        env:
+          RAG_AGENT_MCP_SERVER_REPO: ${{ github.workspace }}/mcp
+          RAG_EVAL_APP_REPO: ${{ github.workspace }}/app
+          RAG_EVAL_MCP_REPO: ${{ github.workspace }}/mcp
+          RAG_EVAL_STARTER_REPO: ${{ github.workspace }}/starter
+        run: |
+          export RAG_AGENT_MCP_SERVER_PYTHON="$(command -v python)"
+          python -m rag_enterprise_langgraph.cli \
+            --eval-set config/eval-set-operations-manual-v3.2-candidate.json \
+            --eval-output "$RUNNER_TEMP/manual-eval-report.md" \
+            --eval-json "$RUNNER_TEMP/manual-eval-report.json" \
+            --max-recovery-steps 3 \
+            --eval-calibration
+
+      - name: Combine the two isolated quality phases
+        id: combine
+        if: always() && steps.secret.outputs.skip != 'true'
+        continue-on-error: true
+        working-directory: app
+        run: |
+          python scripts/combine_eval_reports.py \
+            "$RUNNER_TEMP/core-eval-report.json" \
+            "$RUNNER_TEMP/manual-eval-report.json" \
+            "$RUNNER_TEMP/eval-report.json"
+
+      - name: Run live unauthorized RT-06 path
+        id: rt06_live
+        if: always() && steps.secret.outputs.skip != 'true'
+        continue-on-error: true
+        env:
+          RAG_AGENT_MCP_SERVER_REPO: ${{ github.workspace }}/mcp
+        run: |
+          curl --fail --silent http://127.0.0.1:8000/health >/dev/null
+          cd "$GITHUB_WORKSPACE/app"
+          export RAG_AGENT_MCP_SERVER_PYTHON="$(command -v python)"
+          python scripts/run_rt06_live.py \
+            --eval-report "$RUNNER_TEMP/eval-report.json" \
+            --eval-report "$RUNNER_TEMP/core-eval-report.json"
+
+      - name: Enforce revised-suite safety and critical correctness
+        id: candidate_correctness
+        if: always() && steps.secret.outputs.skip != 'true'
+        continue-on-error: true
+        working-directory: app
+        run: python scripts/check_correction_candidate.py "$RUNNER_TEMP/eval-report.json"
+
+      - name: Export sanitized generation usage
+        id: usage
+        if: always() && steps.secret.outputs.skip != 'true'
+        continue-on-error: true
+        working-directory: starter/backend
+        run: |
+          python -m app.eval.usage_export \
+            --eval-report "$RUNNER_TEMP/eval-report.json" \
+            --output "$RUNNER_TEMP/eval-usage.json"
+
+      - name: Attach and enforce performance thresholds
+        id: performance
+        if: always() && steps.secret.outputs.skip != 'true'
+        continue-on-error: true
+        working-directory: app
+        run: |
+          python scripts/attach_eval_performance.py \
+            "$RUNNER_TEMP/eval-report.json" \
+            "$RUNNER_TEMP/eval-usage.json" \
+            "$RUNNER_TEMP/eval-report.json"
+
+      - name: Compare approved baseline
+        id: baseline
+        if: always() && steps.secret.outputs.skip != 'true' && inputs.mode == 'blocking'
+        continue-on-error: true
+        working-directory: app
+        env:
+          RAG_AGENT_MCP_SERVER_REPO: ${{ github.workspace }}/mcp
+        run: |
+          if [ -f config/eval-baselines/northwind-openai-v2.json ]; then
+            python scripts/compare_eval_reports.py \
+              config/eval-baselines/northwind-openai-v2.json \
+              "$RUNNER_TEMP/eval-report.json"
+          else
+            python scripts/compare_eval_reports.py \
+              config/eval-baselines/northwind-openai-v1.json \
+              "$RUNNER_TEMP/core-eval-report.json"
+          fi
+
+      - name: Record infrastructure failure for artifact upload
+        if: failure() && steps.secret.outputs.skip != 'true'
+        run: |
+          if [ ! -f "$RUNNER_TEMP/eval-report.json" ]; then
+            printf '%s\n' '{"schema_version":"1.0","status":"fail","failure_class":"infrastructure","message":"Full-stack evaluation failed before a case report was produced."}' > "$RUNNER_TEMP/eval-report.json"
+            printf '%s\n' '# Full-stack evaluation infrastructure failure' '' 'The run failed before a case report was produced. Inspect the CI step status; raw service diagnostics are not included in this artifact.' > "$RUNNER_TEMP/eval-report.md"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.secret.outputs.skip != 'true'
+        with:
+          name: p12b-${{ inputs.candidate }}-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/eval-report.json
+            ${{ runner.temp }}/core-eval-report.json
+            ${{ runner.temp }}/core-eval-report.md
+            ${{ runner.temp }}/manual-eval-report.json
+            ${{ runner.temp }}/manual-eval-report.md
+            ${{ runner.temp }}/eval-usage.json
+          retention-days: 30
+
+      - name: Enforce evaluation outcome
+        if: always() && steps.secret.outputs.skip != 'true'
+        env:
+          CORRECTION_OUTCOME: ${{ steps.candidate_correctness.outcome }}
+          CORE_OUTCOME: ${{ steps.core_evaluation.outcome }}
+          MANUAL_OUTCOME: ${{ steps.manual_evaluation.outcome }}
+          COMBINE_OUTCOME: ${{ steps.combine.outcome }}
+          RT06_OUTCOME: ${{ steps.rt06_live.outcome }}
+          USAGE_OUTCOME: ${{ steps.usage.outcome }}
+          PERFORMANCE_OUTCOME: ${{ steps.performance.outcome }}
+          BASELINE_OUTCOME: ${{ steps.baseline.outcome }}
+          EVAL_MODE: ${{ inputs.mode }}
+        run: |
+          failed=false
+          if [ "$CORRECTION_OUTCOME" != "success" ]; then
+            echo "Revised candidate is blocked: critical numeric, refusal, metadata or RT-06 checks failed." >> "$GITHUB_STEP_SUMMARY"
+            failed=true
+          fi
+          if [ "$CORE_OUTCOME" != "success" ]; then
+            echo "The 25-question core phase failed its safety or infrastructure criteria." >> "$GITHUB_STEP_SUMMARY"
+            failed=true
+          fi
+          if [ "$MANUAL_OUTCOME" != "success" ]; then
+            echo "The 65-question manual phase failed its safety or infrastructure criteria." >> "$GITHUB_STEP_SUMMARY"
+            failed=true
+          fi
+          if [ "$COMBINE_OUTCOME" != "success" ]; then
+            echo "The isolated phases could not form the declared 90-case suite." >> "$GITHUB_STEP_SUMMARY"
+            failed=true
+          fi
+          if [ "$RT06_OUTCOME" != "success" ]; then
+            echo "The live RT-06 authorization path did not pass." >> "$GITHUB_STEP_SUMMARY"
+            failed=true
+          fi
+          if [ "$USAGE_OUTCOME" != "success" ]; then
+            echo "Sanitized STARTER usage telemetry could not be joined to the run." >> "$GITHUB_STEP_SUMMARY"
+            failed=true
+          fi
+          if [ "$EVAL_MODE" = "blocking" ] && [ "$PERFORMANCE_OUTCOME" != "success" ]; then
+            echo "The performance/cost gate was incomplete or breached." >> "$GITHUB_STEP_SUMMARY"
+            failed=true
+          elif [ "$PERFORMANCE_OUTCOME" != "success" ]; then
+            echo "Calibration recorded a performance/cost breach; the run remains non-blocking and is ineligible for baseline promotion." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ "$EVAL_MODE" = "blocking" ] && [ "$BASELINE_OUTCOME" != "success" ]; then
+            echo "The approved-baseline comparison did not pass." >> "$GITHUB_STEP_SUMMARY"
+            failed=true
+          fi
+          if [ "$failed" = "true" ]; then exit 1; fi
