@@ -2,7 +2,9 @@ services:
   - type: web
     name: rag-enterprise-governance-demo
     runtime: python
-    plan: free
+    # Paid instances are required for a dependable public portfolio link;
+    # Render Free sleeps after inactivity and introduces long cold starts.
+    plan: starter
     region: singapore
     rootDir: .
     buildCommand: bash scripts/render_build.sh

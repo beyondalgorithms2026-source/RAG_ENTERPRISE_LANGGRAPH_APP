@@ -6,7 +6,8 @@
 
 **[→ Try the public governed demo](https://rag-enterprise-governance-demo.onrender.com/app)**
 
-> Render Free may take about one minute to wake after inactivity; leave the tab open while it starts.
+> A dependable public link requires paid Render instances for both the app and its paired
+> backend. Verify the active service plans after deployment; a Free instance can sleep after inactivity.
 
 ## The problem this solves
 
@@ -61,7 +62,7 @@ question and expected answer is in `config/eval-set-northwind.json`.
 ## What this is NOT
 
 - **Not a production or client deployment.** The data layer is available as a public
-  Render Free portfolio demo over 28 synthetic documents, with a public governed UI at
+  portfolio demo over 28 synthetic documents, with a public governed UI at
   [`rag-enterprise-governance-demo.onrender.com/app`](https://rag-enterprise-governance-demo.onrender.com/app).
   It has no real users or real-workload evidence.
 - **Not a general benchmark.** The approved v1 claim covers 25 questions on the isolated
@@ -142,8 +143,9 @@ The governed public UI is available at
 [`rag-enterprise-governance-demo.onrender.com/app`](https://rag-enterprise-governance-demo.onrender.com/app),
 and its synthetic data-layer API is available at
 [`rag-enterprise-starter-demo.onrender.com`](https://rag-enterprise-starter-demo.onrender.com).
-Either service may take about a minute to wake after inactivity on Render Free. Deployment
-details and public boundaries are in
+The deployment blueprint requests a paid Render plan for the APP; the paired STARTER
+service must also be upgraded by its owner before presenting the link as dependable.
+Deployment details and public boundaries are in
 [`docs/runbooks/RENDER_PUBLIC_DEMO.md`](docs/runbooks/RENDER_PUBLIC_DEMO.md).
 
 Run the tests — no Docker, no database, no model required:

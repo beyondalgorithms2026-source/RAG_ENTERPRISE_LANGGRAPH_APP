@@ -7,18 +7,16 @@ model-provider secret belongs in this service.
 ## Owner deployment steps
 
 1. Open Render, choose **New + → Blueprint**, and connect this GitHub repository.
-2. Select the repository's `render.yaml` and apply the proposed Free Singapore web service.
+2. Select the repository's `render.yaml` and apply the proposed paid Singapore web service.
 3. Wait until the deploy is live and `/healthz` returns `{"status":"ok"}`.
 4. Send the public service URL to the implementation thread for incognito, mobile,
    four-preset, full-source-link, and security smoke checks.
 
-The first request can be slow because both Free Render services may be asleep. Before a
-retrieval or answer POST, the pinned MCP client checks the backend's read-only `/health`
-endpoint and waits through Render wake pages or transient 502/503/504 responses with
-bounded backoff. It sends the potentially paid POST only after health reports `ok`, so
-wake recovery cannot duplicate a model request. The 300-second deployment timeout bounds
-that readiness wait; a live acceptance run on 8 September exceeded the earlier 120-second
-setting before the backend eventually recovered.
+The paired STARTER service must also use a paid plan before the public URL is described as
+dependable. Before a retrieval or answer POST, the pinned MCP client checks the backend's
+read-only `/health` endpoint and uses bounded readiness handling for transient failures.
+It sends the potentially paid POST only after health reports `ok`, preventing readiness
+recovery from duplicating a model request.
 
 ## Public-demo boundaries
 
