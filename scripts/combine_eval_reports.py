@@ -42,14 +42,24 @@ def combine_reports(core: dict[str, Any], manual: dict[str, Any]) -> dict[str, A
     refusal_rows = [row for row in rows if row.get("expectation") == "refuse"]
     boundary_rows = [row for row in rows if row.get("expectation") == "safe_boundary"]
     infrastructure = sum(row.get("failure_class") == "infrastructure" for row in rows)
+    transport_statuses = {"backend_auth_failed", "backend_timeout", "tool_error"}
+    transport_failures = sum(row.get("grounding_status") in transport_statuses for row in rows)
+    grader_failures = sum(
+        bool((row.get("expected_eval") or {}).get("judge_error")) for row in rows
+    )
+    other_infrastructure_failures = max(0, infrastructure - transport_failures - grader_failures)
     configuration = dict(manual.get("configuration") or {})
     configuration["evaluation_phases"] = {
         phase_id: data["configuration"] for phase_id, data in phase_metadata.items()
     }
+    revised = bool(configuration.get("grader_version"))
     return {
         "schema_version": "2.0",
-        "eval_suite": "northwind-full-stack-v2",
-        "eval_set": "config/eval-suite-northwind-v2.json",
+        "eval_suite": "northwind-correction-candidate" if revised else "northwind-full-stack-v2",
+        "eval_set": "config/eval-suite-correction-candidate.json"
+        if revised
+        else "config/eval-suite-northwind-v2.json",
+        **({"scope": "full-stack", "advisory": True} if revised else {}),
         "total": len(rows),
         "passed": passed,
         "failed": failed,
@@ -59,6 +69,9 @@ def combine_reports(core: dict[str, Any], manual: dict[str, Any]) -> dict[str, A
         "safe_boundary_total": len(boundary_rows),
         "safe_boundary_passed": sum(row.get("eval_status") == "pass" for row in boundary_rows),
         "infrastructure_failures": infrastructure,
+        "transport_failures": transport_failures,
+        "grader_failures": grader_failures,
+        "other_infrastructure_failures": other_infrastructure_failures,
         "configuration": configuration,
         "phases": phase_metadata,
         "status": "pass"

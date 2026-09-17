@@ -1,0 +1,1310 @@
+{
+  "schema_version": "1.2",
+  "suite_version": "2.1.3-candidate",
+  "eval_set": "northwind-public-demo-candidate",
+  "note": "Advisory typed successor; approved v1 remains unchanged. Controlled sources include the safety-duress exception.",
+  "questions": [
+    {
+      "case_id": "NW-001",
+      "question": "How many days in advance must domestic flights be booked?",
+      "expectation": "answer",
+      "expected_documents": [
+        "travel-expense-policy"
+      ],
+      "required_facts": [
+        {
+          "id": "booking",
+          "any_of": [
+            "at least fourteen days",
+            "a minimum of fourteen days",
+            "at least 14 days"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "fact",
+      "difficulty": "standard",
+      "rationale": "Only requested facts and material exceptions are required; prose paraphrases accepted.",
+      "source_sections": [
+        "controlled policy"
+      ],
+      "reference_ids": [
+        "travel-expense-policy"
+      ],
+      "assertions": [
+        {
+          "id": "booking",
+          "type": "concept",
+          "any_of": [
+            "at least fourteen days",
+            "a minimum of fourteen days",
+            "at least 14 days"
+          ],
+          "source_refs": [
+            "travel-expense-policy"
+          ]
+        },
+        {
+          "id": "numeric_value",
+          "type": "numeric",
+          "value": "14",
+          "unit": "days",
+          "source_refs": [
+            "travel-expense-policy"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "NW-002",
+      "question": "What is the daily meal allowance for international travel?",
+      "expectation": "answer",
+      "expected_documents": [
+        "travel-expense-policy"
+      ],
+      "required_facts": [
+        {
+          "id": "allowance",
+          "any_of": [
+            "65 EUR",
+            "€65",
+            "65 euros"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "fact",
+      "difficulty": "standard",
+      "rationale": "Only requested facts and material exceptions are required; prose paraphrases accepted.",
+      "source_sections": [
+        "controlled policy"
+      ],
+      "reference_ids": [
+        "travel-expense-policy"
+      ],
+      "assertions": [
+        {
+          "id": "allowance",
+          "type": "concept",
+          "any_of": [
+            "65 EUR",
+            "€65",
+            "65 euros"
+          ],
+          "source_refs": [
+            "travel-expense-policy"
+          ]
+        },
+        {
+          "id": "numeric_value",
+          "type": "numeric",
+          "value": "65",
+          "unit": "EUR",
+          "source_refs": [
+            "travel-expense-policy"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "NW-003",
+      "question": "How many days per week must hybrid employees attend the office?",
+      "expectation": "answer",
+      "expected_documents": [
+        "remote-working-policy"
+      ],
+      "required_facts": [
+        {
+          "id": "attendance",
+          "any_of": [
+            "a minimum of two days",
+            "at least two days",
+            "at least 2 days"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "fact",
+      "difficulty": "standard",
+      "rationale": "Only requested facts and material exceptions are required; prose paraphrases accepted.",
+      "source_sections": [
+        "controlled policy"
+      ],
+      "reference_ids": [
+        "remote-working-policy"
+      ],
+      "assertions": [
+        {
+          "id": "attendance",
+          "type": "concept",
+          "any_of": [
+            "a minimum of two days",
+            "at least two days",
+            "at least 2 days"
+          ],
+          "source_refs": [
+            "remote-working-policy"
+          ]
+        },
+        {
+          "id": "numeric_value",
+          "type": "numeric",
+          "value": "2",
+          "unit": "days",
+          "source_refs": [
+            "remote-working-policy"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "NW-004",
+      "question": "How long can an employee work from another country?",
+      "expectation": "answer",
+      "expected_documents": [
+        "remote-working-policy"
+      ],
+      "required_facts": [
+        {
+          "id": "duration",
+          "any_of": [
+            "20 working days per calendar year",
+            "20 working days annually"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "fact",
+      "difficulty": "standard",
+      "rationale": "Only requested facts and material exceptions are required; prose paraphrases accepted.",
+      "source_sections": [
+        "controlled policy"
+      ],
+      "reference_ids": [
+        "remote-working-policy"
+      ],
+      "assertions": [
+        {
+          "id": "duration",
+          "type": "concept",
+          "any_of": [
+            "20 working days per calendar year",
+            "20 working days annually"
+          ],
+          "source_refs": [
+            "remote-working-policy"
+          ]
+        },
+        {
+          "id": "numeric_value",
+          "type": "numeric",
+          "value": "20",
+          "unit": "days",
+          "source_refs": [
+            "remote-working-policy"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "NW-005",
+      "question": "How much annual leave do full-time employees receive?",
+      "expectation": "answer",
+      "expected_documents": [
+        "annual-leave-policy"
+      ],
+      "required_facts": [
+        {
+          "id": "leave",
+          "any_of": [
+            "26 days"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "fact",
+      "difficulty": "standard",
+      "rationale": "Only requested facts and material exceptions are required; prose paraphrases accepted.",
+      "source_sections": [
+        "controlled policy"
+      ],
+      "reference_ids": [
+        "annual-leave-policy"
+      ],
+      "assertions": [
+        {
+          "id": "leave",
+          "type": "concept",
+          "any_of": [
+            "26 days"
+          ],
+          "source_refs": [
+            "annual-leave-policy"
+          ]
+        },
+        {
+          "id": "numeric_value",
+          "type": "numeric",
+          "value": "26",
+          "unit": "days",
+          "source_refs": [
+            "annual-leave-policy"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "NW-006",
+      "question": "How many days of annual leave can be carried over, and by when must they be used?",
+      "expectation": "answer",
+      "expected_documents": [
+        "annual-leave-policy"
+      ],
+      "required_facts": [
+        {
+          "id": "carry",
+          "any_of": [
+            "five days",
+            "5 days"
+          ]
+        },
+        {
+          "id": "deadline",
+          "any_of": [
+            "31 March",
+            "March 31"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "fact",
+      "difficulty": "standard",
+      "rationale": "Only requested facts and material exceptions are required; prose paraphrases accepted.",
+      "source_sections": [
+        "controlled policy"
+      ],
+      "reference_ids": [
+        "annual-leave-policy"
+      ],
+      "assertions": [
+        {
+          "id": "carry",
+          "type": "concept",
+          "any_of": [
+            "five days",
+            "5 days"
+          ],
+          "source_refs": [
+            "annual-leave-policy"
+          ]
+        },
+        {
+          "id": "numeric_value",
+          "type": "numeric",
+          "value": "5",
+          "unit": "days",
+          "source_refs": [
+            "annual-leave-policy"
+          ]
+        },
+        {
+          "id": "deadline",
+          "type": "concept",
+          "any_of": [
+            "31 March",
+            "March 31"
+          ],
+          "source_refs": [
+            "annual-leave-policy"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "NW-007",
+      "question": "How many days of absence can be self-certified before a fit note is required?",
+      "expectation": "answer",
+      "expected_documents": [
+        "sickness-absence-policy"
+      ],
+      "required_facts": [
+        {
+          "id": "certification",
+          "any_of": [
+            "up to seven consecutive calendar days",
+            "up to 7 consecutive calendar days"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "fact",
+      "difficulty": "standard",
+      "rationale": "Only requested facts and material exceptions are required; prose paraphrases accepted.",
+      "source_sections": [
+        "controlled policy"
+      ],
+      "reference_ids": [
+        "sickness-absence-policy"
+      ],
+      "assertions": [
+        {
+          "id": "certification",
+          "type": "concept",
+          "any_of": [
+            "up to seven consecutive calendar days",
+            "up to 7 consecutive calendar days"
+          ],
+          "source_refs": [
+            "sickness-absence-policy"
+          ]
+        },
+        {
+          "id": "numeric_value",
+          "type": "numeric",
+          "value": "7",
+          "unit": "days",
+          "source_refs": [
+            "sickness-absence-policy"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "NW-008",
+      "question": "How long is company sick pay paid at full pay?",
+      "expectation": "answer",
+      "expected_documents": [
+        "sickness-absence-policy"
+      ],
+      "required_facts": [
+        {
+          "id": "sick_pay",
+          "any_of": [
+            "first 20 working days"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "fact",
+      "difficulty": "standard",
+      "rationale": "Only requested facts and material exceptions are required; prose paraphrases accepted.",
+      "source_sections": [
+        "controlled policy"
+      ],
+      "reference_ids": [
+        "sickness-absence-policy"
+      ],
+      "assertions": [
+        {
+          "id": "sick_pay",
+          "type": "concept",
+          "any_of": [
+            "first 20 working days"
+          ],
+          "source_refs": [
+            "sickness-absence-policy"
+          ]
+        },
+        {
+          "id": "numeric_value",
+          "type": "numeric",
+          "value": "20",
+          "unit": "days",
+          "source_refs": [
+            "sickness-absence-policy"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "NW-009",
+      "question": "How much leave is the primary carer entitled to?",
+      "expectation": "answer",
+      "expected_documents": [
+        "parental-leave-policy"
+      ],
+      "required_facts": [
+        {
+          "id": "primary_leave",
+          "any_of": [
+            "26 weeks at full pay followed by 13 weeks at half pay"
+          ]
+        },
+        {
+          "id": "half_pay",
+          "any_of": [
+            "13 weeks at half pay"
+          ]
+        },
+        {
+          "id": "pay_basis",
+          "any_of": [
+            "full pay followed by",
+            "full pay, followed by"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "fact",
+      "difficulty": "standard",
+      "rationale": "Only requested facts and material exceptions are required; prose paraphrases accepted.",
+      "source_sections": [
+        "controlled policy"
+      ],
+      "reference_ids": [
+        "parental-leave-policy"
+      ],
+      "assertions": [
+        {
+          "id": "primary_leave",
+          "type": "concept",
+          "any_of": [
+            "26 weeks at full pay followed by 13 weeks at half pay"
+          ],
+          "source_refs": [
+            "parental-leave-policy"
+          ]
+        },
+        {
+          "id": "numeric_value",
+          "type": "numeric",
+          "value": "26",
+          "unit": "weeks",
+          "source_refs": [
+            "parental-leave-policy"
+          ]
+        },
+        {
+          "id": "half_pay",
+          "type": "concept",
+          "any_of": [
+            "13 weeks at half pay"
+          ],
+          "source_refs": [
+            "parental-leave-policy"
+          ]
+        },
+        {
+          "id": "pay_basis",
+          "type": "concept",
+          "any_of": [
+            "full pay followed by",
+            "full pay, followed by"
+          ],
+          "source_refs": [
+            "parental-leave-policy"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "NW-010",
+      "question": "How long is the standard probationary period?",
+      "expectation": "answer",
+      "expected_documents": [
+        "probation-policy"
+      ],
+      "required_facts": [
+        {
+          "id": "probation",
+          "any_of": [
+            "six months",
+            "6 months"
+          ]
+        },
+        {
+          "id": "senior_duration",
+          "any_of": [
+            "three months for Band 6 and above",
+            "3 months for Band 6 and above"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "fact",
+      "difficulty": "standard",
+      "rationale": "Only requested facts and material exceptions are required; prose paraphrases accepted.",
+      "source_sections": [
+        "controlled policy"
+      ],
+      "reference_ids": [
+        "probation-policy"
+      ],
+      "assertions": [
+        {
+          "id": "probation",
+          "type": "concept",
+          "any_of": [
+            "six months",
+            "6 months"
+          ],
+          "source_refs": [
+            "probation-policy"
+          ]
+        },
+        {
+          "id": "numeric_value",
+          "type": "numeric",
+          "value": "6",
+          "unit": "months",
+          "source_refs": [
+            "probation-policy"
+          ]
+        },
+        {
+          "id": "senior_duration",
+          "type": "concept",
+          "any_of": [
+            "three months for Band 6 and above",
+            "3 months for Band 6 and above"
+          ],
+          "source_refs": [
+            "probation-policy"
+          ]
+        },
+        {
+          "id": "senior_numeric",
+          "type": "numeric",
+          "value": "3",
+          "unit": "months",
+          "source_refs": [
+            "probation-policy"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "NW-011",
+      "question": "What notice applies during probation?",
+      "expectation": "answer",
+      "expected_documents": [
+        "probation-policy"
+      ],
+      "required_facts": [
+        {
+          "id": "notice",
+          "any_of": [
+            "two weeks",
+            "2 weeks"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "fact",
+      "difficulty": "standard",
+      "rationale": "Only requested facts and material exceptions are required; prose paraphrases accepted.",
+      "source_sections": [
+        "controlled policy"
+      ],
+      "reference_ids": [
+        "probation-policy"
+      ],
+      "assertions": [
+        {
+          "id": "notice",
+          "type": "concept",
+          "any_of": [
+            "two weeks",
+            "2 weeks"
+          ],
+          "source_refs": [
+            "probation-policy"
+          ]
+        },
+        {
+          "id": "numeric_value",
+          "type": "numeric",
+          "value": "2",
+          "unit": "weeks",
+          "source_refs": [
+            "probation-policy"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "NW-012",
+      "question": "What performance ratings does the company use?",
+      "expectation": "answer",
+      "expected_documents": [
+        "performance-review-cycle"
+      ],
+      "required_facts": [
+        {
+          "id": "developing",
+          "any_of": [
+            "developing"
+          ]
+        },
+        {
+          "id": "effective",
+          "any_of": [
+            "effective"
+          ]
+        },
+        {
+          "id": "strong",
+          "any_of": [
+            "strong"
+          ]
+        },
+        {
+          "id": "exceptional",
+          "any_of": [
+            "exceptional"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "fact",
+      "difficulty": "standard",
+      "rationale": "Only requested facts and material exceptions are required; prose paraphrases accepted.",
+      "source_sections": [
+        "controlled policy"
+      ],
+      "reference_ids": [
+        "performance-review-cycle"
+      ],
+      "assertions": [
+        {
+          "id": "developing",
+          "type": "concept",
+          "any_of": [
+            "developing"
+          ],
+          "source_refs": [
+            "performance-review-cycle"
+          ]
+        },
+        {
+          "id": "effective",
+          "type": "concept",
+          "any_of": [
+            "effective"
+          ],
+          "source_refs": [
+            "performance-review-cycle"
+          ]
+        },
+        {
+          "id": "strong",
+          "type": "concept",
+          "any_of": [
+            "strong"
+          ],
+          "source_refs": [
+            "performance-review-cycle"
+          ]
+        },
+        {
+          "id": "exceptional",
+          "type": "concept",
+          "any_of": [
+            "exceptional"
+          ],
+          "source_refs": [
+            "performance-review-cycle"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "NW-013",
+      "question": "What is the maximum value of a gift that may be accepted?",
+      "expectation": "answer",
+      "expected_documents": [
+        "code-of-conduct"
+      ],
+      "required_facts": [
+        {
+          "id": "gift_limit",
+          "any_of": [
+            "50 EUR",
+            "€50",
+            "50 euros"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "fact",
+      "difficulty": "standard",
+      "rationale": "Only requested facts and material exceptions are required; prose paraphrases accepted.",
+      "source_sections": [
+        "controlled policy"
+      ],
+      "reference_ids": [
+        "code-of-conduct"
+      ],
+      "assertions": [
+        {
+          "id": "gift_limit",
+          "type": "concept",
+          "any_of": [
+            "50 EUR",
+            "€50",
+            "50 euros"
+          ],
+          "source_refs": [
+            "code-of-conduct"
+          ]
+        },
+        {
+          "id": "numeric_value",
+          "type": "numeric",
+          "value": "50",
+          "unit": "EUR",
+          "source_refs": [
+            "code-of-conduct"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "NW-014",
+      "question": "Are facilitation payments allowed?",
+      "expectation": "answer",
+      "expected_documents": [
+        "anti-bribery-policy"
+      ],
+      "required_facts": [
+        {
+          "id": "prohibition",
+          "any_of": [
+            "prohibited without exception",
+            "facilitation payments are prohibited"
+          ]
+        },
+        {
+          "id": "duress_exception",
+          "any_of": [
+            "under duress and personal safety is at risk",
+            "duress where personal safety is at risk"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "fact",
+      "difficulty": "standard",
+      "rationale": "Only requested facts and material exceptions are required; prose paraphrases accepted.",
+      "source_sections": [
+        "controlled policy"
+      ],
+      "reference_ids": [
+        "anti-bribery-policy"
+      ],
+      "assertions": [
+        {
+          "id": "prohibition",
+          "type": "concept",
+          "any_of": [
+            "prohibited without exception",
+            "facilitation payments are prohibited"
+          ],
+          "source_refs": [
+            "anti-bribery-policy"
+          ]
+        },
+        {
+          "id": "duress_exception",
+          "type": "concept",
+          "any_of": [
+            "under duress and personal safety is at risk",
+            "duress where personal safety is at risk"
+          ],
+          "source_refs": [
+            "anti-bribery-policy"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "NW-015",
+      "question": "How long are vehicle telematics records kept?",
+      "expectation": "answer",
+      "expected_documents": [
+        "data-retention-schedule"
+      ],
+      "required_facts": [
+        {
+          "id": "telematics",
+          "any_of": [
+            "90 days"
+          ]
+        },
+        {
+          "id": "open_incident_exception",
+          "any_of": [
+            "except where it relates to an open incident investigation",
+            "unless related to an open incident investigation"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "fact",
+      "difficulty": "standard",
+      "rationale": "Only requested facts and material exceptions are required; prose paraphrases accepted.",
+      "source_sections": [
+        "controlled policy"
+      ],
+      "reference_ids": [
+        "data-retention-schedule"
+      ],
+      "assertions": [
+        {
+          "id": "telematics",
+          "type": "concept",
+          "any_of": [
+            "90 days"
+          ],
+          "source_refs": [
+            "data-retention-schedule"
+          ]
+        },
+        {
+          "id": "numeric_value",
+          "type": "numeric",
+          "value": "90",
+          "unit": "days",
+          "source_refs": [
+            "data-retention-schedule"
+          ]
+        },
+        {
+          "id": "open_incident_exception",
+          "type": "concept",
+          "answer_anchors": [["incident", "investigation", "inquiry", "case"]],
+          "any_of": [
+            "except where it relates to an open incident investigation",
+            "unless related to an open incident investigation"
+          ],
+          "source_refs": [
+            "data-retention-schedule"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "NW-016",
+      "question": "Who can approve expenditure of 20,000 EUR?",
+      "expectation": "answer",
+      "expected_documents": [
+        "expenses-approval-limits"
+      ],
+      "required_facts": [
+        {
+          "id": "authority",
+          "any_of": [
+            "finance director"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "fact",
+      "difficulty": "standard",
+      "rationale": "Only requested facts and material exceptions are required; prose paraphrases accepted.",
+      "source_sections": [
+        "controlled policy"
+      ],
+      "reference_ids": [
+        "expenses-approval-limits"
+      ],
+      "assertions": [
+        {
+          "id": "authority",
+          "type": "concept",
+          "any_of": [
+            "finance director"
+          ],
+          "source_refs": [
+            "expenses-approval-limits"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "NW-017",
+      "question": "What goods-in-transit insurance must hauliers evidence?",
+      "expectation": "answer",
+      "expected_documents": [
+        "supplier-onboarding"
+      ],
+      "required_facts": [
+        {
+          "id": "insurance",
+          "any_of": [
+            "at least 250,000 EUR per vehicle",
+            "at least €250,000 per vehicle"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "fact",
+      "difficulty": "standard",
+      "rationale": "Only requested facts and material exceptions are required; prose paraphrases accepted.",
+      "source_sections": [
+        "controlled policy"
+      ],
+      "reference_ids": [
+        "supplier-onboarding"
+      ],
+      "assertions": [
+        {
+          "id": "insurance",
+          "type": "concept",
+          "any_of": [
+            "at least 250,000 EUR per vehicle",
+            "at least €250,000 per vehicle"
+          ],
+          "source_refs": [
+            "supplier-onboarding"
+          ]
+        },
+        {
+          "id": "numeric_value",
+          "type": "numeric",
+          "value": "250000",
+          "unit": "EUR",
+          "source_refs": [
+            "supplier-onboarding"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "NW-018",
+      "question": "How often are driving licences checked?",
+      "expectation": "answer",
+      "expected_documents": [
+        "fleet-and-driver-safety"
+      ],
+      "required_facts": [
+        {
+          "id": "licence",
+          "any_of": [
+            "every six months",
+            "every 6 months"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "fact",
+      "difficulty": "standard",
+      "rationale": "Only requested facts and material exceptions are required; prose paraphrases accepted.",
+      "source_sections": [
+        "controlled policy"
+      ],
+      "reference_ids": [
+        "fleet-and-driver-safety"
+      ],
+      "assertions": [
+        {
+          "id": "licence",
+          "type": "concept",
+          "any_of": [
+            "every six months",
+            "every 6 months"
+          ],
+          "source_refs": [
+            "fleet-and-driver-safety"
+          ]
+        },
+        {
+          "id": "numeric_value",
+          "type": "numeric",
+          "value": "6",
+          "unit": "months",
+          "source_refs": [
+            "fleet-and-driver-safety"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "NW-019",
+      "question": "What weight of load requires two people or mechanical assistance?",
+      "expectation": "answer",
+      "expected_documents": [
+        "warehouse-health-and-safety"
+      ],
+      "required_facts": [
+        {
+          "id": "weight",
+          "any_of": [
+            "above 23 kilograms",
+            "over 23 kilograms"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "fact",
+      "difficulty": "standard",
+      "rationale": "Only requested facts and material exceptions are required; prose paraphrases accepted.",
+      "source_sections": [
+        "controlled policy"
+      ],
+      "reference_ids": [
+        "warehouse-health-and-safety"
+      ],
+      "assertions": [
+        {
+          "id": "weight",
+          "type": "concept",
+          "any_of": [
+            "above 23 kilograms",
+            "over 23 kilograms"
+          ],
+          "source_refs": [
+            "warehouse-health-and-safety"
+          ]
+        },
+        {
+          "id": "numeric_value",
+          "type": "numeric",
+          "value": "23",
+          "unit": "kilograms",
+          "source_refs": [
+            "warehouse-health-and-safety"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "NW-020",
+      "question": "What is the annual development budget per employee?",
+      "expectation": "answer",
+      "expected_documents": [
+        "training-and-development"
+      ],
+      "required_facts": [
+        {
+          "id": "budget",
+          "any_of": [
+            "1,200 EUR",
+            "€1,200",
+            "1200 EUR"
+          ]
+        }
+      ],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "fact",
+      "difficulty": "standard",
+      "rationale": "Only requested facts and material exceptions are required; prose paraphrases accepted.",
+      "source_sections": [
+        "controlled policy"
+      ],
+      "reference_ids": [
+        "training-and-development"
+      ],
+      "assertions": [
+        {
+          "id": "budget",
+          "type": "concept",
+          "any_of": [
+            "1,200 EUR",
+            "€1,200",
+            "1200 EUR"
+          ],
+          "source_refs": [
+            "training-and-development"
+          ]
+        },
+        {
+          "id": "numeric_value",
+          "type": "numeric",
+          "value": "1200",
+          "unit": "EUR",
+          "source_refs": [
+            "training-and-development"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "NW-021",
+      "question": "What is the company's pension contribution rate?",
+      "expectation": "refuse",
+      "expected_documents": [],
+      "required_facts": [],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "refusal",
+      "difficulty": "standard",
+      "rationale": "No controlled source supports this answer; refusal required.",
+      "source_sections": [],
+      "reference_ids": [],
+      "assertions": []
+    },
+    {
+      "case_id": "NW-022",
+      "question": "How many employees work at the Rotterdam depot?",
+      "expectation": "refuse",
+      "expected_documents": [],
+      "required_facts": [],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "refusal",
+      "difficulty": "standard",
+      "rationale": "No controlled source supports this answer; refusal required.",
+      "source_sections": [],
+      "reference_ids": [],
+      "assertions": []
+    },
+    {
+      "case_id": "NW-023",
+      "question": "What was Northwind Logistics' revenue last year?",
+      "expectation": "refuse",
+      "expected_documents": [],
+      "required_facts": [],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "refusal",
+      "difficulty": "standard",
+      "rationale": "No controlled source supports this answer; refusal required.",
+      "source_sections": [],
+      "reference_ids": [],
+      "assertions": []
+    },
+    {
+      "case_id": "NW-024",
+      "question": "What is the policy on keeping pets in company accommodation?",
+      "expectation": "refuse",
+      "expected_documents": [],
+      "required_facts": [],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "refusal",
+      "difficulty": "standard",
+      "rationale": "No controlled source supports this answer; refusal required.",
+      "source_sections": [],
+      "reference_ids": [],
+      "assertions": []
+    },
+    {
+      "case_id": "NW-025",
+      "question": "Which insurance provider underwrites the company fleet?",
+      "expectation": "refuse",
+      "expected_documents": [],
+      "required_facts": [],
+      "forbidden_facts": [],
+      "ordered_fact_ids": [],
+      "question_type": "refusal",
+      "difficulty": "standard",
+      "rationale": "No controlled source supports this answer; refusal required.",
+      "source_sections": [],
+      "reference_ids": [],
+      "assertions": []
+    }
+  ],
+  "reference_evidence": [
+    {
+      "id": "travel-expense-policy",
+      "document": "travel-expense-policy.md",
+      "section": "controlled policy",
+      "text": "# Travel and Expense Policy\n\n## Scope\n\nThis policy applies to all Northwind Logistics employees travelling on company business.\n\n## Booking\n\nDomestic flights must be booked at least fourteen days in advance where the itinerary is\nknown. Economy class is the standard for all flights under six hours. Flights of six\nhours or more may be booked in premium economy with written approval from a department\nhead.\n\n## Daily allowance\n\nThe daily meal allowance is 45 EUR for domestic travel and 65 EUR for international\ntravel. Receipts are required for any single expense above 25 EUR.\n\n## Accommodation\n\nHotel spend should not exceed 180 EUR per night in listed cities and 120 EUR per night\nelsewhere. Where a conference venue rate exceeds these limits, the venue rate applies.\n\n## Submitting a claim\n\nClaims must be submitted within 30 days of the final day of travel. Claims submitted\nafter 60 days require director approval and may be refused.\n"
+    },
+    {
+      "id": "remote-working-policy",
+      "document": "remote-working-policy.md",
+      "section": "controlled policy",
+      "text": "# Remote and Hybrid Working Policy\n\n## Eligibility\n\nAll Northwind Logistics employees whose role does not require physical presence at a\ndepot are eligible for hybrid working. Depot operations roles are excluded because the\nwork cannot be performed remotely.\n\n## Expected office attendance\n\nHybrid employees attend the office a minimum of two days per week. Teams may agree a\nfixed anchor day; where they do, attendance on that day takes precedence over the\nindividual minimum.\n\n## Equipment\n\nThe company provides a laptop and one external monitor. A contribution of up to 250 EUR\ntowards a desk chair is available once every three years on production of a receipt.\n\n## Working from another country\n\nWorking from outside your country of employment requires prior written approval and is\nlimited to 20 working days per calendar year, for tax residency reasons.\n"
+    },
+    {
+      "id": "annual-leave-policy",
+      "document": "annual-leave-policy.md",
+      "section": "controlled policy",
+      "text": "# Annual Leave Policy\n\n## Entitlement\n\nFull-time employees receive 26 days of annual leave per calendar year, in addition to\npublic holidays observed in their country of employment. Part-time entitlement is\ncalculated pro rata.\n\n## Booking\n\nLeave must be requested through the leave system and approved by the line manager before\ntravel is booked. Requests of five consecutive days or more should be submitted at least\nthree weeks in advance.\n\n## Carry-over\n\nA maximum of five days may be carried into the following year and must be used by 31\nMarch. Days not used by that date are forfeited.\n\n## Depot coverage\n\nDepot teams operate a coverage roster. No more than one third of a depot shift team may\nbe on leave on the same day, and requests are approved in the order received.\n\n## Leaving the company\n\nOn leaving, accrued but untaken leave is paid in the final salary payment. Leave taken in\nexcess of accrual is deducted from the final payment.\n"
+    },
+    {
+      "id": "sickness-absence-policy",
+      "document": "sickness-absence-policy.md",
+      "section": "controlled policy",
+      "text": "# Sickness Absence Policy\n\n## Reporting an absence\n\nAn employee unable to attend work must notify their line manager before the start of\ntheir shift, or as early as possible where that is not practical. Notification by message\nto a colleague is not sufficient.\n\n## Certification\n\nAbsence of up to seven consecutive calendar days may be self-certified on return. Absence\nbeyond seven calendar days requires a fit note from a registered practitioner, submitted\nto People Operations.\n\n## Company sick pay\n\nEmployees with more than six months of service receive full pay for the first 20 working\ndays of absence in any rolling twelve-month period, and half pay for the following 20\nworking days. Thereafter, statutory provision applies.\n\n## Return to work\n\nA return-to-work conversation is held after every absence, regardless of length. Its\npurpose is support and accurate recording, not disciplinary action.\n\n## Long-term absence\n\nAbsence exceeding four consecutive weeks is managed as long-term absence, with a written\nplan agreed between the employee, the line manager and People Operations.\n"
+    },
+    {
+      "id": "parental-leave-policy",
+      "document": "parental-leave-policy.md",
+      "section": "controlled policy",
+      "text": "# Parental Leave Policy\n\n## Eligibility\n\nEmployees with 26 weeks of continuous service at the point of notification are eligible\nfor company parental leave. Employees with less service receive the provision required by\napplicable local employment law.\n\n## Primary carer leave\n\nThe primary carer is entitled to 26 weeks at full pay, followed by 13 weeks at half pay.\nLeave must begin within eight weeks of the birth or placement.\n\n## Secondary carer leave\n\nThe secondary carer is entitled to six weeks at full pay, which may be taken in up to\nthree separate blocks within the first year.\n\n## Notification\n\nNotification should be given at least 15 weeks before the expected date where known.\nNotification of an adoption placement should be given within seven days of the match\nbeing confirmed.\n\n## Return to work\n\nAn employee returning from parental leave returns to the same role. Where the role no\nlonger exists, a suitable alternative at the same band is offered.\n"
+    },
+    {
+      "id": "probation-policy",
+      "document": "probation-policy.md",
+      "section": "controlled policy",
+      "text": "# Probation Policy\n\n## Standard period\n\nThe standard probationary period is six months from the start date for all roles up to\nBand 5, and three months for Band 6 and above.\n\n## Reviews\n\nA formal review is held at the midpoint and at the end of the period. Both are recorded\nin writing and shared with the employee within five working days.\n\n## Extension\n\nProbation may be extended once, by a maximum of three months, where a specific and\ndocumented improvement is required. An extension must be confirmed in writing before the\noriginal end date.\n\n## Notice during probation\n\nEither party may end the employment during probation with two weeks of notice. This\nreplaces the contractual notice period, which applies from confirmation onwards.\n\n## Confirmation\n\nWhere no action is taken by the end date, probation is treated as passed and employment\nis confirmed automatically.\n"
+    },
+    {
+      "id": "performance-review-cycle",
+      "document": "performance-review-cycle.md",
+      "section": "controlled policy",
+      "text": "# Performance Review Cycle\n\n## Cycle\n\nNorthwind Logistics runs a single annual review cycle. Objectives are agreed in January,\na lightweight checkpoint is held in July, and the review conversation takes place in\nNovember.\n\n## Ratings\n\nFour ratings are used: developing, effective, strong, and exceptional. There is no forced\ndistribution. Managers are asked to justify any rating of exceptional with specific\nevidence.\n\n## Calibration\n\nRatings are calibrated in departmental sessions before they are shared, so that standards\nare consistent between teams. Calibration notes are retained by People Operations and are\nnot shared with employees.\n\n## Relationship to pay\n\nThe review outcome is an input to the pay decision but does not determine it\nmechanically. Pay decisions are made separately in the following February.\n\n## Disagreement\n\nAn employee who disagrees with a rating may add a written comment to the record. The\ncomment is retained with the review and is visible to the next reviewing manager.\n"
+    },
+    {
+      "id": "code-of-conduct",
+      "document": "code-of-conduct.md",
+      "section": "controlled policy",
+      "text": "# Code of Conduct\n\n## Purpose\n\nThis code sets the standard of behaviour expected of everyone working for or on behalf of\nNorthwind Logistics, including contractors and agency staff.\n\n## Respect\n\nHarassment, discrimination and bullying are not tolerated in any form, in any location,\nincluding client sites, depots, vehicles and online channels.\n\n## Conflicts of interest\n\nAny personal interest that could reasonably be seen to influence a business decision must\nbe declared to your line manager in writing. Declaration is required even where you\nbelieve the interest has no effect.\n\n## Gifts and hospitality\n\nGifts with a value above 50 EUR may not be accepted. Hospitality above 100 EUR per person\nrequires prior approval from a department head and is recorded in the gifts register.\n\n## Raising a concern\n\nConcerns may be raised with a line manager, with People Operations, or through the\nconfidential whistleblowing channel. Retaliation against anyone raising a concern in good\nfaith is itself a disciplinary matter.\n"
+    },
+    {
+      "id": "anti-bribery-policy",
+      "document": "anti-bribery-policy.md",
+      "section": "controlled policy",
+      "text": "# Anti-Bribery and Corruption Policy\n\n## Position\n\nNorthwind Logistics prohibits bribery in all forms, whether offered, given, requested or\nreceived, and whether directly or through a third party.\n\n## Facilitation payments\n\nFacilitation payments are prohibited without exception, including small payments to\nexpedite routine customs or permit processing. Where a payment is demanded under duress\nand personal safety is at risk, the payment may be made and must be reported to Legal\nwithin 24 hours.\n\n## Third parties\n\nAgents, brokers and customs intermediaries are subject to due diligence before\nappointment and are re-screened every two years. Contracts must include the standard\nanti-bribery clause.\n\n## Record keeping\n\nAll payments to third parties must be supported by an invoice describing the service\nperformed. Round-sum payments without a described service are prohibited.\n\n## Consequences\n\nBreach of this policy is gross misconduct and may also be a criminal offence under\napplicable local law.\n"
+    },
+    {
+      "id": "data-retention-schedule",
+      "document": "data-retention-schedule.md",
+      "section": "controlled policy",
+      "text": "# Data Retention Schedule\n\n## Principle\n\nData is retained only as long as there is a lawful and operational reason to keep it.\nRetention periods run from the end of the relationship or the closure of the record,\nwhichever is later.\n\n## Employee records\n\nCore employee records are retained for six years after the end of employment.\nUnsuccessful application records are retained for twelve months.\n\n## Operational records\n\nConsignment and delivery records are retained for seven years. Vehicle telematics data is\nretained for 90 days, except where it relates to an open incident investigation.\n\n## Security logs\n\nSystem access logs are retained for 180 days. Logs relating to a reported incident are\nretained until the investigation closes and then for a further two years.\n\n## Deletion\n\nDeletion is performed on a quarterly schedule. A record subject to a legal hold is\nexcluded from deletion until the hold is lifted by Legal.\n"
+    },
+    {
+      "id": "expenses-approval-limits",
+      "document": "expenses-approval-limits.md",
+      "section": "controlled policy",
+      "text": "# Expenses and Procurement Approval Limits\n\n## Approval thresholds\n\nExpenditure up to 500 EUR may be approved by a line manager. Expenditure from 501 EUR to\n5,000 EUR requires department head approval. Expenditure from 5,001 EUR to 50,000 EUR\nrequires finance director approval. Anything above 50,000 EUR requires board approval.\n\n## Splitting\n\nSplitting a purchase into smaller parts to stay below a threshold is prohibited and is\ntreated as a conduct matter. Related purchases from the same supplier within a single\nquarter are assessed together.\n\n## Purchase orders\n\nA purchase order is required for any committed spend above 1,000 EUR. Invoices received\nwithout a matching purchase order are held by Finance until one is raised.\n\n## Emergency spend\n\nDepot managers may authorise emergency spend up to 2,000 EUR where an operational\nstoppage is in progress. The spend must be reported to Finance within one working day.\n\n## Segregation of duties\n\nThe person who approves a purchase may not also approve the resulting invoice for\npayment.\n"
+    },
+    {
+      "id": "supplier-onboarding",
+      "document": "supplier-onboarding.md",
+      "section": "controlled policy",
+      "text": "# Supplier Onboarding Procedure\n\n## Purpose\n\nThis procedure governs how a new supplier is assessed and added to the approved supplier\nregister.\n\n## Due diligence\n\nAll suppliers complete a due diligence questionnaire covering ownership, insurance,\nsubcontracting and sanctions exposure. Suppliers providing customs or brokerage services\nadditionally complete the anti-bribery screening.\n\n## Insurance\n\nHauliers must evidence goods-in-transit cover of at least 250,000 EUR per vehicle and\npublic liability cover of at least 5,000,000 EUR. Certificates are checked at onboarding\nand at each annual renewal.\n\n## Trial period\n\nNew hauliers operate under a 90-day trial during which performance is reviewed monthly\nagainst agreed on-time delivery and damage thresholds.\n\n## Register\n\nA supplier may not be paid until they appear on the approved supplier register. Adding a\nsupplier to the register requires two named approvers from different teams.\n"
+    },
+    {
+      "id": "fleet-and-driver-safety",
+      "document": "fleet-and-driver-safety.md",
+      "section": "controlled policy",
+      "text": "# Fleet and Driver Safety Policy\n\n## Licence checks\n\nDriving licences are checked at recruitment and every six months thereafter. A driver\nwhose licence check is overdue by more than 14 days is removed from the driving roster\nuntil the check is completed.\n\n## Vehicle checks\n\nDrivers complete a walkaround check before the first journey of each shift and record it\nin the fleet system. Defects classified as safety-critical remove the vehicle from\nservice immediately.\n\n## Rest and hours\n\nDriving hours follow applicable local law. Where company rules are stricter, the company\nrule applies. Drivers must take a break of at least 45 minutes after four and a half\nhours of driving.\n\n## Incidents\n\nAll collisions, however minor, are reported to the depot manager before the end of the\nshift. Photographs of the scene are taken where it is safe to do so.\n\n## Telematics\n\nVehicles are fitted with telematics recording location, speed and harsh braking. Data is\nused for safety and route planning, and is retained for 90 days.\n"
+    },
+    {
+      "id": "warehouse-health-and-safety",
+      "document": "warehouse-health-and-safety.md",
+      "section": "controlled policy",
+      "text": "# Warehouse Health and Safety Standard\n\n## Personal protective equipment\n\nHigh-visibility clothing and safety footwear are mandatory in all operational areas of\nevery depot. Bump caps are required in racking aisles.\n\n## Segregation\n\nPedestrian walkways are physically segregated from forklift routes. Where segregation is\nnot possible at a loading door, a supervised crossing procedure is used.\n\n## Forklift operation\n\nOnly operators holding a current certificate and a company authorisation may operate\nforklift equipment. Authorisation is withdrawn immediately following a reportable\nincident, pending review.\n\n## Manual handling\n\nLoads above 23 kilograms require either two people or mechanical assistance. Manual\nhandling training is refreshed every two years.\n\n## Reporting\n\nNear misses are reported through the same channel as accidents. The company treats near\nmiss reporting as a positive indicator and does not attach blame to it.\n"
+    },
+    {
+      "id": "training-and-development",
+      "document": "training-and-development.md",
+      "section": "controlled policy",
+      "text": "# Training and Development Policy\n\n## Budget\n\nEach employee has an annual development budget of 1,200 EUR. The budget does not carry\nover between years.\n\n## Approval\n\nDevelopment spend within the budget is approved by the line manager. Spend above the\nbudget requires department head approval and a business justification.\n\n## Study leave\n\nUp to five days of paid study leave per year are available for an approved qualification\nthat is relevant to the role.\n\n## Repayment\n\nWhere the company funds a qualification costing more than 3,000 EUR, a repayment\nagreement applies: 100 per cent if the employee leaves within 12 months of completion, 50\nper cent within 24 months, and nothing thereafter.\n\n## Mandatory training\n\nHealth and safety, information security and code of conduct training are mandatory\nannually and are not funded from the development budget.\n"
+    }
+  ]
+}

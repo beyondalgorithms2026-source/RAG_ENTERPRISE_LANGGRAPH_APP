@@ -1,0 +1,1487 @@
+{
+  "provenance": {
+    "scope": "starter-only-public-synthetic-manual",
+    "configuration": {
+      "llm": "gpt-4o-mini-2024-07-18",
+      "embedding": "text-embedding-3-small",
+      "dimensions": 384,
+      "mode": "hybrid",
+      "k_chunks": 6,
+      "chunk_cap_chars": 4000
+    },
+    "prompt_versions": null,
+    "retrieval_traces": null,
+    "limitation": "Original diagnostic did not retain snippets, complete traces or prompt hashes. Only answer matching and ordering can be regraded; this is not a full canonical quality result."
+  },
+  "rows": [
+    {
+      "case_id": "OM-030",
+      "question": "If a driver finds a safety-critical defect, may they move the vehicle at all?",
+      "answer": "If a driver finds a safety-critical defect, they must immobilise the vehicle, except when it is necessary to move the vehicle less than 500 metres to remove it from live traffic or immediate danger, and this must be done safely [S1].",
+      "original_required_facts": [
+        {
+          "id": "distance",
+          "any_of": [
+            "less than 500 metres",
+            "under 500 metres"
+          ]
+        },
+        {
+          "id": "reason",
+          "any_of": [
+            "live traffic",
+            "immediate danger"
+          ]
+        },
+        {
+          "id": "safety",
+          "any_of": [
+            "done safely",
+            "can be done safely"
+          ]
+        }
+      ],
+      "citations": [
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"5.1 Vehicle Inspection Requirements\", \"heading_level\": 2}"
+        }
+      ],
+      "temporary_checker_pass": true,
+      "canonical_answer_match": true,
+      "canonical_order_match": true,
+      "canonical_missing": []
+    },
+    {
+      "case_id": "OM-035",
+      "question": "When newly received cold-chain equipment arrives, what must be checked before it is released for use, and which section governs that check?",
+      "answer": "Before newly received cold-chain equipment is released for use, calibration evidence must be checked. This check is governed by Section 4.3.5 of the operations manual [S2].",
+      "original_required_facts": [
+        {
+          "id": "check",
+          "any_of": [
+            "calibration evidence"
+          ]
+        },
+        {
+          "id": "section",
+          "any_of": [
+            "Section 4.3.5"
+          ]
+        }
+      ],
+      "citations": [
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"2.2.4 Goods receipt\", \"heading_level\": 3}"
+        }
+      ],
+      "temporary_checker_pass": true,
+      "canonical_answer_match": true,
+      "canonical_order_match": true,
+      "canonical_missing": []
+    },
+    {
+      "case_id": "OM-039",
+      "question": "Does an IT tool that costs \u20ac800 and will store customer route data still need Information Security review before purchase?",
+      "answer": "Yes, an IT tool that costs \u20ac800 and will store customer route data still needs an Information Security review before purchase, as all IT procurement requires this review when the tool stores, processes, transmits, or integrates with Northwind data, regardless of cost [S1].",
+      "original_required_facts": [
+        {
+          "id": "review",
+          "any_of": [
+            "Information Security review",
+            "Security review"
+          ]
+        },
+        {
+          "id": "section",
+          "any_of": [
+            "Section 7.4.5"
+          ]
+        }
+      ],
+      "citations": [
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"7.4.5 IT procurement security review\", \"heading_level\": 3}"
+        }
+      ],
+      "temporary_checker_pass": false,
+      "canonical_answer_match": false,
+      "canonical_order_match": true,
+      "canonical_missing": [
+        "section"
+      ]
+    },
+    {
+      "case_id": "OM-041",
+      "question": "A supervisor in Madrid discovers a data-protection observation at 21:00 on a Spanish public holiday that is not a Belgian public holiday. By when must it be logged?",
+      "answer": "The observation must be logged within 24 hours, as it relates to data protection, which is a specific category requiring a shorter logging time than general observations [S2].",
+      "original_required_facts": [
+        {
+          "id": "deadline",
+          "any_of": [
+            "24 hours"
+          ]
+        },
+        {
+          "id": "calendar",
+          "any_of": [
+            "Belgian public holidays"
+          ]
+        }
+      ],
+      "citations": [
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"3.2.1 Immediate reporting\", \"heading_level\": 3}"
+        }
+      ],
+      "temporary_checker_pass": false,
+      "canonical_answer_match": false,
+      "canonical_order_match": true,
+      "canonical_missing": [
+        "calendar"
+      ]
+    },
+    {
+      "case_id": "OM-045",
+      "question": "A person titled 'Operations Manager' at Band 6 is on site during an incident. Are they automatically the Incident Commander?",
+      "answer": "No, the person titled 'Operations Manager' at Band 6 is not automatically the Incident Commander. The Incident Commander must hold current certification under the Northwind Incident Command programme and is not necessarily the most senior person present, even if a Band 6+ manager is on site [S3][S4].",
+      "original_required_facts": [
+        {
+          "id": "certification",
+          "any_of": [
+            "Incident Command certification"
+          ]
+        },
+        {
+          "id": "assignment",
+          "any_of": [
+            "assigned under Section 3.4.2",
+            "assigned Incident Commander"
+          ]
+        }
+      ],
+      "citations": [
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"3.4.2 Incident Commander assignment\", \"heading_level\": 3}"
+        },
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"Table 3.1 \u2014 Incident Severity Classification Matrix\", \"heading_level\": 3}"
+        }
+      ],
+      "temporary_checker_pass": false,
+      "canonical_answer_match": false,
+      "canonical_order_match": true,
+      "canonical_missing": [
+        "certification",
+        "assignment"
+      ]
+    },
+    {
+      "case_id": "OM-060",
+      "question": "What new budget-variance tier did Version 3.2 add below the previous 5% escalation starting point?",
+      "answer": "Version 3.2 added a new budget-variance tier for variances between 2.5% to 4.9%, which requires a recovery note with cause, forecast, and corrective action to be submitted by a Band 4\u20135 manager [S1][S2].",
+      "original_required_facts": [
+        {
+          "id": "range",
+          "any_of": [
+            "2.5% to 4.9%",
+            "2.5 percent to 4.9 percent"
+          ]
+        },
+        {
+          "id": "action",
+          "any_of": [
+            "recovery note"
+          ]
+        },
+        {
+          "id": "authority",
+          "any_of": [
+            "Band 4\u20135 manager",
+            "Band 4-5 manager"
+          ]
+        },
+        {
+          "id": "deadline",
+          "any_of": [
+            "Month-end + 5 Working Days",
+            "month end plus 5 working days"
+          ]
+        }
+      ],
+      "citations": [
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"Table 2.2 \u2014 Budget Variance Escalation\", \"heading_level\": 3}"
+        },
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"Appendix A: Amendment Log \u2014 Version 3.1 to Version 3.2\", \"heading_level\": 1}"
+        }
+      ],
+      "temporary_checker_pass": false,
+      "canonical_answer_match": false,
+      "canonical_order_match": true,
+      "canonical_missing": [
+        "deadline"
+      ]
+    },
+    {
+      "case_id": "OM-064",
+      "question": "May Quality release chilled pharmaceuticals after a temperature excursion based only on the product looking normal?",
+      "answer": "No, Quality may not release chilled pharmaceuticals after a temperature excursion based only on the product looking normal. A normal-looking pharmaceutical product may still be non-compliant, and stock must not be released without written Quality release, regardless of visual inspection [S1].",
+      "original_required_facts": [
+        {
+          "id": "visual_only",
+          "any_of": [
+            "must not be released based only on visual inspection",
+            "not released based only on visual inspection"
+          ]
+        },
+        {
+          "id": "release",
+          "any_of": [
+            "written Quality release"
+          ]
+        }
+      ],
+      "citations": [
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"4.3.2 Temperature excursion procedure\", \"heading_level\": 3}"
+        }
+      ],
+      "temporary_checker_pass": false,
+      "canonical_answer_match": false,
+      "canonical_order_match": true,
+      "canonical_missing": [
+        "visual_only"
+      ]
+    },
+    {
+      "case_id": "OM-066",
+      "question": "Which five things may an interim control notice not do?",
+      "answer": "An interim control notice may not increase spending authority, waive incident reporting, reduce PPE requirements, shorten record retention, or authorise unqualified drivers [S1].",
+      "original_required_facts": [
+        {
+          "id": "spending",
+          "any_of": [
+            "increase spending authority"
+          ]
+        },
+        {
+          "id": "reporting",
+          "any_of": [
+            "waive incident reporting"
+          ]
+        },
+        {
+          "id": "ppe",
+          "any_of": [
+            "reduce PPE requirements"
+          ]
+        },
+        {
+          "id": "retention",
+          "any_of": [
+            "shorten record retention"
+          ]
+        },
+        {
+          "id": "drivers",
+          "any_of": [
+            "authorise unqualified drivers",
+            "authorize unqualified drivers"
+          ]
+        }
+      ],
+      "citations": [
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"1.3.5 Interim control notices\", \"heading_level\": 3}"
+        }
+      ],
+      "temporary_checker_pass": true,
+      "canonical_answer_match": true,
+      "canonical_order_match": true,
+      "canonical_missing": []
+    },
+    {
+      "case_id": "OM-068",
+      "question": "When a Temperature Excursion is detected, what is the ordered sequence of actions starting with stopping pick/load/dispatch?",
+      "answer": "When a Temperature Excursion is detected, the ordered sequence of actions is as follows: 1. Stop picking, loading or dispatch of affected stock. 2. Place affected stock in Quarantine within 15 minutes. 3. Capture temperature graph, alarm log, location, product batch and time range. 4. Notify Quality within the response time in Table 4.1. 5. Check whether stock was Released Stock at the time of excursion. 6. Determine whether customer notification is required. 7. Record deviation in the quality system. 8. Await written Quality release before stock movement. If the excursion affects Category B chilled pharmaceuticals, the maximum excursion time is 30 minutes, except when lane validation documentation approved by Quality permits a named product-specific exposure limit and the product has not exceeded that validated limit [S1].",
+      "original_required_facts": [
+        {
+          "id": "stop",
+          "any_of": [
+            "Stop picking, loading or dispatch"
+          ]
+        },
+        {
+          "id": "quarantine",
+          "any_of": [
+            "Quarantine within 15 minutes"
+          ]
+        },
+        {
+          "id": "capture",
+          "any_of": [
+            "Capture temperature graph"
+          ]
+        },
+        {
+          "id": "quality",
+          "any_of": [
+            "Notify Quality"
+          ]
+        },
+        {
+          "id": "release_status",
+          "any_of": [
+            "Released Stock"
+          ]
+        },
+        {
+          "id": "customer",
+          "any_of": [
+            "customer notification"
+          ]
+        },
+        {
+          "id": "deviation",
+          "any_of": [
+            "Record deviation"
+          ]
+        },
+        {
+          "id": "written_release",
+          "any_of": [
+            "Await written Quality release"
+          ]
+        }
+      ],
+      "citations": [
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"4.3.2 Temperature excursion procedure\", \"heading_level\": 3}"
+        }
+      ],
+      "temporary_checker_pass": true,
+      "canonical_answer_match": true,
+      "canonical_order_match": true,
+      "canonical_missing": []
+    },
+    {
+      "case_id": "OM-069",
+      "question": "What is the complete escalation sequence for a Critical or Major incident, from the reporter through Communications?",
+      "answer": "The complete escalation sequence for a Critical or Major incident is as follows: 1. The reporter notifies the Shift Lead or Site Duty Manager. 2. The Site Duty Manager ensures immediate safety containment. 3. A Certified Incident Commander is appointed. 4. The Incident Commander notifies the Regional Operations Director. 5. The Regional Operations Director notifies the COO. 6. If the incident is Critical, the COO notifies the CEO, Legal, and Communications. 7. Quality notifies the customer quality contact if product integrity is affected. 8. Legal determines regulator notification requirements. 9. Communications prepares an external holding statement if the reputational impact is Major or Critical. If the Site Duty Manager is unavailable for more than 15 minutes, the reporter must contact the Regional Operations Control Desk directly, unless it would delay emergency medical response, evacuation, spill containment, or fire alarm activation [S1].",
+      "original_required_facts": [
+        {
+          "id": "reporter",
+          "any_of": [
+            "Reporter notifies Shift Lead or Site Duty Manager"
+          ]
+        },
+        {
+          "id": "containment",
+          "any_of": [
+            "immediate safety containment"
+          ]
+        },
+        {
+          "id": "commander",
+          "any_of": [
+            "Certified Incident Commander is appointed"
+          ]
+        },
+        {
+          "id": "regional",
+          "any_of": [
+            "Regional Operations Director"
+          ]
+        },
+        {
+          "id": "coo",
+          "any_of": [
+            "notifies COO"
+          ]
+        },
+        {
+          "id": "critical",
+          "any_of": [
+            "CEO, Legal and Communications"
+          ]
+        },
+        {
+          "id": "quality",
+          "any_of": [
+            "customer quality contact"
+          ]
+        },
+        {
+          "id": "legal",
+          "any_of": [
+            "regulator notification requirements"
+          ]
+        },
+        {
+          "id": "communications",
+          "any_of": [
+            "external holding statement"
+          ]
+        }
+      ],
+      "citations": [
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"3.4.1 Escalation sequence\", \"heading_level\": 3}"
+        }
+      ],
+      "temporary_checker_pass": false,
+      "canonical_answer_match": false,
+      "canonical_order_match": false,
+      "canonical_missing": [
+        "reporter",
+        "coo"
+      ]
+    },
+    {
+      "case_id": "OM-072",
+      "question": "What is the mandatory sequence of points in a Critical or Major incident escalation call?",
+      "answer": "The mandatory sequence of points in a Critical or Major incident escalation call is: 1. State incident classification. 2. State whether people are injured or missing. 3. State whether emergency services are present. 4. State whether operations are stopped. 5. State customer or product impact. 6. State regulatory notification risk. 7. State next update time [S2].",
+      "original_required_facts": [
+        {
+          "id": "classification",
+          "any_of": [
+            "Critical/Major incident",
+            "Critical or Major incident"
+          ]
+        },
+        {
+          "id": "discovery",
+          "any_of": [
+            "discovered at"
+          ]
+        },
+        {
+          "id": "people",
+          "any_of": [
+            "People injured or at risk"
+          ]
+        },
+        {
+          "id": "emergency",
+          "any_of": [
+            "Emergency services"
+          ]
+        },
+        {
+          "id": "operations",
+          "any_of": [
+            "Operational status"
+          ]
+        },
+        {
+          "id": "product",
+          "any_of": [
+            "Product or customer affected"
+          ]
+        },
+        {
+          "id": "regulatory",
+          "any_of": [
+            "Regulatory risk"
+          ]
+        },
+        {
+          "id": "containment",
+          "any_of": [
+            "Containment action taken"
+          ]
+        },
+        {
+          "id": "commander",
+          "any_of": [
+            "Incident Commander"
+          ]
+        },
+        {
+          "id": "update",
+          "any_of": [
+            "Next update"
+          ]
+        }
+      ],
+      "citations": [
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"3.4.3 Escalation calls\", \"heading_level\": 3}"
+        }
+      ],
+      "temporary_checker_pass": false,
+      "canonical_answer_match": false,
+      "canonical_order_match": false,
+      "canonical_missing": [
+        "discovery",
+        "people",
+        "operations",
+        "product",
+        "regulatory",
+        "containment",
+        "commander"
+      ]
+    },
+    {
+      "case_id": "OM-084",
+      "question": "The site's most senior Band 6 manager is present and certified Incident Commanders are not. Who leads the incident?",
+      "answer": "In the absence of certified Incident Commanders on site, the most senior Band 6 manager present does not lead the incident. Instead, the Regional Operations Control Desk must assign a certified Incident Commander remotely within 30 minutes for Critical Incidents and 60 minutes for Major Incidents. The senior manager supports the Incident Commander but cannot overrule their decisions unless immediate life safety is at risk.",
+      "original_required_facts": [
+        {
+          "id": "authority",
+          "any_of": [
+            "Regional Operations Control Desk"
+          ]
+        },
+        {
+          "id": "critical_time",
+          "any_of": [
+            "30 minutes for Critical"
+          ]
+        },
+        {
+          "id": "major_time",
+          "any_of": [
+            "60 minutes for Major"
+          ]
+        },
+        {
+          "id": "method",
+          "any_of": [
+            "assign one remotely"
+          ]
+        }
+      ],
+      "citations": [
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"3.4.2 Incident Commander assignment\", \"heading_level\": 3}"
+        }
+      ],
+      "temporary_checker_pass": false,
+      "canonical_answer_match": false,
+      "canonical_order_match": true,
+      "canonical_missing": [
+        "method"
+      ]
+    },
+    {
+      "case_id": "OM-085",
+      "question": "An employee in Spain wants to delay a Minor incident report until after a Spanish public holiday. Does Working Day allow that delay?",
+      "answer": "No, an employee in Spain cannot delay a Minor incident report until after a Spanish public holiday, as the rules specify that the report must be made within 24 hours of discovery, and the presence of a public holiday does not provide an exception for delays unless it is a Belgian public holiday [S1].",
+      "original_required_facts": [
+        {
+          "id": "calendar",
+          "any_of": [
+            "Belgian public holidays"
+          ]
+        },
+        {
+          "id": "not_local",
+          "any_of": [
+            "not the employee\u2019s local public holidays",
+            "not the employee's local public holidays"
+          ]
+        }
+      ],
+      "citations": [
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"1.2 Definitions\", \"chunk_window\": 3, \"heading_level\": 2, \"chunk_window_total\": 3}"
+        }
+      ],
+      "temporary_checker_pass": false,
+      "canonical_answer_match": false,
+      "canonical_order_match": true,
+      "canonical_missing": [
+        "calendar",
+        "not_local"
+      ]
+    },
+    {
+      "case_id": "OM-089",
+      "question": "A driver fails a post-accident substance test. Which Operations Manual sections and which separate HR document jointly govern suspension from driving and the conduct process?",
+      "answer": "The suspension from driving and the conduct process following a post-accident substance test is governed by Section 6.3 Substance Testing and Section 6.4 Disciplinary Framework of the Operations Manual. Additionally, the full disciplinary procedure is maintained in a separate Controlled Document, HRPOL-014 Disciplinary and Corrective Conduct Procedure [S1][S4].",
+      "original_required_facts": [
+        {
+          "id": "accident",
+          "any_of": [
+            "5.5.1 Accident response",
+            "Accident response"
+          ]
+        },
+        {
+          "id": "testing",
+          "any_of": [
+            "Section 6.3"
+          ]
+        },
+        {
+          "id": "conduct",
+          "any_of": [
+            "Section 6.4"
+          ]
+        },
+        {
+          "id": "document",
+          "any_of": [
+            "HRPOL-014"
+          ]
+        }
+      ],
+      "citations": [
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"6.3 Substance Testing\", \"heading_level\": 2}"
+        },
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"6.4 Disciplinary Framework\", \"heading_level\": 2}"
+        }
+      ],
+      "temporary_checker_pass": false,
+      "canonical_answer_match": false,
+      "canonical_order_match": true,
+      "canonical_missing": [
+        "accident"
+      ]
+    },
+    {
+      "case_id": "OM-025",
+      "question": "Do contracts above \u20ac25,000 always need two signatories?",
+      "answer": "Contracts above \u20ac25,000 require two signatories, except when the document is an order under a Board pre-approved Framework Agreement and the order value is within Table 2.1 [S1].",
+      "original_required_facts": [
+        {
+          "id": "exception",
+          "any_of": [
+            "Framework Agreement"
+          ]
+        },
+        {
+          "id": "approval",
+          "any_of": [
+            "Board preapproved",
+            "Board pre-approved"
+          ]
+        },
+        {
+          "id": "limit",
+          "any_of": [
+            "within Table 2.1"
+          ]
+        }
+      ],
+      "citations": [
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"2.5.1 Contract review\", \"heading_level\": 3}"
+        }
+      ],
+      "temporary_checker_pass": true,
+      "canonical_answer_match": true,
+      "canonical_order_match": true,
+      "canonical_missing": []
+    },
+    {
+      "case_id": "OM-027",
+      "question": "If an inbound seal is broken on an internal shuttle transfer that has electronic seal verification and no customer chain-of-custody requirement, must unloading stop?",
+      "answer": "No, unloading does not have to stop if the delivery is an internal shuttle transfer with electronic seal verification and no customer chain-of-custody requirement [S1].",
+      "original_required_facts": [
+        {
+          "id": "transfer",
+          "any_of": [
+            "internal shuttle transfer"
+          ]
+        },
+        {
+          "id": "verification",
+          "any_of": [
+            "electronic seal verification"
+          ]
+        },
+        {
+          "id": "custody",
+          "any_of": [
+            "no customer chain-of-custody requirement",
+            "no customer chain of custody requirement"
+          ]
+        }
+      ],
+      "citations": [
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"4.1.3 Branching exceptions\", \"heading_level\": 3}"
+        }
+      ],
+      "temporary_checker_pass": true,
+      "canonical_answer_match": true,
+      "canonical_order_match": true,
+      "canonical_missing": []
+    },
+    {
+      "case_id": "OM-040",
+      "question": "How does the fleet accident-and-breakdown escalation path relate to the general incident path?",
+      "answer": "The fleet accident-and-breakdown escalation path is specifically described in Section 5.5 of the manual and is modified by vehicle-specific requirements in Section 5.5.2. This escalation path follows the general incident escalation path outlined in Section 3.4, which includes a series of steps to classify the incident and assess its impact, such as whether people are injured, if emergency services are present, and the potential impact on operations and customers [S1][S5].",
+      "original_required_facts": [
+        {
+          "id": "general_path",
+          "any_of": [
+            "Section 3.4"
+          ]
+        },
+        {
+          "id": "fleet_modification",
+          "any_of": [
+            "Section 5.5.2"
+          ]
+        }
+      ],
+      "citations": [
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"3.4.3 Escalation calls\", \"heading_level\": 3}"
+        },
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"5.5 Accident and Breakdown Procedure\", \"heading_level\": 2}"
+        }
+      ],
+      "temporary_checker_pass": true,
+      "canonical_answer_match": true,
+      "canonical_order_match": true,
+      "canonical_missing": []
+    },
+    {
+      "case_id": "OM-044",
+      "question": "A chilled room briefly reads +9\u00b0C for four minutes then returns to +6\u00b0C. Is that a Temperature Excursion?",
+      "answer": "Yes, the situation described constitutes a Temperature Excursion because the temperature of +9\u00b0C exceeds the maximum limit of +8\u00b0C for Category B chilled pharmaceuticals, and the duration of the excursion was four minutes, which is within the maximum excursion time of 30 minutes specified for this category [S3].",
+      "original_required_facts": [
+        {
+          "id": "threshold",
+          "any_of": [
+            "5 consecutive minutes"
+          ]
+        },
+        {
+          "id": "duration",
+          "evidence_required": false,
+          "any_of": [
+            "four minutes",
+            "4 minutes"
+          ]
+        }
+      ],
+      "citations": [
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"4.3.1 Temperature thresholds\", \"heading_level\": 3}"
+        }
+      ],
+      "temporary_checker_pass": false,
+      "canonical_answer_match": false,
+      "canonical_order_match": true,
+      "canonical_missing": [
+        "threshold"
+      ]
+    },
+    {
+      "case_id": "OM-046",
+      "question": "Expected financial exposure is \u20ac260,000 with no injuries. Does this meet the definition of a Critical Incident?",
+      "answer": "No, the expected financial exposure of \u20ac260,000 does not meet the definition of a Critical Incident, which requires financial exposure above \u20ac250,000. Instead, it falls under the Major Incident category, which includes financial exposure from \u20ac50,001 to \u20ac250,000 [S1][S2].",
+      "original_required_facts": [
+        {
+          "id": "threshold",
+          "any_of": [
+            "above \u20ac250,000",
+            "above EUR 250,000"
+          ]
+        },
+        {
+          "id": "exposure",
+          "evidence_required": false,
+          "any_of": [
+            "\u20ac260,000",
+            "EUR 260,000"
+          ]
+        }
+      ],
+      "citations": [
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"Appendix B: Incident Classification Matrix \u2014 Full Version\", \"heading_level\": 1}"
+        },
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"1.2 Definitions\", \"chunk_window\": 1, \"heading_level\": 2, \"chunk_window_total\": 3}"
+        }
+      ],
+      "temporary_checker_pass": true,
+      "canonical_answer_match": true,
+      "canonical_order_match": true,
+      "canonical_missing": []
+    },
+    {
+      "case_id": "OM-053",
+      "question": "For how long may dock doors remain open during cold-chain loading if there is no air curtain or sealed dock shelter?",
+      "answer": "Dock doors may remain open for a maximum of 7 minutes during cold chain loading unless protected by an active air curtain or sealed dock shelter. If loading exceeds 20 minutes, temperature must be checked every 10 minutes [S1].",
+      "original_required_facts": [
+        {
+          "id": "7_minutes",
+          "any_of": [
+            "7 minutes"
+          ]
+        }
+      ],
+      "citations": [
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"4.3.3 Cold chain loading\", \"heading_level\": 3}"
+        }
+      ],
+      "temporary_checker_pass": true,
+      "canonical_answer_match": true,
+      "canonical_order_match": true,
+      "canonical_missing": []
+    },
+    {
+      "case_id": "OM-067",
+      "question": "List in order the eight purchase-request steps a requester must complete before a supplier is instructed.",
+      "answer": "The eight purchase-request steps a requester must complete before a supplier is instructed are: 1. Confirm the business need and budget code. 2. Check whether an approved supplier exists. 3. Obtain at least 3 written quotes for purchases above \u20ac7,500. 4. Attach the specification, quote comparison and risk assessment where required. 5. Route the purchase request to the approval authority in Table 2.1. 6. Wait for purchase order release before instructing the supplier. 7. Confirm goods receipt or service completion within 3 Working Days of delivery. 8. Resolve invoice mismatch within 5 Working Days of Finance notification [S1].",
+      "original_required_facts": [
+        {
+          "id": "need",
+          "any_of": [
+            "Confirm the business need and budget code"
+          ]
+        },
+        {
+          "id": "supplier",
+          "any_of": [
+            "approved supplier"
+          ]
+        },
+        {
+          "id": "quotes",
+          "any_of": [
+            "3 written quotes",
+            "three written quotes"
+          ]
+        },
+        {
+          "id": "attachments",
+          "any_of": [
+            "specification, quote comparison and risk assessment"
+          ]
+        },
+        {
+          "id": "approval",
+          "any_of": [
+            "approval authority in Table 2.1"
+          ]
+        },
+        {
+          "id": "po",
+          "any_of": [
+            "Wait for purchase order release"
+          ]
+        },
+        {
+          "id": "receipt",
+          "any_of": [
+            "Confirm goods receipt or service completion"
+          ]
+        },
+        {
+          "id": "mismatch",
+          "any_of": [
+            "Resolve invoice mismatch"
+          ]
+        }
+      ],
+      "citations": [
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"2.2.2 Purchase request steps\", \"heading_level\": 3}"
+        }
+      ],
+      "temporary_checker_pass": true,
+      "canonical_answer_match": true,
+      "canonical_order_match": true,
+      "canonical_missing": []
+    },
+    {
+      "case_id": "OM-070",
+      "question": "Walk through the receiving team's required steps from confirming the booking reference through moving goods to storage.",
+      "answer": "The receiving team's required steps are as follows: 1. Confirm booking reference, supplier, vehicle registration, and driver identity. 2. Check seal number against the transport document. 3. Record arrival time to the nearest minute. 4. Direct the vehicle to the assigned bay. 5. Inspect trailer condition before opening doors. 6. Confirm goods count against the delivery note. 7. Record visible damage before unloading. 8. Scan pallets or cartons into the warehouse management system. 9. Apply Quarantine status where required. 10. Move goods to the assigned storage location within 2 hours of unloading. For cold chain receiving, temperature must be checked before unloading unless unloading delay would increase product risk. Temperature procedures are detailed in Section 4.3.2. For hazardous materials, segregation rules in Section 4.4 apply before put-away [S1].",
+      "original_required_facts": [
+        {
+          "id": "booking",
+          "any_of": [
+            "Confirm booking reference"
+          ]
+        },
+        {
+          "id": "seal",
+          "any_of": [
+            "Check seal number"
+          ]
+        },
+        {
+          "id": "arrival",
+          "any_of": [
+            "Record arrival time"
+          ]
+        },
+        {
+          "id": "bay",
+          "any_of": [
+            "assigned bay"
+          ]
+        },
+        {
+          "id": "trailer",
+          "any_of": [
+            "Inspect trailer condition"
+          ]
+        },
+        {
+          "id": "count",
+          "any_of": [
+            "Confirm goods count"
+          ]
+        },
+        {
+          "id": "damage",
+          "any_of": [
+            "Record visible damage"
+          ]
+        },
+        {
+          "id": "scan",
+          "any_of": [
+            "Scan pallets or cartons"
+          ]
+        },
+        {
+          "id": "quarantine",
+          "any_of": [
+            "Apply Quarantine status"
+          ]
+        },
+        {
+          "id": "storage",
+          "any_of": [
+            "assigned storage location within 2 hours",
+            "storage location within 2 hours"
+          ]
+        }
+      ],
+      "citations": [
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"4.1.2 Receiving steps\", \"heading_level\": 3}"
+        }
+      ],
+      "temporary_checker_pass": true,
+      "canonical_answer_match": true,
+      "canonical_order_match": true,
+      "canonical_missing": []
+    },
+    {
+      "case_id": "OM-083",
+      "question": "Is it true that weekend warehouse overtime is paid at the standard 1.5\u00d7 rate?",
+      "answer": "No, weekend warehouse overtime is not paid at the standard 1.5\u00d7 rate. Saturday scheduled warehouse overtime is paid at 1.20\u00d7 for the first 6 hours and 1.45\u00d7 thereafter, while Sunday warehouse overtime is paid at 1.60\u00d7 [S1].",
+      "original_required_facts": [
+        {
+          "id": "saturday_first",
+          "any_of": [
+            "1.20\u00d7",
+            "1.20x"
+          ]
+        },
+        {
+          "id": "saturday_later",
+          "any_of": [
+            "1.45\u00d7",
+            "1.45x"
+          ]
+        },
+        {
+          "id": "sunday",
+          "any_of": [
+            "1.60\u00d7",
+            "1.60x"
+          ]
+        }
+      ],
+      "citations": [
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"6.1 Working Hours and Overtime\", \"heading_level\": 2}"
+        }
+      ],
+      "temporary_checker_pass": true,
+      "canonical_answer_match": true,
+      "canonical_order_match": true,
+      "canonical_missing": []
+    },
+    {
+      "case_id": "OM-007",
+      "question": "Within how many calendar days of the expense date must an expense claim normally be submitted?",
+      "answer": "Expense claims must be submitted within 30 calendar days of the expense date. Claims submitted after 30 days require Band 4\u20135 approval, and those submitted after 90 calendar days require Band 6+ approval and may be rejected unless local law requires reimbursement [S1].",
+      "original_required_facts": [
+        {
+          "id": "30_calendar_days",
+          "any_of": [
+            "30 calendar days"
+          ]
+        }
+      ],
+      "citations": [
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"2.4 Expense Claims and Advances\", \"heading_level\": 2}"
+        }
+      ],
+      "temporary_checker_pass": true,
+      "canonical_answer_match": true,
+      "canonical_order_match": true,
+      "canonical_missing": []
+    },
+    {
+      "case_id": "OM-012",
+      "question": "What is the Band 6+ maximum for operating expenditure before Board approval is required?",
+      "answer": "The Band 6+ maximum for operating expenditure before Board approval is required is \u20ac186,400. Any amount above this requires Board approval [S1].",
+      "original_required_facts": [
+        {
+          "id": "186_400",
+          "any_of": [
+            "\u20ac186,400"
+          ]
+        }
+      ],
+      "citations": [
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"2.1 Delegation of Authority\", \"heading_level\": 2}"
+        }
+      ],
+      "temporary_checker_pass": true,
+      "canonical_answer_match": true,
+      "canonical_order_match": true,
+      "canonical_missing": []
+    },
+    {
+      "case_id": "OM-013",
+      "question": "What IT procurement amount can a Band 4\u20135 manager approve under Version 3.2?",
+      "answer": "A Band 4\u20135 manager can approve IT procurement amounts up to \u20ac15,000 under Version 3.2 [S1].",
+      "original_required_facts": [
+        {
+          "id": "15_000",
+          "any_of": [
+            "\u20ac15,000"
+          ]
+        }
+      ],
+      "citations": [
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"2.1 Delegation of Authority\", \"heading_level\": 2}"
+        }
+      ],
+      "temporary_checker_pass": true,
+      "canonical_answer_match": true,
+      "canonical_order_match": true,
+      "canonical_missing": []
+    },
+    {
+      "case_id": "OM-015",
+      "question": "For a budget variance between 5.0% and 7.9%, who is the approval authority and what is the reporting deadline?",
+      "answer": "For a budget variance between 5.0% and 7.9%, the approval authority is Band 6+ and the reporting deadline is Month-end + 3 Working Days [S1].",
+      "original_required_facts": [
+        {
+          "id": "authority",
+          "any_of": [
+            "Band 6+",
+            "Band 6"
+          ]
+        },
+        {
+          "id": "deadline",
+          "any_of": [
+            "Month-end + 3 Working Days",
+            "month end plus 3 working days"
+          ]
+        }
+      ],
+      "citations": [
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"Table 2.2 \u2014 Budget Variance Escalation\", \"heading_level\": 3}"
+        }
+      ],
+      "temporary_checker_pass": true,
+      "canonical_answer_match": true,
+      "canonical_order_match": true,
+      "canonical_missing": []
+    },
+    {
+      "case_id": "OM-023",
+      "question": "Can temporary staff operate forklifts?",
+      "answer": "No, temporary staff may not operate forklifts unless they hold a valid RTITB certificate, have completed the Northwind induction module NWFLT-02 within the previous 90 days, and passed the site practical assessment [S1].",
+      "original_required_facts": [
+        {
+          "id": "certificate",
+          "any_of": [
+            "RTITB certificate"
+          ]
+        },
+        {
+          "id": "induction",
+          "any_of": [
+            "NWFLT-02"
+          ]
+        },
+        {
+          "id": "recency",
+          "any_of": [
+            "previous 90 days",
+            "within 90 days"
+          ]
+        },
+        {
+          "id": "assessment",
+          "any_of": [
+            "site practical assessment"
+          ]
+        }
+      ],
+      "citations": [
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"5.2 Driver Qualification and Licence Checks\", \"heading_level\": 2}"
+        }
+      ],
+      "temporary_checker_pass": true,
+      "canonical_answer_match": true,
+      "canonical_order_match": true,
+      "canonical_missing": []
+    },
+    {
+      "case_id": "OM-026",
+      "question": "Must a buyer obtain three written quotes for an \u20ac9,000 spare part bought from the original equipment manufacturer of a safety-critical component?",
+      "answer": "No, a buyer is not required to obtain three written quotes for a \u20ac9,000 spare part if the supplier is the original equipment manufacturer for a safety-critical component, as this is an exception to the requirement for purchases above \u20ac7,500 [S1].",
+      "original_required_facts": [
+        {
+          "id": "exception",
+          "any_of": [
+            "original equipment manufacturer"
+          ]
+        },
+        {
+          "id": "scope",
+          "any_of": [
+            "safety-critical component",
+            "safety critical component"
+          ]
+        }
+      ],
+      "citations": [
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"2.2.3 Quote requirements\", \"heading_level\": 3}"
+        }
+      ],
+      "temporary_checker_pass": true,
+      "canonical_answer_match": true,
+      "canonical_order_match": true,
+      "canonical_missing": []
+    },
+    {
+      "case_id": "OM-029",
+      "question": "Can alcohol ever be claimed on expenses?",
+      "answer": "Alcohol is not reimbursable, except when pre-approved as part of a customer hospitality event with a named host, named customer attendees, and total hospitality cost below \u20ac85 per external attendee [S1].",
+      "original_required_facts": [
+        {
+          "id": "preapproval",
+          "any_of": [
+            "preapproved",
+            "pre-approved"
+          ]
+        },
+        {
+          "id": "hospitality",
+          "any_of": [
+            "customer hospitality event"
+          ]
+        },
+        {
+          "id": "host",
+          "any_of": [
+            "named host"
+          ]
+        },
+        {
+          "id": "attendees",
+          "any_of": [
+            "named customer attendees"
+          ]
+        },
+        {
+          "id": "limit",
+          "any_of": [
+            "\u20ac85 per external attendee",
+            "EUR 85 per external attendee"
+          ]
+        }
+      ],
+      "citations": [
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"2.4 Expense Claims and Advances\", \"heading_level\": 2}"
+        }
+      ],
+      "temporary_checker_pass": true,
+      "canonical_answer_match": true,
+      "canonical_order_match": true,
+      "canonical_missing": []
+    },
+    {
+      "case_id": "OM-031",
+      "question": "Does a Local Legal Addendum automatically override the manual if the addendum is 20 months old and has not been reviewed?",
+      "answer": "No, the Local Legal Addendum does not automatically override the manual if it is older than 18 months without review, as stated in the exception clause. Therefore, a 20-month-old addendum that has not been reviewed would not apply [S1].",
+      "original_required_facts": [
+        {
+          "id": "review_limit",
+          "any_of": [
+            "18 months"
+          ]
+        },
+        {
+          "id": "expired_review",
+          "any_of": [
+            "older than 18 months without review",
+            "20 months old"
+          ]
+        }
+      ],
+      "citations": [
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"1.3.4 Exception approval\", \"heading_level\": 3}"
+        }
+      ],
+      "temporary_checker_pass": true,
+      "canonical_answer_match": true,
+      "canonical_order_match": true,
+      "canonical_missing": []
+    },
+    {
+      "case_id": "OM-032",
+      "question": "If the Site Duty Manager is unreachable for 20 minutes during a Critical Incident, must the reporter wait, or contact the Regional Operations Control Desk?",
+      "answer": "If the Site Duty Manager is unavailable for more than 15 minutes during a Critical Incident, the reporter must contact the Regional Operations Control Desk directly, unless doing so would delay emergency medical response, evacuation, spill containment, or fire alarm activation [S1].",
+      "original_required_facts": [
+        {
+          "id": "wait_limit",
+          "any_of": [
+            "15 minutes"
+          ]
+        },
+        {
+          "id": "contact",
+          "any_of": [
+            "Regional Operations Control Desk"
+          ]
+        }
+      ],
+      "citations": [
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"3.4.1 Escalation sequence\", \"heading_level\": 3}"
+        }
+      ],
+      "temporary_checker_pass": true,
+      "canonical_answer_match": true,
+      "canonical_order_match": true,
+      "canonical_missing": []
+    },
+    {
+      "case_id": "OM-042",
+      "question": "An employee reports an equipment malfunction at 16:00. The manual says the matter must be handled Immediately. What is the latest clock time that still complies?",
+      "answer": "The latest clock time that still complies with the requirement to handle the matter immediately, which is defined as within 4 hours of discovery, would be 20:00 (8:00 PM) on the same day, given that the malfunction was reported at 16:00 (4:00 PM) [S1].",
+      "original_required_facts": [
+        {
+          "id": "definition",
+          "any_of": [
+            "4 hours"
+          ]
+        },
+        {
+          "id": "latest_time",
+          "evidence_required": false,
+          "any_of": [
+            "20:00",
+            "8 pm",
+            "8:00 pm"
+          ]
+        }
+      ],
+      "citations": [
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"1.2 Definitions\", \"chunk_window\": 1, \"heading_level\": 2, \"chunk_window_total\": 3}"
+        }
+      ],
+      "temporary_checker_pass": true,
+      "canonical_answer_match": true,
+      "canonical_order_match": true,
+      "canonical_missing": []
+    },
+    {
+      "case_id": "OM-054",
+      "question": "What are the minimum pre-cooling times for frozen, chilled and controlled-ambient vehicles before loading?",
+      "answer": "The minimum pre-cooling times for vehicles before loading are as follows: 1. Frozen vehicles: minimum 45 minutes. 2. Chilled vehicles: minimum 30 minutes. 3. Controlled ambient vehicles: minimum 20 minutes. Additionally, for dual-temperature vehicles, each compartment must reach the set point before the first pallet enters [S1].",
+      "original_required_facts": [
+        {
+          "id": "frozen",
+          "any_of": [
+            "45 minutes"
+          ]
+        },
+        {
+          "id": "chilled",
+          "any_of": [
+            "30 minutes"
+          ]
+        },
+        {
+          "id": "ambient",
+          "any_of": [
+            "20 minutes"
+          ]
+        }
+      ],
+      "citations": [
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"4.3.3 Cold chain loading\", \"heading_level\": 3}"
+        }
+      ],
+      "temporary_checker_pass": true,
+      "canonical_answer_match": true,
+      "canonical_order_match": true,
+      "canonical_missing": []
+    },
+    {
+      "case_id": "OM-058",
+      "question": "Why was the term Immediately given a definition in Version 3.2, and what audit finding drove that change?",
+      "answer": "The term 'Immediately' was given a definition in Version 3.2 as 'within 4 hours of discovery' due to an audit finding identified as QA-2026-031, which highlighted the need for clarity in response times [S1].",
+      "original_required_facts": [
+        {
+          "id": "reason",
+          "any_of": [
+            "Immediately undefined",
+            "ambiguity"
+          ]
+        },
+        {
+          "id": "finding",
+          "any_of": [
+            "QA-2026-031"
+          ]
+        }
+      ],
+      "citations": [
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"Appendix A: Amendment Log \u2014 Version 3.1 to Version 3.2\", \"heading_level\": 1}"
+        }
+      ],
+      "temporary_checker_pass": false,
+      "canonical_answer_match": false,
+      "canonical_order_match": true,
+      "canonical_missing": [
+        "reason"
+      ]
+    },
+    {
+      "case_id": "OM-071",
+      "question": "After a road accident, what ordered actions must the driver take before considering liability statements?",
+      "answer": "After a road accident, the driver must take the following ordered actions: 1. Stop safely. 2. Protect life and call emergency services if required. 3. Activate hazard warning equipment. 4. Notify Fleet Control within 30 minutes if safe. 5. Avoid admitting liability. 6. Record location, time, parties, vehicle registrations, and witness details. 7. Photograph damage, road position, and signage where lawful and safe. 8. Follow drug and alcohol testing instructions under Section 6.3 where applicable [S1].",
+      "original_required_facts": [
+        {
+          "id": "stop",
+          "any_of": [
+            "Stop safely"
+          ]
+        },
+        {
+          "id": "life",
+          "any_of": [
+            "Protect life"
+          ]
+        },
+        {
+          "id": "hazards",
+          "any_of": [
+            "Activate hazard warning equipment"
+          ]
+        },
+        {
+          "id": "notify",
+          "any_of": [
+            "Notify Fleet Control within 30 minutes"
+          ]
+        },
+        {
+          "id": "liability",
+          "any_of": [
+            "Avoid admitting liability"
+          ]
+        },
+        {
+          "id": "details",
+          "any_of": [
+            "Record location, time, parties, vehicle registrations and witness details"
+          ]
+        },
+        {
+          "id": "photos",
+          "any_of": [
+            "Photograph damage, road position and signage"
+          ]
+        },
+        {
+          "id": "testing",
+          "any_of": [
+            "Section 6.3"
+          ]
+        }
+      ],
+      "citations": [
+        {
+          "file_name": "northwind-operations-manual-v3.2.md",
+          "locator": "{\"section\": \"5.5.1 Accident response\", \"heading_level\": 3}"
+        }
+      ],
+      "temporary_checker_pass": false,
+      "canonical_answer_match": true,
+      "canonical_order_match": true,
+      "canonical_missing": []
+    }
+  ]
+}
