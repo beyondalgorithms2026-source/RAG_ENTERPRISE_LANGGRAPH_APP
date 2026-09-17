@@ -941,3 +941,23 @@ That is D3, not a D2 failure.
 - D11 requires the owner to record and publish the approximately three-minute walkthrough
   using the committed script. Disposable full-database CI stabilization remains deliberately
   deferred; it is measured follow-up work, not a B004 deployment blocker.
+
+### B004 serial closeout — 17 Sep 2026
+
+- Published the checksummed 90-case v2 candidate snapshot: 82 passed, 3 failed and 5
+  manual review; 8/8 required refusals and 2/2 safe-boundary cases; zero evaluation
+  infrastructure failures. Approved v1 remains 25/25 and unchanged.
+- Published the committed red-team release: 18 deterministic checks plus RT-06 and RT-16
+  live backend evidence, 20/20 defended.
+- Added read-only `/evidence/status`, durable `/red-team/latest` evidence, redesigned
+  Documents/Security/Quality views, and bounded Render Free readiness states.
+- Reconciled the hosted public-demo corpus after a guarded dry run and local rollback
+  snapshot. Removed 55 duplicate seeded rows and their dependent data. Post-cleanup:
+  28 canonical sources (14 public, 10 internal, 4 restricted), zero duplicate identities,
+  and 221/221 chunks embedded. Rollback snapshot SHA-256:
+  `5367068771b373ee3d109c4f783fc8472029697665309357012942f228d7faba`.
+- Changed paid evaluation entry workflows to manual dispatch with an explicit
+  `confirm_paid_run` gate. Ordinary pushes, pull requests and schedules no longer launch
+  model-backed evaluation.
+- Added `docs/CLAUDE_B004_CLOSEOUT_HANDOFF.md`. Upwork publication remains Claude/user
+  work; B005 owns calibration, model comparison and further quality tuning.

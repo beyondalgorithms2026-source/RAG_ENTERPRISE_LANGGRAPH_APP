@@ -1,11 +1,13 @@
 name: full-eval
 
 on:
-  pull_request:
-  push:
   workflow_dispatch:
-  schedule:
-    - cron: "17 2 * * *"
+    inputs:
+      confirm_paid_run:
+        description: Confirm this manual run may call paid model APIs
+        required: true
+        default: false
+        type: boolean
 
 jobs:
   scope:
@@ -44,6 +46,7 @@ jobs:
 
   full-eval:
     needs: scope
+    if: ${{ inputs.confirm_paid_run == true }}
     uses: ./.github/workflows/eval-correction-reusable.yml
     with:
       candidate: app

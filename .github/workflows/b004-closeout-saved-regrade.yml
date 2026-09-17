@@ -2,14 +2,12 @@ name: b004-closeout-saved-answer-regrade
 
 on:
   workflow_dispatch:
-  push:
-    branches: [b004/closeout]
-    paths:
-      - .github/workflows/b004-closeout-saved-regrade.yml
-      - src/rag_enterprise_langgraph/eval_judge.py
-      - scripts/merge_saved_regrade.py
-      - scripts/generate_candidate_evidence.py
-      - scripts/generate_red_team_release.py
+    inputs:
+      confirm_paid_run:
+        description: Confirm this manual regrade may call a paid model API
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -17,6 +15,7 @@ permissions:
 
 jobs:
   regrade-preserved-answers:
+    if: ${{ inputs.confirm_paid_run == true }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

@@ -160,18 +160,18 @@ def test_valid_contiguous_data_cell_quote_remains_accepted():
     assert graded["assertions"][0]["state"] == "supported"
 
 
-def test_judge_schema_has_unique_required_fields_and_scoped_data_quotes(monkeypatch):
+def test_judge_schema_has_unique_required_fields_and_validates_scoped_quote(monkeypatch):
     monkeypatch.setenv("EVAL_OPENAI_API_KEY", "unit-test-only")
 
     def transport(request, timeout):
         body = json.loads(request.data)
         schema = body["response_format"]["json_schema"]["schema"]
-        row = schema["properties"]["assertions"]["properties"]["trigger"]
+        assertions_schema = schema["properties"]["assertions"]
+        assert assertions_schema["required"] == ["assertion_0"]
+        row = assertions_schema["properties"]["assertion_0"]
         assert len(row["required"]) == len(set(row["required"]))
         assert set(row["required"]) == set(row["properties"])
-        quotes = row["properties"]["evidence_span"]["enum"]
-        assert "|Term|Defined meaning|" not in quotes
-        assert "Quality must approve release." not in quotes
+        quote = "More than five consecutive minutes outside range."
         return StringIO(
             json.dumps(
                 {
@@ -182,10 +182,10 @@ def test_judge_schema_has_unique_required_fields_and_scoped_data_quotes(monkeypa
                                 "content": json.dumps(
                                     {
                                         "assertions": {
-                                            "trigger": {
+                                        "assertion_0": {
                                                 "state": "supported",
                                                 "answer_span": ANSWER,
-                                                "evidence_span": quotes[0],
+                                            "evidence_span": quote,
                                                 "explanation": "Duration comparison.",
                                             }
                                         }
