@@ -34,13 +34,21 @@ async def regrade(pack: Path, fixture: dict, *, semantic_judge=None, use_judge=F
         concepts = [
             a for a in case.assertions if a["type"] == "concept" or a["id"] in unresolved_polarity
         ]
+        metadata = None
+        no_grounded_answer = saved.get("grounding_status") in {"not_found", "not_grounded"}
+        recoverable_saved_judge_failure = bool(
+            saved.get("failure_class") == "infrastructure"
+            and use_judge
+            and answer
+            and concepts
+            and not no_grounded_answer
+        )
         error = (
             "starter_infrastructure_failure"
             if saved.get("failure_class") == "infrastructure"
+            and not recoverable_saved_judge_failure
             else None
         )
-        metadata = None
-        no_grounded_answer = saved.get("grounding_status") in {"not_found", "not_grounded"}
         if (
             use_judge
             and concepts

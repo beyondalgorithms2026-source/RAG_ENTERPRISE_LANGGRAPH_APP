@@ -304,6 +304,44 @@ def test_saved_answer_judge_failure_is_infrastructure_not_quality_pass():
     assert report["baseline_eligible"] is False
 
 
+def test_saved_judge_infrastructure_flag_does_not_skip_bounded_regrade(monkeypatch):
+    fixture = json.loads((ROOT / "tests/fixtures/starter_manual_diagnostic_36.json").read_text())
+    fixture["rows"] = [r for r in fixture["rows"] if r["case_id"] == "OM-064"]
+    fixture["rows"][0]["failure_class"] = "infrastructure"
+    calls = 0
+    monkeypatch.setattr(grading, "apply_judgement", lambda *args, **kwargs: None)
+
+    async def available(**kwargs):
+        nonlocal calls
+        calls += 1
+        return {
+            "judgement": {
+                "assertions": [
+                    {
+                        "id": assertion["id"],
+                        "state": "supported",
+                        "answer_span": kwargs["answer"],
+                        "evidence_span": next(
+                            reference["text"]
+                            for reference in kwargs["references"]
+                            if not assertion.get("source_refs")
+                            or reference["id"] in assertion["source_refs"]
+                        ),
+                        "explanation": "The preserved answer is supported by scoped evidence.",
+                    }
+                    for assertion in kwargs["assertions"]
+                ]
+            },
+            "model": "test-judge",
+            "usage": {},
+        }
+
+    report = asyncio.run(regrade(PACK, fixture, semantic_judge=available, use_judge=True))
+    assert calls == 1
+    assert report["rows"][0]["failure_class"] is None
+    assert report["rows"][0]["judge_metadata"]["model"] == "test-judge"
+
+
 def test_saved_missing_grounded_answer_is_quality_failure_without_judge_call():
     fixture = {
         "rows": [
