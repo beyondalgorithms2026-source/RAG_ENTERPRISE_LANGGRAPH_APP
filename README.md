@@ -76,6 +76,22 @@ question and expected answer is in `config/eval-set-northwind.json`.
   versioned questions, corpus, prompts, model, and retrieval configuration recorded in
   the baseline.
 
+## What the demo shows
+
+**[Try it live →](https://rag-enterprise-governance-demo.onrender.com/app)** (free tier; may take 30–90 seconds to wake)
+
+The governed UI has seven pages a visitor can inspect:
+
+| Page | What you see |
+|:--|:--|
+| **Ask** | Submit a policy question. The answer appears beside a governance panel showing evidence status, cited passages, source links, and the full audit timeline with latencies per tool call. Four preset scenarios demonstrate a grounded answer, an explicit refusal, approval withholding, and restricted-data denial. |
+| **Documents** | Browse the 14 anonymous-visible synthetic policy documents. Each shows metadata, a preview, and a link to the full source. Internal and restricted documents are excluded by SQL before retrieval — their names do not appear. |
+| **Quality** | Side-by-side comparison: the approved v1 baseline (25/25) and the v2 candidate snapshot (82/90), with failed and manual-review case IDs disclosed. |
+| **Security** | All 20 red-team scenarios grouped by attack category (prompt injection, grounding, faithfulness, access control). Each card shows the defense mechanism and whether it was proved deterministically or against the live backend. |
+| **Audit** | Hash-chained event timeline for each orchestrated run — every tool call, decision, and latency is recorded. |
+| **Approvals** | The human-oversight queue. High-risk answers sit here as `pending_approval` until a named reviewer decides. Public visitors can inspect but not approve — the greyed-out buttons are the proof. |
+| **Compare** | Side-by-side model and configuration comparison. |
+
 ## Architecture — three repositories, on purpose
 
 ```
