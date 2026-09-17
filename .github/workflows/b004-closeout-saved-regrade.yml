@@ -1,6 +1,7 @@
 name: b004-closeout-saved-answer-regrade
 
 on:
+  workflow_dispatch:
   push:
     branches: [b004/closeout]
     paths:

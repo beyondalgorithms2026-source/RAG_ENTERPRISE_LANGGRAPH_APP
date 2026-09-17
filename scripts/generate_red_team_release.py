@@ -12,7 +12,9 @@ from rag_enterprise_langgraph.red_team import run_red_team
 
 def build_release(report: dict[str, Any]) -> dict[str, Any]:
     controls = {"RT-06": report.get("rt06"), "RT-16": report.get("rt16")}
-    if any(not isinstance(value, dict) or value.get("status") != "pass" for value in controls.values()):
+    if any(
+        not isinstance(value, dict) or value.get("status") != "pass" for value in controls.values()
+    ):
         raise ValueError("RT-06 and RT-16 must both have preserved passing live evidence")
     result = run_red_team()
     verification = ((report.get("configuration") or {}).get("workflow") or {}).get("url")
@@ -26,12 +28,12 @@ def build_release(report: dict[str, Any]) -> dict[str, Any]:
             finding["actual_result"] = (
                 "Preserved SQL denied/authorized control and full-stack unauthorized path passed."
             )
-            finding["verification_reference"] = verification or control.get("verification_reference")
+            finding["verification_reference"] = verification or control.get(
+                "verification_reference"
+            )
     result["defended"] = sum(item["status"] == "defended" for item in result["findings"])
     result["failed"] = sum(item["status"] == "failed" for item in result["findings"])
-    result["manual_review"] = sum(
-        item["status"] == "manual_review" for item in result["findings"]
-    )
+    result["manual_review"] = sum(item["status"] == "manual_review" for item in result["findings"])
     result["requires_backend"] = sum(
         item["status"] == "requires_backend" for item in result["findings"]
     )

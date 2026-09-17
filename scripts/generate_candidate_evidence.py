@@ -21,8 +21,12 @@ def _sha256(path: Path) -> str:
 
 
 def build_status(
-    report: dict[str, Any], *, source_name: str, source_sha256: str,
-    approved_v1: dict[str, Any] | None = None, approved_v1_sha256: str | None = None,
+    report: dict[str, Any],
+    *,
+    source_name: str,
+    source_sha256: str,
+    approved_v1: dict[str, Any] | None = None,
+    approved_v1_sha256: str | None = None,
 ) -> dict[str, Any]:
     rows = report.get("rows")
     if not isinstance(rows, list) or len(rows) != 90 or report.get("total") != 90:

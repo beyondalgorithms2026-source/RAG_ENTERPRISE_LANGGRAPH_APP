@@ -95,9 +95,7 @@ def test_judge_retries_transport_failure_at_most_three_times(monkeypatch):
             }
         }
         response = {
-            "choices": [
-                {"finish_reason": "stop", "message": {"content": json.dumps(content)}}
-            ]
+            "choices": [{"finish_reason": "stop", "message": {"content": json.dumps(content)}}]
         }
         return io.BytesIO(json.dumps(response).encode())
 
@@ -122,7 +120,9 @@ def test_judge_retries_invalid_structured_response_without_leaking_body(monkeypa
     def respond(_request, timeout):
         nonlocal calls
         calls += 1
-        return io.BytesIO(b'{"choices":[{"finish_reason":"stop","message":{"content":"not-json SECRET"}}]}')
+        return io.BytesIO(
+            b'{"choices":[{"finish_reason":"stop","message":{"content":"not-json SECRET"}}]}'
+        )
 
     monkeypatch.setattr(eval_judge.urllib.request, "urlopen", respond)
     payload = grading.judge_payload(

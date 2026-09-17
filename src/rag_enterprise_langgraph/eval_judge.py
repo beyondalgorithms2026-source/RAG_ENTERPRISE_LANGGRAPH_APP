@@ -163,8 +163,7 @@ def _request_once(payload: str) -> dict[str, Any]:
         return {
             "judgement": {
                 "assertions": [
-                    {"id": assertion_id, **row}
-                    for assertion_id, row in assertion_rows.items()
+                    {"id": assertion_id, **row} for assertion_id, row in assertion_rows.items()
                 ]
             },
             "model": MODEL,
@@ -176,7 +175,9 @@ def _request_once(payload: str) -> dict[str, Any]:
         raise
     except (KeyError, IndexError, TypeError, ValueError) as exc:
         # Do not export HTTP bodies, credential-bearing requests or raw diagnostics.
-        raise RetryableJudgeInfrastructureError("offline judge structured response invalid") from exc
+        raise RetryableJudgeInfrastructureError(
+            "offline judge structured response invalid"
+        ) from exc
 
 
 def _request(payload: str) -> dict[str, Any]:
