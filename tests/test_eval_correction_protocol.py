@@ -35,9 +35,7 @@ def test_judge_schema_requires_known_ids_and_actual_table_quotes(monkeypatch):
         assertions = schema["properties"]["assertions"]
         assert assertions["required"] == ["assertion_0"]
         row = assertions["properties"]["assertion_0"]
-        quotes = row["properties"]["evidence_span"]["enum"]
-        assert "|Band 6+|Three days|" in quotes
-        assert "Authority|Band 6+" not in quotes
+        assert row["properties"]["evidence_span"] == {"type": "string"}
         content = {
             "assertions": {
                 "assertion_0": {
@@ -180,6 +178,51 @@ def test_judge_retries_invalid_structured_response_without_leaking_body(monkeypa
     assert calls == 3
     assert str(exc_info.value) == "offline judge retry budget exhausted"
     assert "SECRET" not in str(exc_info.value)
+
+
+def test_judge_retries_fabricated_evidence_span_at_most_three_times(monkeypatch):
+    monkeypatch.setenv("EVAL_OPENAI_API_KEY", "unit-test-placeholder")
+    monkeypatch.setattr(eval_judge.time, "sleep", lambda _seconds: None)
+    calls = 0
+
+    def respond(_request, timeout):
+        nonlocal calls
+        calls += 1
+        content = {
+            "assertions": {
+                "assertion_0": {
+                    "state": "supported",
+                    "answer_span": "Band 6+ approves.",
+                    "evidence_span": "Authority|Band 6+",
+                    "explanation": "Fabricated across table cells.",
+                }
+            }
+        }
+        return io.BytesIO(
+            json.dumps(
+                {
+                    "choices": [
+                        {
+                            "finish_reason": "stop",
+                            "message": {"content": json.dumps(content)},
+                        }
+                    ]
+                }
+            ).encode()
+        )
+
+    monkeypatch.setattr(eval_judge.urllib.request, "urlopen", respond)
+    payload = grading.judge_payload(
+        question="Who approves?",
+        answer="Band 6+ approves.",
+        assertions=[{"id": "authority", "type": "concept"}],
+        references=[{"id": "r", "text": "|Authority|Deadline|\n|Band 6+|Three days|"}],
+        citations=[],
+    )
+    with pytest.raises(eval_judge.JudgeInfrastructureError) as exc_info:
+        eval_judge._request(payload)
+    assert calls == 3
+    assert str(exc_info.value) == "offline judge retry budget exhausted"
 
 
 def test_judge_does_not_retry_deterministic_request_rejection(monkeypatch):

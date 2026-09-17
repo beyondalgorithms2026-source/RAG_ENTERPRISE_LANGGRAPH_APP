@@ -108,12 +108,19 @@ def _request_once(payload: str) -> dict[str, Any]:
         }
     )
     fields = {key: value for key, value in ROW_SCHEMA["properties"].items() if key != "id"}
-    fields = {
-        **fields,
-        "answer_span": {"type": "string", "enum": [q for q in answer_quotes if q] or [""]},
-    }
     assertion_keys = {
         f"assertion_{index}": assertion for index, assertion in enumerate(supplied["assertions"])
+    }
+    evidence_quotes = {
+        schema_key: factual_quotes(
+            [
+                ref
+                for ref in supplied["reference_evidence"]
+                if not assertion.get("source_refs") or ref["id"] in assertion["source_refs"]
+            ]
+        )
+        or [""]
+        for schema_key, assertion in assertion_keys.items()
     }
     assertion_schema = {
         "type": "object",
@@ -122,21 +129,7 @@ def _request_once(payload: str) -> dict[str, Any]:
             schema_key: {
                 "type": "object",
                 "additionalProperties": False,
-                "properties": {
-                    **fields,
-                    "evidence_span": {
-                        "type": "string",
-                        "enum": factual_quotes(
-                            [
-                                ref
-                                for ref in supplied["reference_evidence"]
-                                if not assertion.get("source_refs")
-                                or ref["id"] in assertion["source_refs"]
-                            ]
-                        )
-                        or [""],
-                    },
-                },
+                "properties": fields,
                 "required": list(fields),
             }
             for schema_key, assertion in assertion_keys.items()
@@ -189,13 +182,13 @@ def _request_once(payload: str) -> dict[str, Any]:
         assertion_rows = parsed["assertions"]
         if not isinstance(assertion_rows, dict) or set(assertion_rows) != set(assertion_keys):
             raise ValueError("invalid assertion set")
-        for row in assertion_rows.values():
+        for schema_key, row in assertion_rows.items():
             if not isinstance(row, dict) or not str(row.get("explanation") or "").strip():
                 raise ValueError("invalid assertion row")
-            if row.get("state") in {"supported", "contradicted"} and (
-                not row.get("answer_span") or not row.get("evidence_span")
-            ):
-                raise ValueError("invalid support spans")
+            if row.get("answer_span") not in answer_quotes:
+                raise ValueError("invalid literal answer span")
+            if row.get("evidence_span") not in evidence_quotes[schema_key]:
+                raise ValueError("invalid scoped evidence span")
         return {
             "judgement": {
                 "assertions": [
