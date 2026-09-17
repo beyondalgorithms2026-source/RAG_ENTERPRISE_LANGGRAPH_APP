@@ -56,6 +56,9 @@ jobs:
           if [ -f preserved/two-case-regrade.json ]; then
             jq -r '.rows[] | "\(.case_id): \(.judge_metadata.failure_reason // "graded")"' \
               preserved/two-case-regrade.json >> "$GITHUB_STEP_SUMMARY"
+            while IFS= read -r reason; do
+              echo "::error title=Saved-answer regrade::$reason"
+            done < <(jq -r '.rows[] | select(.failure_class == "infrastructure") | "\(.case_id): \(.judge_metadata.failure_reason)"' preserved/two-case-regrade.json)
           fi
           exit "$result"
 
