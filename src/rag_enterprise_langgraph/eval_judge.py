@@ -139,7 +139,9 @@ def _request_once(payload: str) -> dict[str, Any]:
         # and provider-side failures are transient and safe to retry.
         if exc.code == 429 or exc.code >= 500:
             raise RetryableJudgeInfrastructureError("offline judge transport failure") from exc
-        raise JudgeInfrastructureError("offline judge request rejected") from exc
+        raise JudgeInfrastructureError(
+            f"offline judge request rejected (HTTP {exc.code})"
+        ) from exc
     except (urllib.error.URLError, TimeoutError) as exc:
         raise RetryableJudgeInfrastructureError("offline judge transport failure") from exc
     try:

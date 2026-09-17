@@ -160,7 +160,7 @@ def test_judge_does_not_retry_deterministic_request_rejection(monkeypatch):
     with pytest.raises(eval_judge.JudgeInfrastructureError) as exc_info:
         eval_judge._request(payload)
     assert calls == 1
-    assert str(exc_info.value) == "offline judge request rejected"
+    assert str(exc_info.value) == "offline judge request rejected (HTTP 401)"
 
 
 def test_90_candidate_cases_preserve_five_original_refusals():
