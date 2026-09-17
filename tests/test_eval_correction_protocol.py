@@ -4,6 +4,7 @@ import asyncio
 import copy
 import io
 import json
+import urllib.error
 from pathlib import Path
 
 import pytest
@@ -67,6 +68,99 @@ def test_judge_schema_requires_known_ids_and_actual_table_quotes(monkeypatch):
     )
     result = eval_judge._request(payload)
     assert result["judgement"]["assertions"][0]["id"] == "authority"
+
+
+def test_judge_retries_transport_failure_at_most_three_times(monkeypatch):
+    monkeypatch.setenv("EVAL_OPENAI_API_KEY", "unit-test-placeholder")
+    monkeypatch.setattr(eval_judge.time, "sleep", lambda _seconds: None)
+    calls = 0
+
+    def respond(request, timeout):
+        nonlocal calls
+        calls += 1
+        if calls < 3:
+            raise urllib.error.URLError("sensitive provider detail")
+        body = json.loads(request.data)
+        assertion_id = body["response_format"]["json_schema"]["schema"]["properties"][
+            "assertions"
+        ]["required"][0]
+        content = {
+            "assertions": {
+                assertion_id: {
+                    "state": "supported",
+                    "answer_span": "Band 6+ approves.",
+                    "evidence_span": "Band 6+ approves.",
+                    "explanation": "The approval role is stated.",
+                }
+            }
+        }
+        response = {
+            "choices": [
+                {"finish_reason": "stop", "message": {"content": json.dumps(content)}}
+            ]
+        }
+        return io.BytesIO(json.dumps(response).encode())
+
+    monkeypatch.setattr(eval_judge.urllib.request, "urlopen", respond)
+    payload = grading.judge_payload(
+        question="Who approves?",
+        answer="Band 6+ approves.",
+        assertions=[{"id": "authority", "type": "concept"}],
+        references=[{"id": "r", "text": "Band 6+ approves."}],
+        citations=[],
+    )
+    result = eval_judge._request(payload)
+    assert calls == 3
+    assert result["judgement"]["assertions"][0]["state"] == "supported"
+
+
+def test_judge_retries_invalid_structured_response_without_leaking_body(monkeypatch):
+    monkeypatch.setenv("EVAL_OPENAI_API_KEY", "unit-test-placeholder")
+    monkeypatch.setattr(eval_judge.time, "sleep", lambda _seconds: None)
+    calls = 0
+
+    def respond(_request, timeout):
+        nonlocal calls
+        calls += 1
+        return io.BytesIO(b'{"choices":[{"finish_reason":"stop","message":{"content":"not-json SECRET"}}]}')
+
+    monkeypatch.setattr(eval_judge.urllib.request, "urlopen", respond)
+    payload = grading.judge_payload(
+        question="Who approves?",
+        answer="Band 6+ approves.",
+        assertions=[{"id": "authority", "type": "concept"}],
+        references=[{"id": "r", "text": "Band 6+ approves."}],
+        citations=[],
+    )
+    with pytest.raises(eval_judge.JudgeInfrastructureError) as exc_info:
+        eval_judge._request(payload)
+    assert calls == 3
+    assert str(exc_info.value) == "offline judge retry budget exhausted"
+    assert "SECRET" not in str(exc_info.value)
+
+
+def test_judge_does_not_retry_deterministic_request_rejection(monkeypatch):
+    monkeypatch.setenv("EVAL_OPENAI_API_KEY", "unit-test-placeholder")
+    monkeypatch.setattr(eval_judge.time, "sleep", lambda _seconds: None)
+    calls = 0
+
+    def respond(request, timeout):
+        nonlocal calls
+        calls += 1
+        raise urllib.error.HTTPError(request.full_url, 401, "credential detail", {}, None)
+
+    monkeypatch.setattr(eval_judge.urllib.request, "urlopen", respond)
+    payload = grading.judge_payload(
+        question="Who approves?",
+        answer="Band 6+ approves.",
+        assertions=[{"id": "authority", "type": "concept"}],
+        references=[{"id": "r", "text": "Band 6+ approves."}],
+        citations=[],
+    )
+    with pytest.raises(eval_judge.JudgeInfrastructureError) as exc_info:
+        eval_judge._request(payload)
+    assert calls == 1
+    assert str(exc_info.value) == "offline judge request rejected"
 
 
 def test_90_candidate_cases_preserve_five_original_refusals():

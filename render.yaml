@@ -24,3 +24,7 @@ services:
         value: "true"
       - key: RAG_AGENT_PUBLIC_BACKEND_URL
         value: https://rag-enterprise-starter-demo.onrender.com
+      - key: RAG_AGENT_EVIDENCE_STATUS_PATH
+        value: docs/evaluation/status.json
+      - key: RAG_AGENT_RED_TEAM_LATEST_PATH
+        value: docs/evaluation/red-team-release.json

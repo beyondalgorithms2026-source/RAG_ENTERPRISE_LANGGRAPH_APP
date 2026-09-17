@@ -73,6 +73,7 @@ class Settings(BaseSettings):
     run_results_dir: str = "runs/run-results"
     red_team_findings_path: str = "config/red-team-findings.json"
     red_team_latest_path: str = "runs/red-team/latest.json"
+    evidence_status_path: str = "docs/evaluation/status.json"
 
     input_token_cost_per_1m: float = 3.0
     output_token_cost_per_1m: float = 15.0

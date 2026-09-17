@@ -31,13 +31,13 @@ def report():
 
 def test_candidate_status_and_html_derive_counts_and_limitations_from_report():
     status = build_status(report(), source_name="eval-report.json", source_sha256="abc")
-    assert status["evidence_status"] == "provisional"
-    assert status["approved_baseline"] == {"id": "northwind-openai-v1", "case_count": 25}
+    assert status["evidence_status"] == "candidate"
+    assert status["approved_baseline"]["result"] == "25/25"
     assert status["quality"]["passed"] == 88
     assert status["limitations"]["failed_case_ids"] == ["C-000"]
     assert status["limitations"]["manual_review_case_ids"] == ["C-001"]
     page = render(status)
-    assert "88" in page and "C-000" in page and "not calibration" in page
+    assert "88" in page and "C-000" in page and "not an approved baseline" in page
 
 
 def test_candidate_status_rejects_incomplete_or_inconsistent_run():
@@ -49,3 +49,14 @@ def test_candidate_status_rejects_incomplete_or_inconsistent_run():
         assert "exactly 90" in str(exc)
     else:
         raise AssertionError("incomplete report accepted")
+
+
+def test_candidate_status_rejects_any_infrastructure_failure():
+    broken = report()
+    broken["grader_failures"] = 1
+    try:
+        build_status(broken, source_name="bad.json", source_sha256="abc")
+    except ValueError as exc:
+        assert "zero evaluation-infrastructure" in str(exc)
+    else:
+        raise AssertionError("infrastructure-tainted report accepted")

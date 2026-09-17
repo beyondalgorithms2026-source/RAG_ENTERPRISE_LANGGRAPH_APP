@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -16,6 +18,7 @@ def app_env(tmp_path):
         approvals_path=str(tmp_path / "approvals.jsonl"),
         eval_runs_dir=str(tmp_path / "eval-runs"),
         red_team_latest_path=str(tmp_path / "red-team-latest.json"),
+        evidence_status_path=str(tmp_path / "evidence-status.json"),
         run_results_dir=str(tmp_path / "run-results"),
     )
     app = create_app(settings)
@@ -39,8 +42,30 @@ def test_ui_routes_return_200(app_env):
     assert client.get("/app/static/app.css").status_code == 200
     script = client.get("/app/static/app.js")
     assert script.status_code == 200
-    assert "Starting the data layer if needed" in script.text
+    assert "Free-tier data service is starting" in script.text
+    assert 'fetchJSON("/evidence/status"' in script.text
+    assert "canonicalDocuments" in script.text
     assert client.get("/healthz").json() == {"status": "ok"}
+
+
+def test_evidence_status_serves_only_committed_artifact(app_env):
+    client, settings = app_env
+    path = settings.evidence_status_path
+    assert client.get("/evidence/status").status_code == 503
+
+    with open(path, "w", encoding="utf-8") as handle:
+        json.dump(
+            {
+                "schema_version": "2.0",
+                "evidence_status": "candidate",
+                "approval_statement": "Candidate, not approved baseline.",
+            },
+            handle,
+        )
+
+    response = client.get("/evidence/status")
+    assert response.status_code == 200
+    assert response.json()["evidence_status"] == "candidate"
 
 
 def test_public_demo_is_read_only_and_hides_pending_answer(tmp_path):

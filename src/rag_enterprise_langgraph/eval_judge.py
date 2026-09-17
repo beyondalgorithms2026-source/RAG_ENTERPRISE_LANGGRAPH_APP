@@ -6,6 +6,7 @@ import asyncio
 import json
 import os
 import re
+import time
 import urllib.error
 import urllib.request
 from typing import Any
@@ -45,11 +46,22 @@ class JudgeInfrastructureError(RuntimeError):
     pass
 
 
-def _request(payload: str) -> dict[str, Any]:
+class RetryableJudgeInfrastructureError(JudgeInfrastructureError):
+    pass
+
+
+MAX_ATTEMPTS = 3
+RETRY_BACKOFF_SECONDS = (0.25, 0.75)
+
+
+def _request_once(payload: str) -> dict[str, Any]:
     key = os.environ.get("EVAL_OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
     if not key:
         raise JudgeInfrastructureError("offline judge credential unavailable")
-    supplied = json.loads(payload)
+    try:
+        supplied = json.loads(payload)
+    except (TypeError, ValueError) as exc:
+        raise JudgeInfrastructureError("offline judge request payload invalid") from exc
     # Quote choices are copied from actual evidence, including complete table
     # rows. The judge cannot fabricate a header/cell combination as a quote.
     answer = supplied["answer"]
@@ -122,23 +134,60 @@ def _request(payload: str) -> dict[str, Any]:
     try:
         with urllib.request.urlopen(request, timeout=60) as response:
             result = json.load(response)
+    except urllib.error.HTTPError as exc:
+        # Authentication and request-contract failures are deterministic. Rate limits
+        # and provider-side failures are transient and safe to retry.
+        if exc.code == 429 or exc.code >= 500:
+            raise RetryableJudgeInfrastructureError("offline judge transport failure") from exc
+        raise JudgeInfrastructureError("offline judge request rejected") from exc
+    except (urllib.error.URLError, TimeoutError) as exc:
+        raise RetryableJudgeInfrastructureError("offline judge transport failure") from exc
+    try:
         choice = result["choices"][0]
-        if choice.get("finish_reason") != "stop" or choice["message"].get("refusal"):
-            raise JudgeInfrastructureError("offline judge refused or truncated output")
+        if choice.get("finish_reason") != "stop":
+            raise RetryableJudgeInfrastructureError("offline judge truncated output")
+        if choice["message"].get("refusal"):
+            raise JudgeInfrastructureError("offline judge refused output")
         parsed = json.loads(choice["message"]["content"])
+        assertion_rows = parsed["assertions"]
+        expected_ids = {assertion["id"] for assertion in supplied["assertions"]}
+        if not isinstance(assertion_rows, dict) or set(assertion_rows) != expected_ids:
+            raise ValueError("invalid assertion set")
+        for row in assertion_rows.values():
+            if not isinstance(row, dict) or not str(row.get("explanation") or "").strip():
+                raise ValueError("invalid assertion row")
+            if row.get("state") in {"supported", "contradicted"} and (
+                not row.get("answer_span") or not row.get("evidence_span")
+            ):
+                raise ValueError("invalid support spans")
         return {
             "judgement": {
                 "assertions": [
                     {"id": assertion_id, **row}
-                    for assertion_id, row in parsed["assertions"].items()
+                    for assertion_id, row in assertion_rows.items()
                 ]
             },
             "model": MODEL,
             "usage": result.get("usage", {}),
         }
-    except (urllib.error.URLError, KeyError, IndexError, ValueError) as exc:
+    except RetryableJudgeInfrastructureError:
+        raise
+    except JudgeInfrastructureError:
+        raise
+    except (KeyError, IndexError, TypeError, ValueError) as exc:
         # Do not export HTTP bodies, credential-bearing requests or raw diagnostics.
-        raise JudgeInfrastructureError("offline judge transport or response failure") from exc
+        raise RetryableJudgeInfrastructureError("offline judge structured response invalid") from exc
+
+
+def _request(payload: str) -> dict[str, Any]:
+    for attempt in range(MAX_ATTEMPTS):
+        try:
+            return _request_once(payload)
+        except RetryableJudgeInfrastructureError:
+            if attempt + 1 >= MAX_ATTEMPTS:
+                raise JudgeInfrastructureError("offline judge retry budget exhausted") from None
+            time.sleep(RETRY_BACKOFF_SECONDS[attempt])
+    raise AssertionError("unreachable")
 
 
 async def judge(**kwargs: Any) -> dict[str, Any]:
