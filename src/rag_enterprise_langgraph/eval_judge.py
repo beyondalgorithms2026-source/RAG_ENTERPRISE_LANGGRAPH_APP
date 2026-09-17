@@ -54,6 +54,40 @@ MAX_ATTEMPTS = 3
 RETRY_BACKOFF_SECONDS = (0.25, 0.75)
 
 
+def _safe_rejection_reason(exc: urllib.error.HTTPError) -> str:
+    category = "invalid_request"
+    param = ""
+    provider_code = ""
+    try:
+        payload = json.loads(exc.read(8192))
+        error = payload.get("error") if isinstance(payload, dict) else None
+        error = error if isinstance(error, dict) else {}
+        message = str(error.get("message") or "").casefold()
+        if "invalid schema" in message or "json schema" in message:
+            category = "invalid_schema"
+        elif "content" in message and ("policy" in message or "filter" in message):
+            category = "content_policy"
+        elif "model" in message:
+            category = "model_contract"
+        elif "token" in message or "context length" in message:
+            category = "request_size"
+        for key, target in (("param", "param"), ("code", "provider_code")):
+            value = str(error.get(key) or "")
+            if re.fullmatch(r"[A-Za-z0-9_.-]{1,80}", value):
+                if target == "param":
+                    param = value
+                else:
+                    provider_code = value
+    except (json.JSONDecodeError, OSError, TypeError, ValueError):
+        pass
+    suffix = f"; class={category}"
+    if param:
+        suffix += f"; param={param}"
+    if provider_code:
+        suffix += f"; code={provider_code}"
+    return f"offline judge request rejected (HTTP {exc.code}{suffix})"
+
+
 def _request_once(payload: str) -> dict[str, Any]:
     key = os.environ.get("EVAL_OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
     if not key:
@@ -142,9 +176,7 @@ def _request_once(payload: str) -> dict[str, Any]:
         # and provider-side failures are transient and safe to retry.
         if exc.code == 429 or exc.code >= 500:
             raise RetryableJudgeInfrastructureError("offline judge transport failure") from exc
-        raise JudgeInfrastructureError(
-            f"offline judge request rejected (HTTP {exc.code})"
-        ) from exc
+        raise JudgeInfrastructureError(_safe_rejection_reason(exc)) from exc
     except (urllib.error.URLError, TimeoutError) as exc:
         raise RetryableJudgeInfrastructureError("offline judge transport failure") from exc
     try:

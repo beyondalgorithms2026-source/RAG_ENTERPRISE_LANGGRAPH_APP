@@ -203,7 +203,45 @@ def test_judge_does_not_retry_deterministic_request_rejection(monkeypatch):
     with pytest.raises(eval_judge.JudgeInfrastructureError) as exc_info:
         eval_judge._request(payload)
     assert calls == 1
-    assert str(exc_info.value) == "offline judge request rejected (HTTP 401)"
+    assert str(exc_info.value) == (
+        "offline judge request rejected (HTTP 401; class=invalid_request)"
+    )
+
+
+def test_judge_rejection_exposes_only_allowlisted_provider_classification(monkeypatch):
+    monkeypatch.setenv("EVAL_OPENAI_API_KEY", "unit-test-placeholder")
+
+    def respond(request, timeout):
+        response = io.BytesIO(
+            json.dumps(
+                {
+                    "error": {
+                        "message": "Invalid schema with SECRET response detail",
+                        "type": "invalid_request_error",
+                        "param": "response_format",
+                        "code": "invalid_json_schema",
+                    }
+                }
+            ).encode()
+        )
+        raise urllib.error.HTTPError(request.full_url, 400, "raw SECRET", {}, response)
+
+    monkeypatch.setattr(eval_judge.urllib.request, "urlopen", respond)
+    payload = grading.judge_payload(
+        question="Who approves?",
+        answer="Band 6+ approves.",
+        assertions=[{"id": "authority", "type": "concept"}],
+        references=[{"id": "r", "text": "Band 6+ approves."}],
+        citations=[],
+    )
+    with pytest.raises(eval_judge.JudgeInfrastructureError) as exc_info:
+        eval_judge._request(payload)
+    rendered = str(exc_info.value)
+    assert rendered == (
+        "offline judge request rejected (HTTP 400; class=invalid_schema; "
+        "param=response_format; code=invalid_json_schema)"
+    )
+    assert "SECRET" not in rendered
 
 
 def test_90_candidate_cases_preserve_five_original_refusals():
