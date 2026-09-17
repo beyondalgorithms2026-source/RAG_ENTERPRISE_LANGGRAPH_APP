@@ -1,80 +1,9 @@
-<!-- GENERATED FILE - do not edit by hand.
-     Produced by scripts/generate_evaluation_report.py from approved evidence. -->
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Approved Evaluation Evidence — Governed RAG</title>
-<style>
-  :root { color-scheme: light dark; --bg:#fbfbfa; --card:#fff; --fg:#17201d;
-    --muted:#59635f; --line:#d9dfdc; --good:#176b45; --accent:#164d3c; }
-  @media (prefers-color-scheme:dark) { :root { --bg:#141816; --card:#1c221f;
-    --fg:#eef4f0; --muted:#a7b2ac; --line:#34413b; --good:#79d5aa; --accent:#8edcba; } }
-  * { box-sizing:border-box } body { margin:0; padding:2.5rem 1.25rem 4rem;
-    background:var(--bg); color:var(--fg); font:16px/1.55 ui-sans-serif,system-ui,sans-serif }
-  main { max-width:64rem; margin:auto } h1 { font-size:clamp(2rem,5vw,3.5rem);
-    line-height:1.05; letter-spacing:-.04em; margin:.35rem 0 1rem } h2 { margin-top:2.5rem }
-  .eyebrow { color:var(--good); font-weight:700; letter-spacing:.08em; text-transform:uppercase }
-  .lede,.muted { color:var(--muted) } .lede { font-size:1.12rem; max-width:48rem }
-  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(12rem,1fr)); gap:.8rem;
-    margin:2rem 0 } .card,.note { background:var(--card); border:1px solid var(--line);
-    border-radius:.75rem; padding:1rem } .metric { font-size:2rem; font-weight:750; color:var(--good) }
-  .label { color:var(--muted); font-size:.82rem; text-transform:uppercase; letter-spacing:.06em }
-  table { width:100%; border-collapse:collapse } th,td { text-align:left; padding:.7rem;
-    border-bottom:1px solid var(--line) } th { color:var(--muted) } code { overflow-wrap:anywhere }
-  a { color:var(--accent) } footer { border-top:1px solid var(--line); margin-top:3rem;
-    padding-top:1rem; color:var(--muted); font-size:.9rem }
-</style>
-</head>
-<body><main>
-  <p class="eyebrow">Approved full-stack evidence</p>
-  <h1>Governed RAG evaluation</h1>
-  <p class="lede">A reproducible APP → MCP → STARTER → PostgreSQL/pgvector quality
-  gate over a deterministic synthetic corpus. This is portfolio evidence, not a claim
-  about production traffic or client workloads.</p>
-
-  <div class="grid">
-    <section class="card"><div class="label">Quality cases</div>
-      <div class="metric">25/25</div>
-      <div class="muted">approved baseline passes</div></section>
-    <section class="card"><div class="label">Required refusals</div>
-      <div class="metric">5/5</div>
-      <div class="muted">unsupported questions safely refused</div></section>
-    <section class="card"><div class="label">SQL ACL boundary</div>
-      <div class="metric">PASS</div>
-      <div class="muted">live denied + authorized RT-06 control</div></section>
-    <section class="card"><div class="label">Offline red team</div>
-      <div class="metric">18/18</div>
-      <div class="muted">deterministic mechanisms defended</div></section>
-  </div>
-
-  <div class="note"><strong>Try the public demo:</strong>
-    <a href="https://rag-enterprise-governance-demo.onrender.com/app">open the governed browser flow</a>.
-    Render Free may need time to wake after inactivity. Read the
-    <a href="../manual/">public synthetic Operations Manual v3.2</a>.</div>
-
-  <div class="note"><strong>Expanded suite:</strong> the 90-case v2 suite is under
-    calibration and is not shown as approved evidence until its ten-run gate and review
-    complete.</div>
-
-  <h2>What was measured</h2>
-  <table><tbody>
-    <tr><th>Baseline</th><td><code>northwind-openai-v1</code></td></tr>
-    <tr><th>Calibration</th><td>10 eligible full-stack runs</td></tr>
-    <tr><th>Model</th><td><code>gpt-4o-mini-2024-07-18</code></td></tr>
-    <tr><th>Embedding</th><td><code>text-embedding-3-small</code>, 384 dimensions</td></tr>
-    <tr><th>Retrieval</th><td>hybrid; reranking false</td></tr>
-    <tr><th>Red team</th><td>20 defined scenarios: 18 deterministic defenses passed; RT-06 and RT-16 are proved separately in the live stack.</td></tr>
-  </tbody></table>
-
-  <h2>Limits</h2>
-  <ul><li>Synthetic public-demo corpus; no client or private data.</li><li>Approved quality evidence is a fixed full-stack calibration snapshot, not live traffic.</li><li>Offline red-team checks prove deterministic governance mechanisms; RT-06 and RT-16 require live SQL authorization proof.</li></ul>
-  <p>The checked-in <a href="status.json"><code>status.json</code></a> is the
-  machine-readable form of this approved snapshot. A failed or incomplete CI run never
-  replaces it automatically.</p>
-
-  <footer>Generated 2026-09-13T07:56:55.114347+00:00 from
-  <code>config/eval-baselines/northwind-openai-v1.json</code>. No test count, live-traffic claim, or
-  historical local-model score is inferred.</footer>
-</main></body></html>
+<!-- GENERATED from status.json; do not edit counts by hand. -->
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>B004 evaluation evidence</title>
+<style>body{font:16px/1.5 system-ui;max-width:900px;margin:3rem auto;padding:0 1rem}table{border-collapse:collapse}th,td{padding:.5rem 1rem;border-bottom:1px solid #ccc;text-align:left}.note{padding:1rem;background:#fff5cc}</style>
+<h1>B004 evaluation evidence</h1>
+<section><h2>Approved v1 baseline</h2><p><strong>25/25</strong> cases passed. This is the only approved baseline.</p><p>Artifact SHA-256: <code>6e729a9e27407493cd5352bb991c506ab00bb502438016a39672e543cad6bde4</code></p></section>
+<section><h2>v2 candidate snapshot</h2><p class="note">Candidate snapshot only; v2 is not an approved baseline.</p>
+<table><tr><th>Cases</th><td>90</td></tr><tr><th>Pass</th><td>82</td></tr><tr><th>Fail</th><td>3</td></tr><tr><th>Manual review</th><td>5</td></tr><tr><th>Refusals</th><td>8/8</td></tr><tr><th>Transport failures</th><td>0</td></tr><tr><th>Grader failures</th><td>0</td></tr><tr><th>Other infrastructure failures</th><td>0</td></tr><tr><th>RT-06</th><td>pass</td></tr><tr><th>RT-16</th><td>pass</td></tr></table>
+<h2>Limitations</h2><p>Failed: OM-035, OM-041, OM-089.</p><p>Manual review: OM-007, OM-066, OM-067, OM-071, OM-072.</p>
+<p>Candidate source SHA-256: <code>a3480e7094dd6333b607d7680380d8c8a57b941f9aab83ce72ee7a10ac2bac55</code></p></section>
