@@ -66,6 +66,11 @@ body { background:#fafaf9; font-family:Inter,Helvetica,Arial,sans-serif; -webkit
 .starter-card { min-height:152px; gap:9px; padding:15px; border-radius:10px; }
 .starter-card strong { font-size:14px; line-height:1.4; }
 .starter-card small { font-size:12px; line-height:1.45; }
+.public-evidence-grid .quality-card { display:flex; flex-direction:column; }
+.public-evidence-grid .quality-tag { width:max-content; }
+.evidence-link { display:inline-flex; align-items:center; gap:5px; margin-top:auto; color:#115e59; font-size:12px; font-weight:700; text-decoration:none; }
+.evidence-link:hover { text-decoration:underline; }
+.quality-disclosure { margin:22px 0 0; color:#78716c; font-size:12px; }
 
 /* The mark is a single Material Symbols ligature, matching the artboard. */
 .rail-item:first-child .ms,.search-bar > .ms { font-family:'Material Symbols Outlined'; font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 20; }

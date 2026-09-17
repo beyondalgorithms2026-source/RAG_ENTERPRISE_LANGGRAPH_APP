@@ -1,0 +1,37 @@
+name: b004-workstream-ownership
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  scope:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Reject cross-workstream file ownership
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          files="$(git diff --name-only "origin/$BASE_REF...HEAD")"
+          case "$HEAD_REF" in
+            b004-public-demo*)
+              forbidden='^(config/eval-|src/rag_enterprise_langgraph/(answer_quality|evidence|eval_|eval_assertions|eval_judge|eval_runner|orchestrator)\.py|scripts/(build_eval_baseline|combine_eval_reports|generate_candidate_evidence|generate_evaluation_report|regrade_saved_answers)\.py|docs/evaluation/)'
+              ;;
+            b004-v2-quality-evidence*)
+              forbidden='^(src/rag_enterprise_langgraph/(ui\.py|static/)|render\.yaml|docs/runbooks/(PUBLIC_DEMO_RELEASE_CHECKLIST|RENDER_PUBLIC_DEMO)\.md|\.github/workflows/(public-demo-smoke|b004-workstream-ownership)\.yml)'
+              ;;
+            *)
+              exit 0
+              ;;
+          esac
+          if printf '%s\n' "$files" | grep -Eq "$forbidden"; then
+            echo "This branch changes files owned by the other B004 workstream."
+            printf '%s\n' "$files" | grep -E "$forbidden" || true
+            exit 1
+          fi
