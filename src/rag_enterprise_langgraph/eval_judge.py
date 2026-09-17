@@ -11,7 +11,7 @@ import urllib.error
 import urllib.request
 from typing import Any
 
-from rag_enterprise_langgraph.eval_assertions import factual_quotes, judge_payload
+from rag_enterprise_langgraph.eval_assertions import judge_payload
 
 MODEL = "gpt-4o-mini-2024-07-18"
 SYSTEM = (
@@ -96,30 +96,20 @@ def _request_once(payload: str) -> dict[str, Any]:
         supplied = json.loads(payload)
     except (TypeError, ValueError) as exc:
         raise JudgeInfrastructureError("offline judge request payload invalid") from exc
-    # Quote choices are copied from actual evidence, including complete table
-    # rows. The judge cannot fabricate a header/cell combination as a quote.
+    # Literal spans are checked after generation against the preserved answer and
+    # assertion-scoped references. This permits short contiguous quotes without
+    # placing document text inside the provider's strict JSON Schema.
     answer = supplied["answer"]
-    answer_quotes = sorted(
-        {"", answer}
-        | {line.strip() for line in answer.splitlines() if line.strip()}
-        | {
-            match.group().strip()
-            for match in re.finditer(r"\S.*?(?:[.!?;](?=\s|$)|$)", answer, re.DOTALL)
-        }
-    )
     fields = {key: value for key, value in ROW_SCHEMA["properties"].items() if key != "id"}
     assertion_keys = {
         f"assertion_{index}": assertion for index, assertion in enumerate(supplied["assertions"])
     }
-    evidence_quotes = {
-        schema_key: factual_quotes(
-            [
-                ref
-                for ref in supplied["reference_evidence"]
-                if not assertion.get("source_refs") or ref["id"] in assertion["source_refs"]
-            ]
-        )
-        or [""]
+    evidence_texts = {
+        schema_key: [
+            str(ref["text"])
+            for ref in supplied["reference_evidence"]
+            if not assertion.get("source_refs") or ref["id"] in assertion["source_refs"]
+        ]
         for schema_key, assertion in assertion_keys.items()
     }
     assertion_schema = {
@@ -185,9 +175,13 @@ def _request_once(payload: str) -> dict[str, Any]:
         for schema_key, row in assertion_rows.items():
             if not isinstance(row, dict) or not str(row.get("explanation") or "").strip():
                 raise ValueError("invalid assertion row")
-            if row.get("answer_span") not in answer_quotes:
+            answer_span = str(row.get("answer_span") or "")
+            evidence_span = str(row.get("evidence_span") or "")
+            if not answer_span or answer_span not in answer:
                 raise ValueError("invalid literal answer span")
-            if row.get("evidence_span") not in evidence_quotes[schema_key]:
+            if not evidence_span or not any(
+                evidence_span in reference for reference in evidence_texts[schema_key]
+            ):
                 raise ValueError("invalid scoped evidence span")
         return {
             "judgement": {
