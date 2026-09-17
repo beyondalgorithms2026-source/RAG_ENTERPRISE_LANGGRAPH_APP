@@ -46,8 +46,10 @@ hand or inferred from an unapproved local run.
 |---|---|
 | Correct refusals | **5 of 5** |
 | Overall quality | **25 of 25** in the approved full-stack baseline |
-| Red-team scenarios | 18 deterministic mechanisms defended offline; RT-06 and RT-16 require live SQL proof |
-| Automated tests | Counted by CI on each run; no stale total is published here |
+| Candidate v2 snapshot | **82 passed, 3 failed, 5 manual review** across 90 cases; not an approved baseline |
+| Candidate safety cases | **8/8 refusals** and **2/2 safe-boundary cases** |
+| Red-team scenarios | **18 deterministic defenses plus RT-06 and RT-16 live backend controls; 20/20 defended** |
+| Current offline APP suite | **254 passed** on the B004 closeout branch |
 
 The report publishes the pinned model, embedding, chunking, retrieval, prompt, and corpus
 metadata needed to interpret the result. Baseline changes require an explicit reviewed

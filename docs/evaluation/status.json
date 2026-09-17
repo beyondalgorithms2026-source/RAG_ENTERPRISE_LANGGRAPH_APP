@@ -1,10 +1,19 @@
 {
-  "baseline": {
-    "approved_at": "2026-09-12T00:56:38.099541+00:00",
-    "calibration_run_count": 10,
+  "approval_statement": "Candidate snapshot only; v2 is not an approved baseline.",
+  "approved_baseline": {
+    "case_count": 25,
+    "failed": 0,
     "id": "northwind-openai-v1",
-    "source_path": "config/eval-baselines/northwind-openai-v1.json",
-    "source_run_url": null
+    "manual_review": 0,
+    "passed": 25,
+    "refusal_passed": 5,
+    "refusal_total": 5,
+    "result": "25/25",
+    "source": {
+      "name": "northwind-openai-v1.json",
+      "sha256": "6e729a9e27407493cd5352bb991c506ab00bb502438016a39672e543cad6bde4"
+    },
+    "statement": "Approved v1 baseline; unchanged by the v2 candidate publication."
   },
   "configuration": {
     "app_prompts": {
@@ -18,16 +27,18 @@
       }
     },
     "chunking": {
+      "answer_context_chunk_cap_chars": "4000",
       "overlap_words": "40",
       "policy": "default",
       "target_words": "320"
     },
-    "corpus_manifest_sha256": "5760b4d7662b395d02b83043975a9037d0d8ba140f45fdcf3138f5d66dc6fdfe",
+    "corpus_manifest_sha256": "45dfe29c088d2c30205cc4e81218cf5569ce42d5e4302b8bd55867ab5334716e",
     "embedding": {
       "dimensions": "384",
       "model": "text-embedding-3-small",
       "provider": "openai"
     },
+    "grader_version": "2.0.1",
     "llm": {
       "model": "gpt-4o-mini-2024-07-18",
       "provider": "openai"
@@ -36,49 +47,123 @@
       "expected_fact_scope": "generated_answer",
       "max_recovery_steps": 3
     },
+    "repository_revisions": {
+      "app": "3e9035814cc06baa7c1e832f14d679cb28ee2f3f",
+      "mcp": "05adc5eb2de92fce4cb23d1358690e0901abbd3e",
+      "starter": "6258a2e7aca0c2dd431821401e1e98c848ec3b80"
+    },
     "retrieval": {
+      "answer_prompt_candidate": "true",
+      "context_selection_candidate": "true",
       "mode": "hybrid",
       "rerank_enabled": "false"
     },
     "starter_prompts": {
       "starter_answer": {
-        "sha256": "9b76a7b3c554e38c1a56b417d27625d1bce2774b2148f305ce207d461628cb03",
-        "version": "1.0.0"
+        "sha256": "93e7cf867bea099e421ae808a6e7a476dd9f4132fac996449cc14433ec7f8ec9",
+        "version": "1.2.2"
       },
       "starter_json_repair": {
         "sha256": "e0a2193b14da0b4841495537c4e83dab057efd22e067049a47caba216115d305",
         "version": "1.0.0"
       },
       "starter_second_pass": {
-        "sha256": "7e55344f072948cf9097d3d865cf5e26326e065d2ff566c2eea96fdce1641f72",
-        "version": "1.0.0"
+        "sha256": "f0c6515fcce9a262b9526dd55dffa77d06e1dee8493b47565e04ccec7afab8ea",
+        "version": "1.1.0"
       }
+    },
+    "suite_version": "2.1.2-candidate",
+    "workflow": {
+      "repository": "beyondalgorithms2026-source/RAG_ENTERPRISE_LANGGRAPH_APP",
+      "run_attempt": "2",
+      "run_id": "35186725102",
+      "url": "https://github.com/beyondalgorithms2026-source/RAG_ENTERPRISE_LANGGRAPH_APP/actions/runs/35186725102"
     }
   },
-  "evidence_status": "approved",
-  "generated_at": "2026-09-13T07:56:55.114347+00:00",
+  "evidence_status": "candidate",
+  "generated_at": "2026-09-17T10:10:22.627617+00:00",
   "governance": {
-    "offline_red_team": {
+    "deterministic_red_team": {
       "defended": 18,
       "failed": 0,
+      "overall_status": "pass",
       "requires_backend": 2,
-      "status": "pass",
       "total": 20
     },
-    "rt06": "pass"
+    "rt06": {
+      "grounding_status": "not_grounded",
+      "status": "pass"
+    },
+    "rt16": {
+      "grounding_status": "not_grounded",
+      "status": "pass"
+    }
   },
-  "limitations": [
-    "Synthetic public-demo corpus; no client or private data.",
-    "Approved quality evidence is a fixed full-stack calibration snapshot, not live traffic.",
-    "Offline red-team checks prove deterministic governance mechanisms; RT-06 and RT-16 require live SQL authorization proof."
-  ],
+  "limitations": {
+    "failed_case_ids": [
+      "OM-035",
+      "OM-041",
+      "OM-089"
+    ],
+    "manual_review_case_ids": [
+      "OM-007",
+      "OM-066",
+      "OM-067",
+      "OM-071",
+      "OM-072"
+    ],
+    "statements": [
+      "Synthetic public-demo corpus; no client or private data.",
+      "This is one reproducible candidate snapshot, not ten-run calibration.",
+      "Quality failures are retained as limitations rather than tuned away."
+    ]
+  },
+  "operations": {
+    "grader_failures": 0,
+    "infrastructure_failures": 0,
+    "other_infrastructure_failures": 0,
+    "transport_failures": 0
+  },
+  "performance": {
+    "backend_request_count": 114,
+    "generation_request_count": 113,
+    "metric_status": {
+      "average_cost_usd_per_query": "pass",
+      "mean_latency_ms": "pass",
+      "p95_latency_ms": "warn",
+      "recovery_rate": "breach"
+    },
+    "metrics": {
+      "average_cost_usd_per_query": 0.000499,
+      "max_latency_ms": 5610.075,
+      "mean_latency_ms": 2340.503533,
+      "p50_latency_ms": 1820.672,
+      "p95_latency_ms": 4342.351,
+      "recovery_rate": 0.266667
+    },
+    "sample_size": 90,
+    "schema_version": "1.0",
+    "status": "breach",
+    "thresholds": {
+      "average_cost_usd_per_query": 0.02,
+      "mean_latency_ms": 3000.0,
+      "p95_latency_ms": 5000.0,
+      "recovery_rate": 0.25
+    }
+  },
   "quality": {
-    "failed": 0,
-    "manual_review": 0,
-    "passed": 25,
-    "strict_refusal_passed": 5,
-    "strict_refusal_total": 5,
-    "total": 25
+    "failed": 3,
+    "manual_review": 5,
+    "passed": 82,
+    "refusal_passed": 8,
+    "refusal_total": 8,
+    "safe_boundary_passed": 2,
+    "safe_boundary_total": 2,
+    "total": 90
   },
-  "schema_version": "1.0"
+  "schema_version": "2.0",
+  "source_artifact": {
+    "name": "candidate-v2-report.json",
+    "sha256": "a3480e7094dd6333b607d7680380d8c8a57b941f9aab83ce72ee7a10ac2bac55"
+  }
 }

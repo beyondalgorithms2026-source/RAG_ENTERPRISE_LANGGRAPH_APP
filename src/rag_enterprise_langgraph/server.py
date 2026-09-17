@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import asyncio
+import json
+from pathlib import Path
 
 import uvicorn
 from fastapi import FastAPI, Query, Request
@@ -76,6 +78,24 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/healthz")
     async def healthz():
         return {"status": "ok"}
+
+    @app.get("/evidence/status")
+    async def evidence_status():
+        """Serve the committed, public-safe evidence register without executing an eval."""
+        path = Path(runtime_settings.evidence_status_path)
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return JSONResponse(
+                status_code=503,
+                content={"detail": "Committed evidence status is unavailable."},
+            )
+        if not isinstance(payload, dict):
+            return JSONResponse(
+                status_code=503,
+                content={"detail": "Committed evidence status is unavailable."},
+            )
+        return payload
 
     @app.post("/ask")
     async def ask(request: AskRequest):

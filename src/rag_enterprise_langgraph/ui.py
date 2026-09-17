@@ -54,7 +54,7 @@ def _shell(*, title: str, page: str, active: str, body: str, settings: Settings)
 <nav class="app-rail" aria-label="Application navigation"><div class="rail-brand"><div class="rail-brand-name">Governed RAG</div><div class="rail-brand-sub">Public demo</div></div>
 <div class="rail-nav">{nav}</div><div class="rail-run" id="rail-run" hidden></div>
 <div class="rail-footer"><div class="rail-role-pill"><span class="rail-dot"></span>Public visitor</div><p class="rail-disclaimer">Inspect-only. You can run questions. You cannot approve, edit, or export.</p><button class="rail-drawer-toggle" type="button" aria-expanded="false">How it's built <span>›</span></button></div></nav>
-<main class="app-main">{body}</main></div><script src="/app/static/app.js"></script></body></html>"""
+<main class="app-main"><div id="backend-readiness" class="readiness readiness-waking" role="status" aria-live="polite"><strong>Waking</strong><span>Checking the free-tier data service…</span></div>{body}</main></div><script src="/app/static/app.js"></script></body></html>"""
 
 
 def build_ui_router(settings: Settings | None = None) -> APIRouter:
@@ -86,13 +86,13 @@ def build_ui_router(settings: Settings | None = None) -> APIRouter:
             page="dashboard",
             active="/app",
             body=f"""
-<header class="page-header ask-header"><p class="eyebrow">Grounded answers · explicit refusal</p><div class="hero-grid"><div><h1>Ask a governed policy question with evidence you can inspect.</h1><p class="page-summary">Answers cite accessible sources. When evidence is insufficient or outside your grant, the workflow refuses rather than inventing an answer. SQL access control, citations, and an audit record remain visible.</p></div><aside class="corpus-card"><div class="card-title"><strong>Governance evidence</strong><span>public demo</span></div><dl><div><dt>Cited answers</dt><dd>required</dd></div><div><dt>Evidence gaps</dt><dd>refused</dd></div><div><dt>Source access</dt><dd>SQL ACL</dd></div><div><dt>Every run</dt><dd>audited</dd></div></dl><p>Synthetic portfolio corpus only. Restricted content is never shown to this visitor grant.</p></aside></div></header>
-<section class="ask-workspace"><form id="ask-form" class="search-form"><input type="hidden" id="ask-max-recovery" value="3" /><label class="sr-only" for="ask-question">Question</label><div class="search-bar">{ICONS["search_spark"]}<input type="text" id="ask-question" placeholder="Ask about leave, gifts, payments, or access controls…" autocomplete="off" /><kbd>⌘↵</kbd><button type="submit">Run {ICONS["arrow"]}</button></div><div class="search-meta"><span>Governed workflow</span><span>Public visitor grant</span><span>SQL ACL enforced</span><span>Shared demo rate limit applies</span></div></form>
+<header class="page-header ask-header"><p class="eyebrow">Synthetic corpus · answer or explicit refusal</p><div class="hero-grid"><div><h1>Ask a governed policy question with evidence you can inspect.</h1><p class="page-summary">This agent can only use passages available to the anonymous public grant. It checks evidence before releasing an answer and records every decision.</p></div><aside class="corpus-card"><div class="card-title"><strong>Public-demo corpus</strong><span>free-tier hosted</span></div><dl><div><dt>Canonical sources</dt><dd>28</dd></div><div><dt>Anonymous-visible</dt><dd>14</dd></div><div><dt>Data</dt><dd>synthetic</dd></div><div><dt>Database</dt><dd>pgvector</dd></div></dl><p>Internal and restricted sources are excluded by the backend grant before retrieval.</p></aside></div></header>
+<section class="ask-workspace"><form id="ask-form" class="search-form"><input type="hidden" id="ask-max-recovery" value="3" /><label class="sr-only" for="ask-question">Question</label><div class="search-bar">{ICONS["search_spark"]}<input type="text" id="ask-question" placeholder="Ask a question about the policy corpus" autocomplete="off" /><kbd>⌘↵</kbd><button type="submit" data-needs-backend>Run {ICONS["arrow"]}</button></div><div class="search-meta"><span>Path: APP → MCP → STARTER</span><span>Grant: anonymous public</span><span>SQL ACL enforced</span><span>Shared demo rate limit applies</span><label class="approval-toggle"><input type="checkbox" id="ask-require-approval" /> Require approval</label></div></form>
 <div class="section-heading"><div><p class="eyebrow">Starter questions</p><h2>Try a governed scenario</h2></div><span class="small muted">Runs render here. No page change.</span></div><div class="starter-grid" aria-label="Starter questions">
-<button type="button" class="starter-card" data-question="How many days of annual leave do full-time employees receive?" data-recovery="3"><span class="chip chip-grounded">Grounded</span><strong>How many annual leave days do full-time employees receive?</strong><small>Cited policy answer with source links.</small></button>
-<button type="button" class="starter-card" data-question="What is the maximum value of a gift that may be accepted under company policy?" data-recovery="3"><span class="chip chip-grounded">Grounded</span><strong>What is the cap on gifts I may accept from a supplier?</strong><small>Threshold and procedure with evidence.</small></button>
-<button type="button" class="starter-card" data-question="Is there ever an exception for a facilitation payment?" data-recovery="3"><span class="chip chip-grounded">Grounded</span><strong>Is there ever an exception for a facilitation payment?</strong><small>Explicit exception and its limits.</small></button>
-<button type="button" class="starter-card" data-question="What was Northwind Logistics' revenue last year?" data-recovery="0"><span class="chip chip-withheld">Withheld</span><strong>What was revenue last year?</strong><small>Demonstrates an access-controlled refusal.</small></button></div>
+<button type="button" class="starter-card" data-needs-backend data-question="What is the maximum value of a gift that may be accepted under company policy?" data-approval="false" data-recovery="3"><span class="chip chip-grounded">Grounded</span><strong>What is the cap on gifts I may accept?</strong><small>Cited policy answer</small></button>
+<button type="button" class="starter-card" data-needs-backend data-question="What is the company's pension contribution rate?" data-approval="false" data-recovery="0"><span class="chip chip-refused">Refusal</span><strong>What is the pension contribution rate?</strong><small>Unsupported fact is not invented</small></button>
+<button type="button" class="starter-card" data-needs-backend data-question="What is the termination policy for employees on medical leave?" data-approval="true" data-recovery="3"><span class="chip chip-withheld">Withheld</span><strong>Termination during medical leave?</strong><small>High-risk answer requires approval</small></button>
+<button type="button" class="starter-card" data-needs-backend data-question="What is the Band 6 salary range for 2026?" data-approval="false" data-recovery="3"><span class="chip chip-refused">Denied</span><strong>What is the Band 6 salary range?</strong><small>Restricted data remains unavailable</small></button></div><!-- 1 · Answerable -->
 <section id="ask-result" class="ask-result" aria-live="polite"><div class="result-empty"><div class="skeleton-lines"><i></i><i></i><i></i></div><div><strong>Your governed result will appear here</strong><p>Answer, citations that open the source, and the decision trail render in place.</p><div class="chip-legend"><span><i class="dot grounded"></i>Grounded</span><span><i class="dot refused"></i>Refused</span><span><i class="dot withheld"></i>Withheld</span><span><i class="dot defended"></i>Defended</span><span><i class="dot calibration"></i>Calibration</span><span><i class="dot error"></i>Error</span></div></div></div></section>
 <section class="run-history-section"><div class="section-heading"><div><p class="eyebrow">Recent activity</p><h2>Run history</h2></div></div><div id="run-history"><div class="spinner">Loading runs…</div></div></section></section>""",
         )
@@ -105,7 +105,7 @@ def build_ui_router(settings: Settings | None = None) -> APIRouter:
             page="documents",
             active="/app/documents",
             body="""
-<div class="documents-layout"><aside class="document-browser"><div class="browser-title"><strong>Corpus</strong><span>8 documents</span></div><label class="sr-only" for="document-filter">Filter documents</label><input id="document-filter" type="text" placeholder="Filter documents" /><div id="document-list" class="document-list"><div class="spinner">Loading corpus…</div></div></aside><section id="document-reader" class="document-reader"><div class="empty">Choose a document to inspect its public corpus preview.</div></section></div>""",
+<div class="documents-layout"><aside class="document-browser"><div class="browser-title"><strong>Anonymous-visible corpus</strong><span id="document-count">Loading…</span></div><label class="sr-only" for="document-filter">Filter documents</label><input id="document-filter" type="text" placeholder="Filter documents" /><div id="document-list" class="document-list"><div class="spinner">Loading corpus…</div></div></aside><section id="document-reader" class="document-reader"><div class="empty">Choose a document to inspect its public corpus preview.</div></section></div>""",
         )
 
     @router.get("/app/approvals", response_class=HTMLResponse)
@@ -138,7 +138,7 @@ def build_ui_router(settings: Settings | None = None) -> APIRouter:
             page="quality",
             active="/app/quality",
             body="""
-<header class="page-header"><p class="eyebrow">Evidence quality</p><h1>Quality evidence</h1><p class="page-summary">Approved v1 evidence is separate from provisional candidate work. No transient local run is presented as a release claim.</p></header><section class="page-content"><div id="quality-content"><div class="spinner">Loading approved evidence…</div></div><div id="eval-runs" class="visually-secondary"></div></section>""",
+<header class="page-header"><p class="eyebrow">Evidence quality</p><h1>Quality gates</h1><p class="page-summary">Two evaluation suites distinguish release-blocking evidence checks from calibration work.</p></header><section class="page-content"><div id="quality-content"><div class="spinner">Loading quality results…</div></div><div id="eval-runs" class="visually-secondary"></div></section>""",
         )
 
     @router.get("/app/security", response_class=HTMLResponse)
@@ -155,6 +155,15 @@ def build_ui_router(settings: Settings | None = None) -> APIRouter:
 
     @router.get("/app/compare", response_class=HTMLResponse)
     async def compare_page():
+        if runtime_settings.public_demo:
+            return _shell(
+                settings=runtime_settings,
+                title="Compare",
+                page="compare",
+                active="/app/compare",
+                body="""
+<header class="page-header"><p class="eyebrow">Recorded comparison evidence</p><h1>Operator-only comparison execution is disabled publicly</h1><p class="page-summary">The public demo keeps model-consuming comparison controls disabled. Use Ask for the governed path, or inspect Quality, Security, and Audit for committed evidence.</p></header><section class="page-content"><div class="quality-note">This preserves the free-tier budget and prevents anonymous visitors from invoking deliberately blocked operator routes.</div></section>""",
+            )
         return _shell(
             settings=runtime_settings,
             title="Compare",

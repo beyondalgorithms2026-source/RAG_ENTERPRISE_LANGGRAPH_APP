@@ -63,7 +63,6 @@ body { background:#fafaf9; font-family:Inter,Helvetica,Arial,sans-serif; -webkit
 .search-meta { gap:18px; margin-top:0; font-family:Inter,Helvetica,Arial,sans-serif; font-size:12px; }
 .section-heading { margin:30px 0 11px; }
 .starter-grid { gap:12px; }
-.starter-grid { grid-template-columns:repeat(4,minmax(0,1fr)); }
 .starter-card { min-height:152px; gap:9px; padding:15px; border-radius:10px; }
 .starter-card strong { font-size:14px; line-height:1.4; }
 .starter-card small { font-size:12px; line-height:1.45; }
@@ -76,3 +75,17 @@ body { background:#fafaf9; font-family:Inter,Helvetica,Arial,sans-serif; -webkit
 /* The mark is a single Material Symbols ligature, matching the artboard. */
 .rail-item:first-child .ms,.search-bar > .ms { font-family:'Material Symbols Outlined'; font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 20; }
 @media (max-width:768px) { .ask-header { padding:20px 18px 0; }.ask-header h1,.page-header.ask-header h1 { font-size:28px; }.ask-workspace { padding:22px 18px; } }
+
+/* B004 closeout: readiness, keyboard clarity, and four canonical Ask scenarios. */
+.starter-grid { grid-template-columns:repeat(4,minmax(0,1fr)); }
+.readiness { position:sticky; z-index:8; top:0; display:flex; align-items:center; gap:10px; min-height:34px; padding:7px 44px; border-bottom:1px solid var(--stone-200); color:var(--ink-secondary); background:#fff; font-size:12px; }
+.readiness strong { font:700 10px 'IBM Plex Mono',monospace; letter-spacing:.08em; text-transform:uppercase; }
+.readiness-ready strong { color:var(--status-grounded); }
+.readiness-waking strong,.readiness-degraded strong { color:var(--status-pending); }
+.readiness-unavailable strong { color:var(--status-error); }
+button:focus-visible,a:focus-visible,input:focus-visible { outline:3px solid rgba(13,148,136,.35); outline-offset:2px; }
+.table-card thead th { position:sticky; z-index:1; top:0; background:#fff; }
+.security-summary-bar { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-bottom:16px; padding:12px 14px; border:1px solid var(--stone-200); border-radius:8px; background:#fff; }
+.check-tile small { display:block; margin-top:7px; color:var(--ink-muted); font:9px 'IBM Plex Mono',monospace; text-transform:uppercase; }
+@media (max-width:900px) { .starter-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (max-width:768px) { .readiness { padding:7px 18px; }.starter-grid { display:flex; }.reader-header,.security-detail,.quality-card { overflow-wrap:anywhere; } }

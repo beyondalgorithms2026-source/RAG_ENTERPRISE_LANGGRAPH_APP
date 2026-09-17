@@ -1,0 +1,31 @@
+name: eval-correction-candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      starter_ref:
+        description: Explicit companion STARTER candidate ref for advisory verification
+        required: true
+        default: codex/eval-correction
+        type: string
+      confirm_paid_run:
+        description: Confirm this manual run may call paid model APIs
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  candidate:
+    if: ${{ inputs.confirm_paid_run == true }}
+    uses: ./.github/workflows/eval-correction-reusable.yml
+    with:
+      candidate: app
+      candidate_ref: ${{ github.sha }}
+      starter_ref: ${{ inputs.starter_ref }}
+      mode: evidence
+      run_quality: true
+    secrets:
+      EVAL_OPENAI_API_KEY: ${{ secrets.EVAL_OPENAI_API_KEY }}

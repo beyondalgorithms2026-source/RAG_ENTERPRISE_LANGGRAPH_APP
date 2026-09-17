@@ -755,6 +755,27 @@ def _focused_evidence_text(
     rules,
     shape=None,
 ) -> str:
+    # Recovery quotes are evidence presentation, not new retrieval. Preserve a
+    # complete authorized procedure instead of scoring away all but its opener.
+    wants_sequence = bool(
+        re.search(r"\b(sequence|ordered|in order|steps|actions|walk through)\b", question, re.I)
+    )
+    wants_prohibitions = bool(
+        re.search(r"\b(?:may|must|can)\b.*\bnot\b", question, re.I)
+    ) and bool(getattr(shape, "item_count", None))
+    complete = []
+    for item in evidence:
+        snippet = str(item.get("snippet") or item.get("excerpt") or "")
+        numbered = len(re.findall(r"(?:^|\s)\d+[.)]\s", snippet)) >= 2
+        prohibited = bool(re.search(r"\b(?:may|must|shall)\s+not\b", snippet, re.I))
+        if len(snippet) <= 2400 and (
+            (wants_sequence and numbered) or (wants_prohibitions and prohibited)
+        ):
+            relevance = _term_hits(snippet, anchors)
+            if relevance:
+                complete.append((relevance, snippet))
+    if complete:
+        return max(complete, key=lambda item: item[0])[1].strip()
     text = " ".join(str(item.get("snippet") or item.get("excerpt") or "") for item in evidence)
     sentences = _split_evidence_sentences(text)
     if not sentences:
@@ -1031,7 +1052,27 @@ def exact_phrase_bias(question: str, anchors: Sequence[str]) -> str | None:
         phrase
         for phrase in capitalized
         if phrase.split()[0].lower() not in _STOPWORDS
-        and phrase.split()[0].lower() not in {"what", "why", "how", "who", "when", "where"}
+        and phrase.split()[0].lower()
+        not in {
+            "what",
+            "why",
+            "how",
+            "who",
+            "when",
+            "where",
+            "are",
+            "is",
+            "can",
+            "could",
+            "does",
+            "do",
+            "did",
+            "may",
+            "must",
+            "should",
+            "will",
+            "would",
+        }
         and phrase.casefold() not in {"operations manual", "the operations manual"}
     ]
     if capitalized:

@@ -1,11 +1,13 @@
 name: full-eval
 
 on:
-  pull_request:
-  push:
   workflow_dispatch:
-  schedule:
-    - cron: "17 2 * * *"
+    inputs:
+      confirm_paid_run:
+        description: Confirm this manual run may call paid model APIs
+        required: true
+        default: false
+        type: boolean
 
 jobs:
   scope:
@@ -44,13 +46,15 @@ jobs:
 
   full-eval:
     needs: scope
-    uses: ./.github/workflows/full-eval-reusable.yml
+    if: ${{ inputs.confirm_paid_run == true }}
+    uses: ./.github/workflows/eval-correction-reusable.yml
     with:
       candidate: app
       candidate_ref: ${{ github.event.pull_request.head.sha || github.sha }}
-      # P18 calibration remains non-baseline-blocking until ten valid runs
-      # support an explicitly approved northwind-openai-v2 baseline.
-      mode: calibration
+      starter_ref: codex/eval-correction
+      # One evidence run records honest quality outcomes but fails closed on
+      # incomplete execution, grader/transport failures, or ACL controls.
+      mode: evidence
       run_quality: ${{ needs.scope.outputs.relevant == 'true' }}
     secrets:
       EVAL_OPENAI_API_KEY: ${{ secrets.EVAL_OPENAI_API_KEY }}
