@@ -741,7 +741,8 @@ async def run_eval(
                 if (
                     concepts
                     and not typed["hard_failure"]
-                    and run.get("grounding_status") not in INFRASTRUCTURE_STATUSES
+                    and run.get("grounding_status")
+                    not in (INFRASTRUCTURE_STATUSES | {"not_found", "not_grounded"})
                 ):
                     from rag_enterprise_langgraph.eval_judge import judge
 
@@ -759,6 +760,7 @@ async def run_eval(
                             judged["judgement"],
                             answer=answer,
                             references=list(case.reference_evidence),
+                            assertions=concepts,
                         )
                         expected_eval["judge_metadata"] = {
                             "model": judged.get("model"),

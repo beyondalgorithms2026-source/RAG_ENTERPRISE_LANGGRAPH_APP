@@ -7,7 +7,7 @@ import re
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
-GRADER_VERSION = "2.0.0"
+GRADER_VERSION = "2.0.1"
 TYPES = {"concept", "identifier", "numeric", "polarity", "classification", "citation"}
 
 
@@ -66,6 +66,18 @@ def validate(assertions: Any, references: Any) -> None:
         if not isinstance(item.get("required", True), bool):
             raise AssertionError("required must be boolean")
         aliases = item.get("any_of", [])
+        anchors = item.get("answer_anchors", [])
+        if (
+            not isinstance(anchors, list)
+            or any(
+                not isinstance(group, list)
+                or not group
+                or any(not isinstance(term, str) or not term.strip() for term in group)
+                for group in anchors
+            )
+            or (anchors and item["type"] != "concept")
+        ):
+            raise AssertionError("answer anchors require nonempty concept alias groups")
         if not isinstance(aliases, list) or any(
             not isinstance(a, str) or not a.strip() for a in aliases
         ):
@@ -242,6 +254,8 @@ def evaluate(
             # Curated contradictory *claims*, not forbidden single words.
             if _span(answer, item.get("contradictions", [])):
                 state = "contradicted"
+            if any(_span(answer, group) is None for group in item.get("answer_anchors", [])):
+                state = "missing"
         elif kind == "numeric":
             state = "supported" if _numeric(answer, item) else "missing"
         elif kind == "polarity":
@@ -284,13 +298,18 @@ def evaluate(
                 "answer_span": matched,
                 "evidence_matched": evidence_match,
                 "method": "deterministic",
+                "answer_anchor_missing": any(
+                    _span(answer, group) is None for group in item.get("answer_anchors", [])
+                ),
             }
         )
     return {
         "grader_version": GRADER_VERSION,
         "assertions": rows,
         "hard_failure": any(
-            r["required"] and r["state"] in {"missing", "contradicted"} and r["type"] != "concept"
+            r["required"]
+            and r["state"] in {"missing", "contradicted"}
+            and (r["type"] != "concept" or r["answer_anchor_missing"])
             for r in rows
         ),
     }
@@ -305,7 +324,32 @@ def _literal_span(text: str, quote: Any) -> str | None:
     return match.group() if match else None
 
 
-def apply_judgement(result: dict, judgement: Any, *, answer: str, references: list[dict]) -> dict:
+def factual_quotes(references: list[dict]) -> list[str]:
+    """Literal factual units, excluding titles, table headers and separators."""
+    quotes = set()
+    for reference in references:
+        lines = [line.strip() for line in reference["text"].splitlines() if line.strip()]
+        for index, line in enumerate(lines):
+            separator = bool(re.fullmatch(r"[|:\-\s]+", line))
+            header = index + 1 < len(lines) and bool(re.fullmatch(r"[|:\-\s]+", lines[index + 1]))
+            if separator or header or line.startswith("#"):
+                continue
+            quotes.add(line)
+            if not line.startswith("|"):
+                quotes.update(
+                    m.group().strip() for m in re.finditer(r"\S.*?(?:[.!?;](?=\s|$)|$)", line)
+                )
+    return sorted(quotes)
+
+
+def apply_judgement(
+    result: dict,
+    judgement: Any,
+    *,
+    answer: str,
+    references: list[dict],
+    assertions: list[dict] | None = None,
+) -> dict:
     """Validate grounded judge spans; never permit overriding hard checks."""
     if not isinstance(judgement, dict) or not isinstance(judgement.get("assertions"), list):
         raise AssertionError("invalid judge output")
@@ -315,34 +359,44 @@ def apply_judgement(result: dict, judgement: Any, *, answer: str, references: li
         if r["type"] == "concept" or (r["type"] == "polarity" and r["state"] == "uncertain")
     }
     seen = set()
-    evidence = "\n".join(r["text"] for r in references)
+    contracts = {a["id"]: a for a in assertions or []}
+    updates = []
     for row in judgement["assertions"]:
         if not isinstance(row, dict) or row.get("id") not in unresolved or row["id"] in seen:
             raise AssertionError("judge returned unknown or duplicate assertion")
         seen.add(row["id"])
         if row.get("state") not in {"supported", "missing", "contradicted", "uncertain"}:
             raise AssertionError("unknown judge state")
-        if not isinstance(row.get("explanation"), str):
+        if not isinstance(row.get("explanation"), str) or not row["explanation"].strip():
             raise AssertionError("judge explanation required")
         answer_span = _literal_span(answer, row.get("answer_span"))
+        source_ids = contracts.get(row["id"], {}).get("source_refs")
+        scoped = [r for r in references if source_ids is None or r["id"] in source_ids]
+        evidence = "\n".join(factual_quotes(scoped))
         evidence_span = _literal_span(evidence, row.get("evidence_span"))
         if row["state"] in {"supported", "contradicted"} and (
             answer_span is None or evidence_span is None
         ):
             raise AssertionError("judge support spans must occur in answer and reference")
         original = unresolved[row["id"]]
-        if original["state"] != "contradicted":
-            original.update(
-                {
-                    "state": row["state"],
-                    "method": "semantic_judge",
-                    "answer_span": answer_span,
-                    "evidence_span": evidence_span,
-                    "explanation": row["explanation"],
-                }
+        if original["state"] != "contradicted" and not original.get("answer_anchor_missing"):
+            updates.append(
+                (
+                    original,
+                    {
+                        "state": row["state"],
+                        "method": "semantic_judge",
+                        "answer_span": answer_span,
+                        "evidence_span": evidence_span,
+                        "explanation": row["explanation"],
+                    },
+                )
             )
     if seen != set(unresolved):
         raise AssertionError("judge omitted concept assertions")
+    # Invalid later rows must not leave earlier assertions partially overwritten.
+    for original, update in updates:
+        original.update(update)
     return result
 
 

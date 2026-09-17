@@ -1,6 +1,6 @@
 {
   "schema_version": "1.2",
-  "suite_version": "2.1.0-candidate",
+  "suite_version": "2.1.2-candidate",
   "eval_set": "operations-manual-v3.2-correction-candidate",
   "note": "Advisory revised contract; original packs and v1 baseline preserved.",
   "questions": [
@@ -5196,7 +5196,7 @@
     },
     {
       "case_id": "OM-085",
-      "question": "An employee in Spain wants to delay a Minor incident report until after a Spanish public holiday. Does Working Day allow that delay?",
+      "question": "An employee in Spain discovers a Minor incident before a Spanish public holiday. Within how many elapsed hours must it be reported, and may a Spanish or Belgian public holiday extend that deadline?",
       "expectation": "answer",
       "expected_documents": [
         "northwind-operations-manual-v3.2"
@@ -5223,7 +5223,7 @@
       "ordered_fact_ids": [],
       "question_type": "definition-dependent",
       "difficulty": "adversarial",
-      "rationale": "Trick question using the manual's own example: Working Day excludes Belgian public holidays, not the employee's local holidays.",
+      "rationale": "Section 3.2.1 requires 24 elapsed hours for a Minor incident report; neither local nor Belgian public holidays extend an elapsed-hours deadline. Working Day definitions do not change that requirement.",
       "source_sections": [
         "3.2.1 Immediate reporting",
         "1.2 Definitions"
@@ -5260,6 +5260,7 @@
           ],
           "contradictions": [
             "unless it is a Belgian public holiday",
+            "unless it is also a Belgian public holiday",
             "unless the following day is a Belgian public holiday"
           ]
         },

@@ -40,7 +40,14 @@ async def regrade(pack: Path, fixture: dict, *, semantic_judge=None, use_judge=F
             else None
         )
         metadata = None
-        if use_judge and concepts and not result["hard_failure"] and not error:
+        no_grounded_answer = saved.get("grounding_status") in {"not_found", "not_grounded"}
+        if (
+            use_judge
+            and concepts
+            and not result["hard_failure"]
+            and not error
+            and not no_grounded_answer
+        ):
             try:
                 response = await (semantic_judge or judge)(
                     question=case.question,
@@ -54,6 +61,7 @@ async def regrade(pack: Path, fixture: dict, *, semantic_judge=None, use_judge=F
                     response["judgement"],
                     answer=answer,
                     references=list(case.reference_evidence),
+                    assertions=concepts,
                 )
                 metadata = {"model": response.get("model"), "usage": response.get("usage", {})}
             except Exception as exc:
@@ -79,6 +87,8 @@ async def regrade(pack: Path, fixture: dict, *, semantic_judge=None, use_judge=F
             )
         )
         if any(a["state"] == "contradicted" for a in result["assertions"]):
+            answer_status = "fail"
+        if no_grounded_answer and not case.expect_refusal:
             answer_status = "fail"
         if case.expect_refusal:
             safe_text = (

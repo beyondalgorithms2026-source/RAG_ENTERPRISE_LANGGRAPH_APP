@@ -10,7 +10,7 @@ import urllib.error
 import urllib.request
 from typing import Any
 
-from rag_enterprise_langgraph.eval_assertions import judge_payload
+from rag_enterprise_langgraph.eval_assertions import factual_quotes, judge_payload
 
 MODEL = "gpt-4o-mini-2024-07-18"
 SYSTEM = (
@@ -21,7 +21,10 @@ SYSTEM = (
     "their meaning. For supported or contradicted assertions, copy a SHORT CONTIGUOUS literal quote "
     "from the answer and a SHORT CONTIGUOUS literal quote from reference text. Do not combine separate "
     "sentences, remove list labels, insert ellipses, paraphrase quotes or change their punctuation. "
-    "For missing or uncertain assertions use empty quotes where no supporting span exists. "
+    "The answer quote itself must state the required concept; matching words or the reference alone "
+    "do not make an omitted concept supported. Give a nonempty explanation for every assertion. "
+    "Select literal quote choices from the answer and each assertion's scoped evidence. For missing "
+    "concepts quote the answer showing the omission and the relevant reference requirement. "
     "Use uncertain when interpretation is ambiguous. Do not infer facts absent from reference evidence."
 )
 ROW_SCHEMA = {
@@ -58,20 +61,10 @@ def _request(payload: str) -> dict[str, Any]:
             for match in re.finditer(r"\S.*?(?:[.!?;](?=\s|$)|$)", answer, re.DOTALL)
         }
     )
-    evidence_quotes = sorted(
-        {""}
-        | {
-            line.strip()
-            for reference in supplied["reference_evidence"]
-            for line in reference["text"].splitlines()
-            if line.strip()
-        }
-    )
     fields = {key: value for key, value in ROW_SCHEMA["properties"].items() if key != "id"}
     fields = {
         **fields,
-        "answer_span": {"type": "string", "enum": answer_quotes},
-        "evidence_span": {"type": "string", "enum": evidence_quotes},
+        "answer_span": {"type": "string", "enum": [q for q in answer_quotes if q] or [""]},
     }
     assertion_schema = {
         "type": "object",
@@ -80,7 +73,21 @@ def _request(payload: str) -> dict[str, Any]:
             assertion["id"]: {
                 "type": "object",
                 "additionalProperties": False,
-                "properties": fields,
+                "properties": {
+                    **fields,
+                    "evidence_span": {
+                        "type": "string",
+                        "enum": factual_quotes(
+                            [
+                                ref
+                                for ref in supplied["reference_evidence"]
+                                if not assertion.get("source_refs")
+                                or ref["id"] in assertion["source_refs"]
+                            ]
+                        )
+                        or [""],
+                    },
+                },
                 "required": list(fields),
             }
             for assertion in supplied["assertions"]

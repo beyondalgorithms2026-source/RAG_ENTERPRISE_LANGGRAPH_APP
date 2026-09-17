@@ -77,6 +77,35 @@ def test_90_candidate_cases_preserve_five_original_refusals():
     assert [c.case_id for c in core if c.expect_refusal] == [f"NW-{n:03}" for n in range(21, 26)]
 
 
+def test_minor_incident_question_explicitly_requests_elapsed_deadline_without_lowering_it():
+    case = next(c for c in read_eval_json(PACK) if c.case_id == "OM-085")
+    assert "elapsed hours" in case.question
+    assert "Spanish or Belgian public holiday" in case.question
+    deadline = next(a for a in case.assertions if a["id"] == "deadline")
+    assert deadline["type"] == "numeric"
+    assert deadline["required"] is True
+    assert deadline["value"] == "24"
+    assert "within 24 hours" in " ".join(r["text"] for r in case.reference_evidence)
+
+
+def test_saved_minor_incident_answer_cannot_pass_with_belgian_holiday_exception():
+    case = next(c for c in read_eval_json(PACK) if c.case_id == "OM-085")
+    result = grading.evaluate(
+        answer=(
+            "A Minor incident must be reported within 24 hours of discovery [S5]. "
+            "A Spanish public holiday does not extend that deadline unless it is also "
+            "a Belgian public holiday [S1]."
+        ),
+        evidence=[],
+        citations=[],
+        assertions=list(case.assertions),
+        references=list(case.reference_evidence),
+    )
+    states = {a["id"]: a["state"] for a in result["assertions"]}
+    assert states["deadline"] == "supported"
+    assert states["no_local_delay"] == "contradicted"
+
+
 @pytest.mark.parametrize(
     "answer,case_id",
     [
@@ -179,6 +208,28 @@ def test_saved_answer_judge_failure_is_infrastructure_not_quality_pass():
     assert report["rows"][0]["revised_answer_status"] != "pass"
     assert "secret/raw/path" not in json.dumps(report)
     assert report["baseline_eligible"] is False
+
+
+def test_saved_missing_grounded_answer_is_quality_failure_without_judge_call():
+    fixture = {
+        "rows": [
+            {
+                "case_id": "OM-064",
+                "answer": "Not found in provided sources.",
+                "grounding_status": "not_found",
+                "citations": [],
+                "evidence": [],
+            }
+        ]
+    }
+
+    async def forbidden(**kwargs):
+        pytest.fail("An absent answer must not consume a semantic judge call")
+
+    report = asyncio.run(regrade(PACK, fixture, semantic_judge=forbidden, use_judge=True))
+    assert report["rows"][0]["revised_answer_status"] == "fail"
+    assert report["rows"][0]["failure_class"] is None
+    assert report["rows"][0]["judge_metadata"] is None
 
 
 def test_missing_shared_reference_is_contract_error(tmp_path):

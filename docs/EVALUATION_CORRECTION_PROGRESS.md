@@ -1,5 +1,31 @@
 # Evaluation correction — candidate implementation and verification
 
+## Owner-approved default activation and question clarification — 15 September 2026
+
+The owner approved default-on STARTER context selection, candidate prompts and
+bounded numeric repair after the online Supabase/OpenAI comparison. Activation is
+independent of v2 baseline approval; the original 25-case pack and baseline are
+unchanged. Explicit false environment overrides remain available for rollback.
+
+Suite 2.1.1-candidate clarifies OM-085 to explicitly request the 24-elapsed-hour
+deadline and no holiday extension. Its required assertions are unchanged and are
+supported by Section 3.2.1. Other failing questions were not weakened: missing
+operative sections, insurance evidence, exceptions and wrong authority are not
+wording-only failures. The preceding full-stack run had 11 quality-labelled failures,
+one manual review and five grading-infrastructure failures, not five bad questions.
+Historical opt-in descriptions below predate this activation decision.
+
+The next online verification completed the unchanged v1 pack (22/25) and suite
+2.1.1-candidate (74/90 raw passes, ten quality-labelled failures, one manual and
+five grading-infrastructure failures). OM-085's raw pass is a known false positive:
+the answer includes 24 hours but incorrectly permits a Belgian-holiday extension.
+Post-run suite 2.1.2-candidate adds that observed contradictory claim to the existing
+source-bound contradiction guard and corrects the outdated Working Day rationale.
+Its offline regression rejects the saved wrong answer; no further generation loop
+or baseline promotion is implied. Other genuine evidence/authority failures remain.
+The approved v1 comparator also rejects missing historical context-cap metadata;
+the baseline file was not rewritten or assumed to have an unrecorded value.
+
 Status: work in progress. The approved 25-case v1 gate remains unchanged. No
 revised baseline has been approved, and the candidate is not a production release.
 
@@ -165,3 +191,37 @@ whole-tree verification must distinguish them from changed-file results.
 
 Existing unrelated frontend/main changes in the working trees are preserved and
 must not be included accidentally in evaluator/backend delivery commits.
+
+## Reliability and grader-defect patch — 15 September 2026
+
+Grader 2.0.1 excludes table headers/separators from factual quote choices, scopes
+judge evidence to each assertion's source references, requires explanations and
+applies validated judge rows atomically. Judge request fields are unique. Missing
+or ungrounded answers fail quality without an unnecessary semantic judge call.
+These changes add no visitor evaluation/model calls. Historical v1 is untouched.
+
+APP recovery preserves complete bounded ordered procedures and prohibition
+excerpts instead of extracting only the introduction. Question-opening auxiliary
+verbs such as "Are" are no longer mistaken for a distinctive exact search phrase.
+Existing evidence validation, recovery bounds, thresholds and statuses remain.
+
+STARTER candidate 1.2.2 and authorized context selection address duplicated and
+administrative evidence crowding, governing definitions, historical amendments,
+complete sequences and conflicting policies. No runtime eval IDs/expected answers,
+SQL ACL changes, new dependencies, model swaps or embedding swaps are introduced.
+
+Correction: NW-016 in the shared mixed corpus has conflicting source policies.
+The legacy corpus requires Finance Director approval for EUR 20,000; Manual v3.2
+allows Band 4–5 operating expenditure up to EUR 28,600. The approved core pack
+must use its intended corpus scope. Do not force a policy decision to match a test.
+
+Targeted online reports are diagnostic, not baseline eligible. Existing shared
+Supabase data is not migrated, seeded, deleted or reauthorized. No Docker is used.
+Calibration/approval remain pending while genuine failures or corpus-scope and
+historical-baseline metadata issues exist. Documentation is guidance, not proof.
+
+See [the reliability verification report](RELIABILITY_FIX_VERIFICATION_2026-09-15.md)
+for exact tests, raw online results, corrected grader findings and remaining
+failures. Core candidate/suite 2.1.3 adds a protected presence guard for the
+material NW-015 investigation exception; do not treat older regrade counts as
+approved scores. APP now has 239 passing offline tests for this patch.
