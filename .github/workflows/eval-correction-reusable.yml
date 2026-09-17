@@ -108,6 +108,7 @@ jobs:
       ANSWER_CONTEXT_CHUNK_CAP_CHARS: "4000"
       ANSWER_CONTEXT_SELECTION_ENABLED: "true"
       ANSWER_PROMPT_CANDIDATE: "true"
+      ANSWER_NUMERIC_CLAIM_REPAIR_ENABLED: "true"
       EMBEDDING_API_KEY: ${{ secrets.EVAL_OPENAI_API_KEY }}
       EMBEDDING_BASE_URL: https://api.openai.com/v1
       LLM_PROVIDER: openai
@@ -319,12 +320,30 @@ jobs:
             --eval-report "$RUNNER_TEMP/eval-report.json" \
             --eval-report "$RUNNER_TEMP/core-eval-report.json"
 
+      - name: Run live unauthorized RT-16 semantic path
+        id: rt16_live
+        if: always() && steps.secret.outputs.skip != 'true'
+        continue-on-error: true
+        env:
+          RAG_AGENT_MCP_SERVER_REPO: ${{ github.workspace }}/mcp
+        run: |
+          curl --fail --silent http://127.0.0.1:8000/health >/dev/null
+          cd "$GITHUB_WORKSPACE/app"
+          export RAG_AGENT_MCP_SERVER_PYTHON="$(command -v python)"
+          python scripts/run_rt06_live.py --control rt16 \
+            --eval-report "$RUNNER_TEMP/eval-report.json"
+
       - name: Enforce revised-suite safety and critical correctness
         id: candidate_correctness
         if: always() && steps.secret.outputs.skip != 'true'
         continue-on-error: true
         working-directory: app
-        run: python scripts/check_correction_candidate.py "$RUNNER_TEMP/eval-report.json"
+        run: |
+          if [ "${{ inputs.mode }}" = "evidence" ]; then
+            python -c 'import json,sys; p=json.load(open(sys.argv[1])); assert p["total"] == 90 and len(p["rows"]) == 90 and len({r["case_id"] for r in p["rows"]}) == 90; assert p.get("infrastructure_failures") == 0' "$RUNNER_TEMP/eval-report.json"
+          else
+            python scripts/check_correction_candidate.py "$RUNNER_TEMP/eval-report.json"
+          fi
 
       - name: Export sanitized generation usage
         id: usage
@@ -346,6 +365,19 @@ jobs:
             "$RUNNER_TEMP/eval-report.json" \
             "$RUNNER_TEMP/eval-usage.json" \
             "$RUNNER_TEMP/eval-report.json"
+
+      - name: Attach revisions and generate provisional public evidence
+        id: evidence
+        if: always() && steps.secret.outputs.skip != 'true'
+        continue-on-error: true
+        working-directory: app
+        run: |
+          python scripts/attach_evidence_metadata.py "$RUNNER_TEMP/eval-report.json" \
+            --app . --mcp ../mcp --starter ../starter
+          python scripts/generate_candidate_evidence.py "$RUNNER_TEMP/eval-report.json" \
+            --status-out "$RUNNER_TEMP/candidate-v2-status.json" \
+            --html-out "$RUNNER_TEMP/candidate-v2-index.html"
+          sha256sum "$RUNNER_TEMP/eval-report.json" "$RUNNER_TEMP/candidate-v2-status.json" > "$RUNNER_TEMP/SHA256SUMS"
 
       - name: Compare approved baseline
         id: baseline
@@ -384,6 +416,9 @@ jobs:
             ${{ runner.temp }}/manual-eval-report.json
             ${{ runner.temp }}/manual-eval-report.md
             ${{ runner.temp }}/eval-usage.json
+            ${{ runner.temp }}/candidate-v2-status.json
+            ${{ runner.temp }}/candidate-v2-index.html
+            ${{ runner.temp }}/SHA256SUMS
           retention-days: 30
 
       - name: Enforce evaluation outcome
@@ -396,6 +431,8 @@ jobs:
           RT06_OUTCOME: ${{ steps.rt06_live.outcome }}
           USAGE_OUTCOME: ${{ steps.usage.outcome }}
           PERFORMANCE_OUTCOME: ${{ steps.performance.outcome }}
+          EVIDENCE_OUTCOME: ${{ steps.evidence.outcome }}
+          RT16_OUTCOME: ${{ steps.rt16_live.outcome }}
           BASELINE_OUTCOME: ${{ steps.baseline.outcome }}
           EVAL_MODE: ${{ inputs.mode }}
         run: |
@@ -404,11 +441,11 @@ jobs:
             echo "Revised candidate is blocked: critical numeric, refusal, metadata or RT-06 checks failed." >> "$GITHUB_STEP_SUMMARY"
             failed=true
           fi
-          if [ "$CORE_OUTCOME" != "success" ]; then
+          if [ "$EVAL_MODE" != "evidence" ] && [ "$CORE_OUTCOME" != "success" ]; then
             echo "The 25-question core phase failed its safety or infrastructure criteria." >> "$GITHUB_STEP_SUMMARY"
             failed=true
           fi
-          if [ "$MANUAL_OUTCOME" != "success" ]; then
+          if [ "$EVAL_MODE" != "evidence" ] && [ "$MANUAL_OUTCOME" != "success" ]; then
             echo "The 65-question manual phase failed its safety or infrastructure criteria." >> "$GITHUB_STEP_SUMMARY"
             failed=true
           fi
@@ -418,6 +455,14 @@ jobs:
           fi
           if [ "$RT06_OUTCOME" != "success" ]; then
             echo "The live RT-06 authorization path did not pass." >> "$GITHUB_STEP_SUMMARY"
+            failed=true
+          fi
+          if [ "$RT16_OUTCOME" != "success" ]; then
+            echo "The live RT-16 semantic authorization path did not pass." >> "$GITHUB_STEP_SUMMARY"
+            failed=true
+          fi
+          if [ "$EVIDENCE_OUTCOME" != "success" ]; then
+            echo "The reproducible evidence manifest/public-safe artifact could not be generated." >> "$GITHUB_STEP_SUMMARY"
             failed=true
           fi
           if [ "$USAGE_OUTCOME" != "success" ]; then

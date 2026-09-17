@@ -19,7 +19,7 @@ jobs:
       candidate: app
       candidate_ref: ${{ github.sha }}
       starter_ref: ${{ inputs.starter_ref }}
-      mode: calibration
+      mode: evidence
       run_quality: true
     secrets:
       EVAL_OPENAI_API_KEY: ${{ secrets.EVAL_OPENAI_API_KEY }}

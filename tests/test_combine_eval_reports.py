@@ -55,3 +55,21 @@ def test_rejects_wrong_phase_size_or_duplicate_case_id():
     manual["rows"][0]["case_id"] = "NW-001"
     with pytest.raises(CombinedReportError, match="duplicate"):
         combine_reports(_report("NW", 25, schema_version="1.0"), manual)
+
+
+def test_reports_transport_grader_and_other_infrastructure_separately():
+    core = _report("NW", 25, schema_version="1.2")
+    manual = _report("OM", 65, schema_version="1.2")
+    core["rows"][0].update(failure_class="infrastructure", grounding_status="backend_timeout")
+    core["rows"][1].update(
+        failure_class="infrastructure",
+        grounding_status="verified",
+        expected_eval={"judge_error": "offline_judge_infrastructure_failure"},
+    )
+    core["rows"][2].update(failure_class="infrastructure", grounding_status="verified")
+    report = combine_reports(core, manual)
+    assert report["infrastructure_failures"] == 3
+    assert report["transport_failures"] == 1
+    assert report["grader_failures"] == 1
+    assert report["other_infrastructure_failures"] == 1
+    assert report["passed"] + report["failed"] + report["manual_review"] == 90
