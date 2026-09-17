@@ -78,11 +78,14 @@ def _request_once(payload: str) -> dict[str, Any]:
         **fields,
         "answer_span": {"type": "string", "enum": [q for q in answer_quotes if q] or [""]},
     }
+    assertion_keys = {
+        f"assertion_{index}": assertion for index, assertion in enumerate(supplied["assertions"])
+    }
     assertion_schema = {
         "type": "object",
         "additionalProperties": False,
         "properties": {
-            assertion["id"]: {
+            schema_key: {
                 "type": "object",
                 "additionalProperties": False,
                 "properties": {
@@ -102,9 +105,9 @@ def _request_once(payload: str) -> dict[str, Any]:
                 },
                 "required": list(fields),
             }
-            for assertion in supplied["assertions"]
+            for schema_key, assertion in assertion_keys.items()
         },
-        "required": [assertion["id"] for assertion in supplied["assertions"]],
+        "required": list(assertion_keys),
     }
     body = {
         "model": MODEL,
@@ -152,8 +155,7 @@ def _request_once(payload: str) -> dict[str, Any]:
             raise JudgeInfrastructureError("offline judge refused output")
         parsed = json.loads(choice["message"]["content"])
         assertion_rows = parsed["assertions"]
-        expected_ids = {assertion["id"] for assertion in supplied["assertions"]}
-        if not isinstance(assertion_rows, dict) or set(assertion_rows) != expected_ids:
+        if not isinstance(assertion_rows, dict) or set(assertion_rows) != set(assertion_keys):
             raise ValueError("invalid assertion set")
         for row in assertion_rows.values():
             if not isinstance(row, dict) or not str(row.get("explanation") or "").strip():
@@ -165,7 +167,8 @@ def _request_once(payload: str) -> dict[str, Any]:
         return {
             "judgement": {
                 "assertions": [
-                    {"id": assertion_id, **row} for assertion_id, row in assertion_rows.items()
+                    {"id": assertion_keys[schema_key]["id"], **row}
+                    for schema_key, row in assertion_rows.items()
                 ]
             },
             "model": MODEL,

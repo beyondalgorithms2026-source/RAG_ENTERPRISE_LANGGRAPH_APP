@@ -33,14 +33,14 @@ def test_judge_schema_requires_known_ids_and_actual_table_quotes(monkeypatch):
         body = json.loads(request.data)
         schema = body["response_format"]["json_schema"]["schema"]
         assertions = schema["properties"]["assertions"]
-        assert assertions["required"] == ["authority"]
-        row = assertions["properties"]["authority"]
+        assert assertions["required"] == ["assertion_0"]
+        row = assertions["properties"]["assertion_0"]
         quotes = row["properties"]["evidence_span"]["enum"]
         assert "|Band 6+|Three days|" in quotes
         assert "Authority|Band 6+" not in quotes
         content = {
             "assertions": {
-                "authority": {
+                "assertion_0": {
                     "state": "supported",
                     "answer_span": answer,
                     "evidence_span": "|Band 6+|Three days|",
@@ -68,6 +68,49 @@ def test_judge_schema_requires_known_ids_and_actual_table_quotes(monkeypatch):
     )
     result = eval_judge._request(payload)
     assert result["judgement"]["assertions"][0]["id"] == "authority"
+
+
+def test_judge_schema_maps_digit_prefixed_ids_through_neutral_property_names(monkeypatch):
+    monkeypatch.setenv("EVAL_OPENAI_API_KEY", "unit-test-placeholder")
+    answer = "The deadline means elapsed hours."
+
+    def respond(request, timeout):
+        body = json.loads(request.data)
+        assertions = body["response_format"]["json_schema"]["schema"]["properties"]["assertions"]
+        assert assertions["required"] == ["assertion_0"]
+        content = {
+            "assertions": {
+                "assertion_0": {
+                    "state": "supported",
+                    "answer_span": answer,
+                    "evidence_span": answer,
+                    "explanation": "The elapsed-hours meaning is preserved.",
+                }
+            }
+        }
+        return io.BytesIO(
+            json.dumps(
+                {
+                    "choices": [
+                        {
+                            "finish_reason": "stop",
+                            "message": {"content": json.dumps(content)},
+                        }
+                    ]
+                }
+            ).encode()
+        )
+
+    monkeypatch.setattr(eval_judge.urllib.request, "urlopen", respond)
+    payload = grading.judge_payload(
+        question="What does 24 hours mean?",
+        answer=answer,
+        assertions=[{"id": "24_hours_meaning", "type": "concept"}],
+        references=[{"id": "r", "text": answer}],
+        citations=[],
+    )
+    result = eval_judge._request(payload)
+    assert result["judgement"]["assertions"][0]["id"] == "24_hours_meaning"
 
 
 def test_judge_retries_transport_failure_at_most_three_times(monkeypatch):
