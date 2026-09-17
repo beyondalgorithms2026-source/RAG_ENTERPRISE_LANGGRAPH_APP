@@ -1,0 +1,27 @@
+name: public-demo-smoke
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "23 */6 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  public-readiness:
+    runs-on: ubuntu-latest
+    env:
+      APP_URL: https://rag-enterprise-governance-demo.onrender.com
+      BACKEND_URL: https://rag-enterprise-starter-demo.onrender.com
+    steps:
+      - name: Check independent service health endpoints
+        run: |
+          curl --fail --silent --show-error --retry 3 --retry-all-errors "$APP_URL/healthz"
+          curl --fail --silent --show-error --retry 3 --retry-all-errors "$BACKEND_URL/health"
+      - name: Check anonymous app and essential static assets
+        run: |
+          curl --fail --silent --show-error --retry 3 --retry-all-errors "$APP_URL/app" > app.html
+          grep -q "Governed RAG" app.html
+          curl --fail --silent --show-error --retry 3 --retry-all-errors "$APP_URL/app/static/app.css" > /dev/null
+          curl --fail --silent --show-error --retry 3 --retry-all-errors "$APP_URL/app/static/app.js" > /dev/null

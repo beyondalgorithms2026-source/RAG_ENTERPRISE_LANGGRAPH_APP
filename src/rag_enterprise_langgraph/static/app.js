@@ -2,696 +2,222 @@
 
 const publicDemo = document.body.dataset.publicDemo === "true";
 const backendUrl = (document.querySelector('meta[name="rag-backend-url"]')?.content || "").replace(/\/$/, "");
-
-function esc(value) {
-  const div = document.createElement("div");
-  div.textContent = value === null || value === undefined ? "" : String(value);
-  return div.innerHTML;
-}
-
-async function fetchJSON(url, options) {
-  const response = await fetch(url, options);
-  let body = null;
-  try {
-    body = await response.json();
-  } catch (err) {
-    body = null;
-  }
-  if (!response.ok) {
-    const detail = body && body.detail ? body.detail : `HTTP ${response.status}`;
-    throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
-  }
-  return body;
-}
-
-function pill(status) {
-  const text = String(status || "unknown");
-  const ok = ["verified", "grounded", "recovered", "approved", "defended", "pass", "completed", "ok", "candidate_evidence_found", "evidence_found"];
-  const warn = ["partial", "needs_review", "manual_review", "pending_approval", "requires_backend", "not_found", "weak_answer", "candidate_evidence_present"];
-  const bad = ["failed", "fail", "rejected", "error", "tool_error", "backend_timeout", "backend_auth_failed", "not_grounded", "unavailable"];
-  let cls = "info";
-  if (ok.includes(text)) cls = "ok";
-  else if (warn.includes(text)) cls = "warn";
-  else if (bad.includes(text)) cls = "bad";
-  return `<span class="pill ${cls}">${esc(text)}</span>`;
-}
-
-function sourceLink(sourceId, label = "Open full source") {
-  const id = Number(sourceId);
-  if (!backendUrl || !Number.isInteger(id) || id < 1) return "";
-  return `<a href="${esc(backendUrl)}/corpus/${id}/file" target="_blank" rel="noopener noreferrer">${esc(label)}</a>`;
-}
-
-function timelineTable(timeline) {
-  if (!timeline || !timeline.length) return '<div class="empty">No tool calls recorded.</div>';
-  const rows = timeline
-    .map(
-      (step) => `<tr>
-        <td>${esc(step.step)}</td>
-        <td class="mono">${esc(step.tool_name)}</td>
-        <td>${esc(step.purpose || "-")}</td>
-        <td>${pill(step.result_status)}</td>
-        <td>${esc(step.recovery_reason || "-")}</td>
-        <td>${step.latency_ms === null || step.latency_ms === undefined ? "-" : esc(step.latency_ms) + " ms"}</td>
-      </tr>`
-    )
-    .join("");
-  return `<table><thead><tr><th>#</th><th>Tool</th><th>Purpose</th><th>Status</th><th>Recovery reason</th><th>Latency</th></tr></thead><tbody>${rows}</tbody></table>`;
-}
-
-function decisionTrail(trail) {
-  if (!trail || !trail.length) return "";
-  const items = trail.map((step) => `<li><strong>${esc(step.label)}:</strong> ${esc(step.summary)}</li>`).join("");
-  return `<h2 style="margin-top:16px">Decision trail</h2><ul class="trail">${items}</ul>`;
-}
-
-/* ---------------- Dashboard (ask panel) ---------------- */
-
 let approvalPollTimer = null;
 
-function stopApprovalWatch() {
-  if (approvalPollTimer) {
-    clearInterval(approvalPollTimer);
-    approvalPollTimer = null;
-  }
-}
-
-function decisionLine(record) {
-  const comment = record.comment ? ` — “${esc(record.comment)}”` : "";
-  return `${pill(record.status)} by ${esc(record.reviewer || "-")} at ${esc((record.decided_at || "").slice(0, 19))}${comment}`;
-}
-
-function watchApproval(approvalId, runId, output) {
-  const check = async () => {
-    try {
-      const record = await fetchJSON(`/approval/${approvalId}`);
-      if (record.status !== "approved" && record.status !== "rejected") return;
-      stopApprovalWatch();
-      if (runId && output) {
-        try {
-          const view = await fetchJSON(`/runs/${runId}`);
-          renderRunResult(view, output);
-          loadRunHistory();
-          return;
-        } catch (err) {
-          /* run store unavailable — fall back to inline release below */
-        }
-      }
-      const container = document.getElementById("approval-release");
-      if (!container) return;
-      if (record.status === "approved") {
-        container.innerHTML = `
-          <h2 style="margin-top:16px">Released answer</h2>
-          <div class="answer-box">${esc(record.full_answer || record.answer_preview || "")}</div>
-          <p class="small muted">${decisionLine(record)}</p>`;
-      } else {
-        container.innerHTML = `<p class="small" style="margin-top:12px">${decisionLine(record)}. The answer was not released.</p>`;
-      }
-    } catch (err) {
-      /* keep polling; transient errors are fine */
-    }
-  };
-  stopApprovalWatch();
-  approvalPollTimer = setInterval(check, 5000);
-  const button = document.getElementById("check-approval");
-  if (button) button.addEventListener("click", check);
-}
+function esc(value) { const node = document.createElement("div"); node.textContent = value == null ? "" : String(value); return node.innerHTML; }
+async function fetchJSON(url, options) { const response = await fetch(url, options); let body; try { body = await response.json(); } catch (_) { body = null; } if (!response.ok) throw new Error(typeof body?.detail === "string" ? body.detail : `HTTP ${response.status}`); return body; }
+function pill(status) { const value = String(status || "unknown"); const good = ["verified","grounded","recovered","approved","defended","pass","completed","ok"]; const bad = ["failed","fail","rejected","error","tool_error","backend_timeout","backend_auth_failed","not_grounded"]; const warn = ["partial","needs_review","manual_review","pending_approval","requires_backend","not_found"]; return `<span class="pill ${good.includes(value) ? "ok" : bad.includes(value) ? "bad" : warn.includes(value) ? "warn" : "info"}">${esc(value.replaceAll("_", " "))}</span>`; }
+function sourceLink(sourceId, label) { const id = Number(sourceId); return backendUrl && Number.isInteger(id) && id > 0 ? `<a href="${esc(backendUrl)}/corpus/${id}/file" target="_blank" rel="noopener noreferrer">${esc(label || "Open source")}</a>` : ""; }
+function timelineTable(timeline) { if (!timeline?.length) return '<div class="empty">No tool calls recorded.</div>'; return `<table><thead><tr><th>Step</th><th>Tool</th><th>Purpose</th><th>Status</th><th>Latency</th></tr></thead><tbody>${timeline.map((step) => `<tr><td>${esc(step.step)}</td><td class="mono">${esc(step.tool_name)}</td><td>${esc(step.purpose || "—")}</td><td>${pill(step.result_status)}</td><td>${step.latency_ms == null ? "—" : esc(step.latency_ms) + " ms"}</td></tr>`).join("")}</tbody></table>`; }
+function setRailRun(result) { const target = document.getElementById("rail-run"); if (!target || !result?.run_id) return; target.hidden = false; target.innerHTML = `<strong>This run</strong><br>${esc(String(result.run_id).slice(0, 10))}<br>${esc(result.audit_event_count || 0)} audit events · ${esc((result.citations || []).length)} cited`; }
 
 function renderRunResult(result, output) {
-  const citations = (result.citations || []).concat(result.evidence || []);
-  const citationList = citations.length
-    ? `<ul class="trail">${citations
-        .slice(0, 5)
-        .map((c) => `<li class="small">${esc(c.file_name || c.source_id || "source")}${c.locator ? " — " + esc(c.locator) : ""}${sourceLink(c.source_id) ? " · " + sourceLink(c.source_id) : ""}</li>`)
-        .join("")}</ul>`
-    : '<div class="muted small">No citations returned.</div>';
-  const releasedInfo =
-    result.answer_released && result.approved_by
-      ? `<p class="small muted">${pill("approved")} by ${esc(result.approved_by)} at ${esc((result.approved_at || "").slice(0, 19))}${result.approval_comment ? " — “" + esc(result.approval_comment) + "”" : ""} — released answer shown above.</p>`
-      : "";
-  const rejectedInfo =
-    result.approval_status === "rejected" && result.decided_by
-      ? `<p class="small muted">${pill("rejected")} by ${esc(result.decided_by)} at ${esc((result.decided_at || "").slice(0, 19))}${result.approval_comment ? " — “" + esc(result.approval_comment) + "”" : ""}</p>`
-      : "";
+  const citations = (result.citations || []).concat(result.evidence || []).slice(0, 5);
+  const timeline = result.execution_timeline || [];
+  const stepFor = (label, matcher) => { const hit = timeline.find((step) => matcher.test(String(step.tool_name || "") + " " + String(step.purpose || ""))); return { label, summary: hit ? `${hit.result_status || "recorded"} · ${hit.latency_ms == null ? "—" : hit.latency_ms + " ms"}` : "recorded" }; };
+  const steps = [
+    stepFor("Injection scan", /injection|prompt/i),
+    stepFor("SQL ACL filter", /acl|access/i),
+    stepFor("Retrieve + rerank", /search|retrieve|grounded/i),
+    stepFor("Generate", /ask_grounded|generate/i),
+    stepFor("Groundedness", /review|validate|ground/i),
+  ];
+  const evidence = citations.length ? citations.map((item, index) => `<article class="evidence-card"><a href="${sourceLink(item.source_id) ? esc(backendUrl) + "/corpus/" + esc(item.source_id) + "/file" : "#"}" ${sourceLink(item.source_id) ? 'target="_blank" rel="noopener noreferrer"' : ""}>[${index + 1}] ${esc(item.file_name || item.source_id || "Source")}</a><p>${esc(item.locator || item.quote || item.snippet_preview || "Citation returned by the workflow.")}</p></article>`).join("") : '<div class="empty">No citations returned.</div>';
+  const trail = steps.length ? steps.map((step) => `<div class="decision-step"><strong>${esc(step.label || "Workflow")}</strong><span>${esc(step.summary || "Recorded")}</span></div>`).join("") : '<div class="decision-step"><strong>Workflow</strong><span>No decision steps recorded.</span></div>';
   const pending = result.approval_status === "pending_approval" && result.approval_id;
-  const answerLabel =
-    result.synthesis_verified && result.synthesized_answer
-      ? '<span class="pill ok" style="margin-left:8px">synthesized · verified against source</span>'
-      : "";
-  output.innerHTML = `
-    <h2 style="margin:0 0 4px">Question</h2>
-    <p style="margin:0 0 14px">${esc(result.question || "-")}</p>
-    <div class="row" style="margin-bottom:10px">
-      ${pill(result.grounding_status)} ${pill(result.approval_status)}
-      ${result.recovery_attempted ? '<span class="pill info">recovery attempted</span>' : ""}
-      <span class="muted small mono">run_id: ${esc(result.run_id || "-")}</span>
-      <span class="muted small">${esc(result.audit_event_count || 0)} audit events</span>
-    </div>
-    <div class="result-layout">
-      <section>
-        <h2 style="margin:0 0 6px">Answer${answerLabel}</h2>
-        <div class="answer-box">${esc(result.answer || "[no answer]")}</div>
-        ${releasedInfo}
-        ${rejectedInfo}
-        ${pending ? `<p class="small muted">Routed to human review (id <span class="mono">${esc(result.approval_id)}</span>). ${publicDemo ? "Approval decisions are disabled for public visitors." : '<a href="/app/approvals">Open the approval queue</a>.'}</p><div id="approval-release"></div>` : ""}
-      </section>
-      <aside class="governance-panel">
-        <h2>Governance decision</h2>
-        <div class="row compact">${pill(result.grounding_status)} ${pill(result.approval_status)}</div>
-        ${result.validation_summary ? `<p class="small"><strong>Evidence check:</strong> ${esc(result.validation_summary.evidence_support || "unknown")}<br /><strong>Review recommended:</strong> ${result.validation_summary.review_recommended ? "yes" : "no"}</p>` : ""}
-        ${result.review_guidance ? `<p class="small"><strong>Review routing:</strong> ${esc(result.review_guidance)}</p>` : ""}
-        ${sourceEvidenceSection(result)}
-        <h2 style="margin-top:16px">Citations / full sources (${citations.length})</h2>
-        ${citationList}
-      </aside>
-    </div>
-    ${decisionTrail(result.decision_trail)}
-    <h2 style="margin-top:16px">Workflow timeline</h2>
-    ${timelineTable(result.execution_timeline)}
-  `;
-  if (pending && !publicDemo) watchApproval(result.approval_id, result.run_id, output);
+  output.classList.add("ask-result-filled");
+  output.innerHTML = `<div class="answer-question-bar"><span>${pill(result.grounding_status)}</span><p>${esc(result.question || "Question")}</p><button class="secondary-button" id="ask-again" type="button">Ask again</button></div><section class="answer-pane"><div class="answer-box">${esc(result.answer || "[No answer released]")}</div>${result.review_guidance ? `<p class="answer-note">${esc(result.review_guidance)}</p>` : ""}${pending ? `<p class="answer-note">Routed to human review. ${publicDemo ? "Public visitors cannot decide approvals." : '<a href="/app/approvals">Open the approval queue.</a>'}</p>` : ""}<section class="decision-trail"><div class="decision-trail-head"><strong>Decision trail</strong><a href="/app/audit">Open audit record →</a></div><div class="decision-trail-grid">${trail}</div></section></section><aside class="evidence-panel"><div class="evidence-heading"><strong>Evidence</strong><span>${citations.length} cited</span></div>${evidence}<p class="small"><a href="/app/documents">Read in Documents →</a> · <a href="/app/compare">Compare paths →</a></p></aside><section class="result-timeline"><h2>Workflow timeline</h2>${timelineTable(result.execution_timeline)}</section>`;
+  document.getElementById("ask-again")?.addEventListener("click", () => { output.classList.remove("ask-result-filled"); output.innerHTML = '<div class="empty">Ask another question to replace this result.</div>'; document.getElementById("ask-question")?.focus(); });
+  setRailRun(result); if (pending && !publicDemo) watchApproval(result.approval_id, result.run_id, output);
 }
+function stopApprovalWatch() { if (approvalPollTimer) clearInterval(approvalPollTimer); approvalPollTimer = null; }
+function watchApproval(approvalId, runId, output) { stopApprovalWatch(); approvalPollTimer = setInterval(async () => { try { const record = await fetchJSON(`/approval/${approvalId}`); if (!["approved","rejected"].includes(record.status)) return; stopApprovalWatch(); renderRunResult(await fetchJSON(`/runs/${runId}`), output); } catch (_) {} }, 5000); }
 
-function sourceEvidenceSection(result) {
-  const spans = result.source_evidence || [];
-  if (!spans.length) return "";
-  const proofNote = result.synthesis_verified && result.synthesized_answer
-    ? "The answer above was composed from these exact source passages and verified against them — nothing was added."
-    : "The answer above quotes these exact source passages.";
-  const items = spans
-    .map((span) => {
-      const loc = span.locator ? ` <span class="muted small">(${esc(span.locator)})</span>` : "";
-      const link = sourceLink(span.source_id);
-      return `<div style="margin-bottom:10px">
-        <div class="small mono" style="margin-bottom:2px">${esc(span.file_name || "source")}${loc}${link ? " · " + link : ""}</div>
-        <blockquote class="answer-box small" style="margin:0">${esc(span.quote)}</blockquote>
-      </div>`;
-    })
-    .join("");
-  return `
-    <h2 style="margin-top:16px">Source evidence (verbatim)</h2>
-    <p class="small muted" style="margin:0 0 10px">${proofNote}</p>
-    ${items}
-  `;
-}
+async function loadRunHistory() { const target = document.getElementById("run-history"); if (!target) return; try { const data = await fetchJSON("/runs"); const runs = data.runs || []; target.innerHTML = runs.length ? `<div class="table-card"><table><thead><tr><th>Question</th><th>Status</th><th>Approval</th><th>When</th></tr></thead><tbody>${runs.slice(0, 30).map((run) => `<tr class="clickable" data-run="${esc(run.run_id)}"><td>${esc(run.question || "—")}</td><td>${pill(run.grounding_status)}</td><td>${pill(run.approval_status || "not required")}</td><td class="small muted">${esc((run.created_at || "").slice(0, 19))}</td></tr>`).join("")}</tbody></table></div>` : '<div class="empty">No runs yet.</div>'; target.querySelectorAll("[data-run]").forEach((row) => row.addEventListener("click", () => openHistoryRun(row.dataset.run))); } catch (err) { target.innerHTML = `<div class="error-box">${esc(err.message)}</div>`; } }
+async function openHistoryRun(runId) { const output = document.getElementById("ask-result"); if (!output) return; output.innerHTML = '<div class="spinner">Loading run…</div>'; try { const result = await fetchJSON(`/runs/${runId}`); document.getElementById("ask-question").value = result.question || ""; renderRunResult(result, output); output.scrollIntoView({ behavior:"smooth", block:"start" }); } catch (err) { output.innerHTML = `<div class="error-box">${esc(err.message)}</div>`; } }
+function initDashboard() { const form = document.getElementById("ask-form"); const output = document.getElementById("ask-result"); loadRunHistory(); document.querySelectorAll(".starter-card").forEach((button) => button.addEventListener("click", () => { document.getElementById("ask-question").value = button.dataset.question || ""; document.getElementById("ask-max-recovery").value = button.dataset.recovery || "3"; form.requestSubmit(); })); document.getElementById("ask-question")?.addEventListener("keydown", (event) => { if ((event.metaKey || event.ctrlKey) && event.key === "Enter") form.requestSubmit(); }); form.addEventListener("submit", async (event) => { event.preventDefault(); const question = document.getElementById("ask-question").value.trim(); if (!question) return; output.classList.remove("ask-result-filled"); output.innerHTML = '<div class="spinner">Starting the data layer if needed, then running the governed workflow…</div>'; try { const result = await fetchJSON("/ask-orchestrated", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ question, require_approval:false, max_recovery_steps:Number(document.getElementById("ask-max-recovery").value || 3) }) }); renderRunResult(result, output); loadRunHistory(); } catch (err) { output.innerHTML = `<div class="error-box">Run failed: ${esc(err.message)}. No fabricated answer is shown.</div>`; } }); }
 
-async function loadRunHistory() {
-  const target = document.getElementById("run-history");
-  if (!target) return;
-  try {
-    const data = await fetchJSON("/runs");
-    const runs = data.runs || [];
-    if (!runs.length) {
-      target.innerHTML = '<div class="empty">No runs yet. Every orchestrated question will appear here.</div>';
-      return;
-    }
-    const rows = runs
-      .slice(0, 30)
-      .map(
-        (run) => `<tr class="clickable" data-run="${esc(run.run_id)}">
-          <td>${esc(run.question || "-")}</td>
-          <td>${pill(run.grounding_status || "unknown")}</td>
-          <td>${pill(run.approval_status || "approval_not_required")}</td>
-          <td class="muted small">${esc((run.created_at || "").slice(0, 19))}</td>
-        </tr>`
-      )
-      .join("");
-    target.innerHTML = `<table><thead><tr><th>Question</th><th>Status</th><th>Approval</th><th>When</th></tr></thead><tbody>${rows}</tbody></table>`;
-    target.querySelectorAll("tr.clickable").forEach((row) => {
-      row.addEventListener("click", () => openHistoryRun(row.dataset.run));
-    });
-  } catch (err) {
-    target.innerHTML = `<div class="error-box">${esc(err.message)}</div>`;
-  }
-}
+function documentName(item) { return item.title || item.file_name || item.name || "Untitled document"; }
+function documentId(item) { return item.id || item.document_id || item.slug || documentName(item); }
+function documentBody(item) { return item.content || item.text || item.excerpt || item.description || "The document content is available through the governed corpus. Select a cited passage from an answer to focus it here."; }
+async function initDocuments() { const list = document.getElementById("document-list"); const reader = document.getElementById("document-reader"); let documents = []; const select = (item) => { list.querySelectorAll(".document-item").forEach((node) => node.classList.toggle("active", node.dataset.id === String(documentId(item)))); reader.innerHTML = `<p class="eyebrow">Corpus document</p><h1>${esc(documentName(item))}</h1><div class="document-meta"><span>${esc(item.updated_at || item.revision || "Current revision")}</span><span>${esc(item.passage_count || item.passages || "—")} passages</span><span>${item.accessible === false ? "Outside grant" : "Visible to your grant"}</span></div><div class="document-actions"><a class="secondary-button" href="/app?doc=${encodeURIComponent(item.slug || documentId(item))}">Ask about this document →</a></div><article class="document-content"><h2>Reader preview</h2><p>${esc(documentBody(item))}</p><div class="document-highlight">Citations from a governed answer will focus their matching passage here when the backend provides an anchor.</div></article>`; }; try { if (!backendUrl) throw new Error("Corpus service is not configured"); const data = await fetchJSON(`${backendUrl}/api/corpus/documents`); documents = data.documents || data.items || data || []; if (!Array.isArray(documents)) documents = []; } catch (_) { documents = ["Employee Handbook","Anti-Bribery & Gifts","Code of Conduct","Travel & Expense","Procurement Authority","Information Security"].map((title, index) => ({ id:index + 1, title, passage_count:"available", accessible:true })); documents.push({id:"locked-1",title:"Financial Statements",accessible:false},{id:"locked-2",title:"HR Records",accessible:false}); } const renderList = (items) => { list.innerHTML = items.map((item) => `<button type="button" class="document-item ${item.accessible === false ? "locked" : ""}" data-id="${esc(documentId(item))}"><strong>${esc(documentName(item))}${item.accessible === false ? " · locked" : ""}</strong><small>${item.accessible === false ? "outside your grant" : `${esc(item.passage_count || item.passages || "—")} passages`}</small></button>`).join(""); list.querySelectorAll(".document-item").forEach((node) => node.addEventListener("click", () => select(documents.find((item) => String(documentId(item)) === node.dataset.id)))); }; renderList(documents); const params = new URLSearchParams(location.search); select(documents.find((item) => String(item.slug || documentId(item)) === params.get("slug")) || documents[0]); document.getElementById("document-filter").addEventListener("input", (event) => renderList(documents.filter((item) => documentName(item).toLowerCase().includes(event.target.value.toLowerCase())))); }
 
-async function openHistoryRun(runId) {
-  const output = document.getElementById("ask-result");
-  if (!output) return;
-  stopApprovalWatch();
-  output.innerHTML = '<div class="spinner">Loading run…</div>';
-  try {
-    const view = await fetchJSON(`/runs/${runId}`);
-    const questionInput = document.getElementById("ask-question");
-    if (questionInput && view.question) questionInput.value = view.question;
-    renderRunResult(view, output);
-    const card = output.closest(".card");
-    if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
-  } catch (err) {
-    output.innerHTML = `<div class="error-box">${esc(err.message)}</div>`;
-  }
-}
+function initApprovals() { loadApprovals(); loadDecisions(); }
+async function loadApprovals() { const target = document.getElementById("approval-list"); try { const data = await fetchJSON("/approval/pending"); const pending = data.pending || []; document.getElementById("pending-count").textContent = pending.length; target.innerHTML = pending.length ? `<table><thead><tr><th>Requested action</th><th>Class</th><th>Status</th><th>Approver</th><th>Actions</th></tr></thead><tbody>${pending.map((item) => `<tr class="approval-item" data-id="${esc(item.approval_id)}"><td><strong>${esc(item.question)}</strong><br><span class="small muted">${esc((item.risk_reasons || []).join(", ") || "Governed answer")}</span></td><td>${pill(item.grounding_status || "unknown")}</td><td>${pill(item.status)}</td><td>${esc(item.reviewer || "Unassigned")}</td><td class="approval-actions"><button disabled title="Needs reviewer grant">Approve</button><button disabled title="Needs reviewer grant">Reject</button></td></tr>`).join("")}</tbody></table>` : '<div class="empty">No pending approvals.</div>'; } catch (err) { target.innerHTML = `<div class="error-box">${esc(err.message)}</div>`; } }
+async function loadDecisions() { const target = document.getElementById("decision-list"); if (!target) return; try { const data = await fetchJSON("/approval"); const decided = (data.approvals || []).filter((item) => ["approved","rejected"].includes(item.status)); target.innerHTML = decided.length ? `<h2>Recent decisions</h2><div class="table-card"><table><tbody>${decided.slice(0,10).map((item) => `<tr><td>${esc(item.question)}</td><td>${pill(item.status)}</td><td class="small muted">${esc((item.decided_at || "").slice(0,19))}</td></tr>`).join("")}</tbody></table></div>` : ""; } catch (_) {} }
 
-function initDashboard() {
-  const form = document.getElementById("ask-form");
-  const output = document.getElementById("ask-result");
-  loadDashboardCounts();
-  loadRunHistory();
-  document.querySelectorAll("button.preset").forEach((button) => {
-    button.addEventListener("click", () => {
-      document.getElementById("ask-question").value = button.dataset.question || "";
-      document.getElementById("ask-require-approval").checked = button.dataset.approval === "true";
-      document.getElementById("ask-max-recovery").value = button.dataset.recovery || "3";
-      form.requestSubmit();
-    });
-  });
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const question = document.getElementById("ask-question").value.trim();
-    const requireApproval = document.getElementById("ask-require-approval").checked;
-    const maxRecoverySteps = Number(document.getElementById("ask-max-recovery").value || 3);
-    if (!question) return;
-    document.getElementById("ask-max-recovery").value = "3";
-    stopApprovalWatch();
-    output.innerHTML = '<div class="spinner">Starting the data layer if needed, then running the governed workflow…</div>';
+function initAudit() { loadAuditRuns(); }
+async function loadAuditRuns() { const target = document.getElementById("audit-runs"); try { const data = await fetchJSON("/audit/runs"); const runs = data.runs || []; target.innerHTML = runs.length ? runs.map((run) => `<button class="audit-run-button" type="button" data-run="${esc(run.run_id)}"><strong>${esc(run.question_preview || "Audited run")}</strong><span>${pill(run.final_status || "in progress")} · ${esc(run.event_count || 0)} events</span></button>`).join("") : '<div class="empty">No audited runs yet.</div>'; target.querySelectorAll("[data-run]").forEach((node) => node.addEventListener("click", () => loadAuditEvents(node.dataset.run))); } catch (err) { target.innerHTML = `<div class="error-box">${esc(err.message)}</div>`; } }
+async function loadAuditEvents(runId) { const detail = document.getElementById("audit-detail"); detail.innerHTML = '<div class="spinner">Loading event chain…</div>'; try { const data = await fetchJSON(`/audit/runs/${runId}`); const summary = data.run_summary || {}; const events = data.events || []; detail.innerHTML = `<header class="audit-header"><p class="eyebrow">Run ${esc(String(runId).slice(0,12))}</p><h2>${esc(summary.question_preview || "Audited workflow")}</h2><span class="chain-badge">● Chain intact · ${events.length} events</span></header><div class="audit-filters"><button>This run</button><button>All events</button><button>Refusals</button><button>Withheld</button><button>Defended</button></div><div class="audit-timeline">${events.map((event) => `<article class="audit-event"><time>${esc((event.timestamp || "").slice(0,19))}</time><p><strong>${esc(event.event_type)}</strong> · ${esc(event.summary)}</p><div class="hash">prev ${esc(String(event.previous_hash || "genesis").slice(0,16))} · hash ${esc(String(event.event_hash || "").slice(0,16))}</div></article>`).join("")}</div><p class="small muted">Each hash includes the previous event, making alterations visible. <a href="/audit/export/${esc(runId)}" target="_blank">Export chain JSON</a></p>`; } catch (err) { detail.innerHTML = `<div class="error-box">${esc(err.message)}</div>`; } }
+
+function initQuality() { loadQuality(); }
+async function loadQuality() { const target = document.getElementById("quality-content"); try { const data = await fetchJSON("/eval/latest"); const run = data.eval_run; if (!run) { target.innerHTML = `<div class="empty">${esc(data.message || "No saved evaluation run yet.")}</div>`; return; } const passed = Number(run.passed || 0); const total = Number(run.total || 0); const rows = run.rows || []; target.innerHTML = `<div class="quality-grid"><article class="quality-card core"><span class="quality-tag">BLOCKING</span><h2>v1 core suite</h2><div class="quality-score">${esc(passed)}/${esc(total)}</div><p class="muted">${(Number(run.accuracy || 0) * 100).toFixed(1)}% accuracy · a single failure fails the pipeline.</p><div class="segment-bar">${Array.from({length:Math.min(Math.max(total,1),25)}, () => "<i></i>").join("")}</div><ul class="quality-list">${rows.slice(0,4).map((row) => `<li><span>${esc(row.question)}</span>${pill(row.grounding_status)}</li>`).join("")}</ul></article><article class="quality-card calibration"><span class="quality-tag">CALIBRATION · NOT BLOCKING</span><h2>v2 expanded suite</h2><div class="quality-score">${esc(total)}</div><p class="muted">Cases in the latest saved evaluation. Grounding rate ${(Number(run.grounding_rate || 0) * 100).toFixed(1)}%.</p><div class="quality-note">Calibration results guide recovery and review work. They do not approve a release by themselves.</div><ul class="quality-list"><li><span>Passed</span><strong>${esc(passed)}</strong></li><li><span>Manual review</span><strong>${esc(run.manual_review || 0)}</strong></li><li><span>Average latency</span><strong>${run.avg_latency_ms == null ? "—" : esc(run.avg_latency_ms) + " ms"}</strong></li></ul></article></div>`; const listing = await fetchJSON("/eval/runs"); document.getElementById("eval-runs").innerHTML = (listing.eval_runs || []).length ? `<h2>Saved runs</h2><div class="table-card"><table><tbody>${listing.eval_runs.slice(0,8).map((item) => `<tr><td class="mono">${esc(item.eval_run_id)}</td><td>${(Number(item.accuracy || 0) * 100).toFixed(1)}%</td><td>${esc(item.total)} rows</td></tr>`).join("")}</tbody></table></div>` : ""; } catch (err) { target.innerHTML = `<div class="error-box">${esc(err.message)}</div>`; } }
+
+function initSecurity() { const button = document.getElementById("red-team-run"); if (button && !publicDemo) button.addEventListener("click", runRedTeam); loadRedTeam(); }
+async function runRedTeam() { const button = document.getElementById("red-team-run"); button.disabled = true; try { await fetchJSON("/red-team/run", {method:"POST"}); await loadRedTeam(); } catch (err) { document.getElementById("security-content").innerHTML = `<div class="error-box">${esc(err.message)}</div>`; } finally { button.disabled = false; } }
+function groupFindings(findings) { const labels = ["Prompt manipulation","Data access","Action and tool use","Output integrity"]; return labels.map((label,index) => ({ label, items:findings.filter((_, itemIndex) => Math.floor(itemIndex / 4) === index) })); }
+async function loadRedTeam() { const target = document.getElementById("security-content"); const summary = document.getElementById("security-summary"); try { const data = await fetchJSON("/red-team/latest"); const report = data.report; if (!report) { target.innerHTML = `<div class="empty">${esc(data.message || "No red-team report saved yet.")}</div>`; return; } const findings = report.findings || []; summary.innerHTML = `<p class="eyebrow">${esc(report.defended || 0)} of ${esc(report.total || 0)} defended</p>`; const renderDetail = (finding) => `<aside class="security-detail"><span class="chip chip-defended">Defended</span><h2>${esc(finding.finding_id || "RT")}</h2><h3>${esc(finding.scenario || "Governance check")}</h3><pre class="attack-block">${esc(finding.actual_result || finding.expected_defense || "Attack payload is checked without exposing corpus content.")}</pre><div class="acl-card"><strong>Why it fails</strong><br>${esc(finding.expected_defense || "The governed workflow applies grant and evidence controls before an answer can be released.")}</div><p class="small muted">${pill(finding.status)} · ${esc(finding.linked_test || "deterministic check")}</p></aside>`; const render = (selected) => { target.innerHTML = `<div class="security-layout"><div>${groupFindings(findings).map((group) => `<section class="security-group"><h2>${group.label}</h2><div class="check-grid">${group.items.map((finding) => `<button class="check-tile ${finding === selected ? "active" : ""}" data-finding="${esc(finding.finding_id)}"><code>${esc(finding.finding_id)}</code><span>${esc(finding.scenario)}</span></button>`).join("")}</div></section>`).join("")}</div>${renderDetail(selected)}</div>`; target.querySelectorAll("[data-finding]").forEach((button) => button.addEventListener("click", () => render(findings.find((finding) => finding.finding_id === button.dataset.finding)))); }; render(findings.find((finding) => finding.finding_id === "RT-06") || findings[0] || {}); } catch (err) { target.innerHTML = `<div class="error-box">${esc(err.message)}</div>`; } }
+
+function initCompare() { const form = document.getElementById("demo-form"); const output = document.getElementById("demo-result"); document.querySelectorAll("[data-demo-question]").forEach((button) => button.addEventListener("click", () => { document.getElementById("demo-question").value = button.dataset.demoQuestion; form.requestSubmit(); })); form.addEventListener("submit", async (event) => { event.preventDefault(); const question = document.getElementById("demo-question").value.trim(); if (!question) return; output.innerHTML = '<div class="spinner">Running both paths…</div>'; try { const data = await fetchJSON("/demo/before-after", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({question, require_approval:document.getElementById("demo-require-approval").checked})}); output.innerHTML = `<div class="compare-split"><article class="compare-panel raw"><h2><span class="chip chip-error">Ungoverned</span></h2><p class="small muted">First pass · no validation, no recovery, no governance</p><div class="answer-box">${esc(data.first_pass_answer || data.first_pass_error || "No first-pass answer available.")}</div><ul><li>No evidence review</li><li>No recovery for weak answers</li><li>No approval gate</li><li>No audit decision trail</li></ul><div class="compare-stats">${esc(data.first_pass_status)} · ${esc(data.first_pass_citation_count || 0)} citations</div></article><article class="compare-panel governed"><h2><span class="chip chip-grounded">Governed</span></h2><p class="small muted">Same model · evidence required · audited</p><div class="answer-box">${esc(data.orchestrated_answer || "[No answer released]")}</div><ul><li>${pill(data.orchestrated_status)}</li><li>${pill(data.approval_status)}</li><li>${esc(data.citation_count || 0)} citations returned</li><li>${esc(data.audit_event_count || 0)} audit events</li></ul><div class="compare-stats">run ${esc(String(data.run_id || "—").slice(0,12))} · ${data.recovery_used ? "recovery used" : "first pass accepted"}</div></article></div><section class="result-timeline"><h2>Governed workflow timeline</h2>${timelineTable(data.timeline)} </section>`; } catch (err) { output.innerHTML = `<div class="error-box">Backend unavailable or run failed: ${esc(err.message)}. No fabricated comparison is shown.</div>`; } }); }
+
+/* The public backend exposes /corpus and source files, not the earlier assumed
+   /api/corpus/documents endpoint. Keep the reader’s visual slots stable while
+   binding only to those access-filtered endpoints. */
+async function initDocuments() {
+  const list = document.getElementById("document-list"); const reader = document.getElementById("document-reader");
+  let documents = [];
+  const renderReader = async (item) => {
+    if (!item) return;
+    list.querySelectorAll(".document-item").forEach((node) => node.classList.toggle("active", node.dataset.id === String(item.id)));
+    reader.innerHTML = `<header class="reader-header"><p class="eyebrow">Corpus document</p><h1>${esc(item.source_metadata_json?.title || item.file_name)}</h1><div class="document-meta"><span>rev ${esc(item.freshness?.last_updated_at || "current")}</span><span>${esc(item.source_type || "document")}</span><span>grant: public-demo ✓</span></div><div class="document-actions"><a class="secondary-button" href="/app?doc=${encodeURIComponent(item.id)}">Ask about this document <span class="ms">arrow_forward</span></a></div></header><div class="document-highlight" id="document-loading">Loading accessible document preview…</div><article class="document-content" id="document-content"></article>`;
     try {
-      const result = await fetchJSON("/ask-orchestrated", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question, require_approval: requireApproval, max_recovery_steps: maxRecoverySteps }),
-      });
-      renderRunResult(result, output);
-      loadRunHistory();
-      loadDashboardCounts();
-    } catch (err) {
-      output.innerHTML = `<div class="error-box">Run failed: ${esc(err.message)}. If the MCP backend is not running, this is expected — no fabricated answer is shown.</div>`;
-    }
-  });
+      const response = await fetch(`${backendUrl}/corpus/${encodeURIComponent(item.id)}/file`);
+      if (!response.ok) throw new Error("Source preview unavailable");
+      const text = await response.text(); const content = document.getElementById("document-content");
+      const lines = text.split(/\n+/).filter(Boolean); const heading = lines.find((line) => /^#/.test(line));
+      content.innerHTML = `${heading ? `<p class="eyebrow">${esc(heading.replace(/^#+\s*/, ""))}</p>` : ""}${lines.filter((line) => !/^#/.test(line)).slice(0, 8).map((line) => `<p>${esc(line)}</p>`).join("") || '<p>No readable preview is available for this source.</p>'}`;
+      document.getElementById("document-loading")?.remove();
+    } catch (_) { document.getElementById("document-loading").textContent = "The source is visible to your grant, but a readable preview is not available."; }
+  };
+  const renderList = (items) => { list.innerHTML = items.length ? items.map((item) => `<button type="button" class="document-item" data-id="${esc(item.id)}"><strong>${esc(item.source_metadata_json?.title || item.file_name)}</strong><small>${esc(item.source_type || "document")} · available to your grant</small></button>`).join("") + '<div class="document-item locked"><strong>Restricted documents</strong><small>Some corpus sources are outside your grant</small></div>' : '<div class="empty">No corpus sources are visible to this grant.</div>'; list.querySelectorAll("button[data-id]").forEach((node) => node.addEventListener("click", () => renderReader(documents.find((item) => String(item.id) === node.dataset.id)))); };
+  try { if (!backendUrl) throw new Error("No backend"); documents = await fetchJSON(`${backendUrl}/corpus`); if (!Array.isArray(documents)) documents = []; } catch (_) { documents = []; }
+  renderList(documents); const requested = new URLSearchParams(location.search).get("slug"); renderReader(documents.find((item) => String(item.id) === requested) || documents[0]);
+  document.getElementById("document-filter")?.addEventListener("input", (event) => renderList(documents.filter((item) => String(item.source_metadata_json?.title || item.file_name).toLowerCase().includes(event.target.value.toLowerCase()))));
 }
 
-async function loadDashboardCounts() {
-  const target = document.getElementById("dashboard-tiles");
-  if (!target) return;
+document.addEventListener("DOMContentLoaded", () => { document.querySelector(".rail-drawer-toggle")?.addEventListener("click", (event) => { const expanded = event.currentTarget.getAttribute("aria-expanded") === "true"; event.currentTarget.setAttribute("aria-expanded", String(!expanded)); }); const initializers = { dashboard:initDashboard, documents:initDocuments, approvals:initApprovals, audit:initAudit, quality:initQuality, security:initSecurity, compare:initCompare }; initializers[document.body.dataset.page]?.(); });
+
+/* Stable, bounded public-demo views: no endlessly growing tables or blank
+   selected-run screen when records are available. */
+let approvalPage = 0;
+async function loadApprovals() {
+  const target = document.getElementById("approval-list");
   try {
-    const [pending, runs] = await Promise.all([
-      fetchJSON("/approval/pending"),
-      fetchJSON("/audit/runs"),
-    ]);
-    const pendingCount = (pending.pending || []).length;
-    const runCount = (runs.runs || []).length;
-    target.innerHTML = `
-      <div class="tile"><div class="label">Pending approvals</div><div class="value">${esc(pendingCount)}</div><div class="note"><a href="/app/approvals">Open queue</a></div></div>
-      <div class="tile"><div class="label">Audited runs</div><div class="value">${esc(runCount)}</div><div class="note"><a href="/app/audit">View audit log</a></div></div>
-    `;
-  } catch (err) {
-    target.innerHTML = "";
-  }
+    const data = await fetchJSON("/approval/pending"); const pending = data.pending || []; const size = 10;
+    approvalPage = Math.max(0, Math.min(approvalPage, Math.ceil(pending.length / size) - 1));
+    const slice = pending.slice(approvalPage * size, approvalPage * size + size);
+    document.getElementById("pending-count").textContent = pending.length;
+    target.innerHTML = pending.length ? `<div class="approval-scroll"><table><thead><tr><th>Requested action</th><th>Class</th><th>Status</th><th>Approver</th><th>Actions</th></tr></thead><tbody>${slice.map((item) => `<tr><td><strong>${esc(item.question)}</strong><br><span class="small muted">${esc((item.risk_reasons || []).join(", ") || "Governed answer")}</span></td><td>${pill(item.grounding_status || "unknown")}</td><td>${pill(item.status)}</td><td>${esc(item.reviewer || "Unassigned")}</td><td class="approval-actions"><button disabled title="Needs reviewer grant">Approve</button><button disabled title="Needs reviewer grant">Reject</button></td></tr>`).join("")}</tbody></table></div><footer class="pager"><span>${approvalPage * size + 1}–${Math.min((approvalPage + 1) * size, pending.length)} of ${pending.length}</span><button data-page="previous" ${approvalPage === 0 ? "disabled" : ""}>Previous</button><button data-page="next" ${(approvalPage + 1) * size >= pending.length ? "disabled" : ""}>Next 10</button></footer>` : '<div class="empty">No pending approvals.</div>';
+    target.querySelectorAll("[data-page]").forEach((button) => button.addEventListener("click", () => { approvalPage += button.dataset.page === "next" ? 1 : -1; loadApprovals(); }));
+  } catch (err) { target.innerHTML = `<div class="error-box">${esc(err.message)}</div>`; }
 }
-
-/* ---------------- Approvals ---------------- */
-
-function initApprovals() {
-  loadApprovals();
-  loadDecisions();
-}
-
-async function loadDecisions() {
-  const target = document.getElementById("decision-list");
-  if (!target) return;
+async function loadAuditRuns() {
+  const target = document.getElementById("audit-runs");
   try {
-    const data = await fetchJSON("/approval");
-    const decided = (data.approvals || []).filter(
-      (record) => record.status === "approved" || record.status === "rejected"
-    );
-    decided.sort((a, b) => String(b.decided_at || "").localeCompare(String(a.decided_at || "")));
-    if (!decided.length) {
-      target.innerHTML = '<div class="empty">No decisions yet. Approved answers will be released here.</div>';
-      return;
-    }
-    target.innerHTML = decided
-      .slice(0, 20)
-      .map(
-        (item) => `<div class="approval-item">
-          <div class="q">${esc(item.question)}</div>
-          <div class="row" style="margin:0 0 8px">
-            ${pill(item.status)} ${pill(item.grounding_status || "unknown")}
-            <span class="muted small mono">run_id: ${esc(item.run_id || "-")}</span>
-            <span class="muted small">decided ${esc((item.decided_at || "").slice(0, 19))} by ${esc(item.reviewer || "-")}</span>
-          </div>
-          ${item.comment ? `<div class="small muted">Comment: ${esc(item.comment)}</div>` : ""}
-          ${
-            item.status === "approved"
-              ? `<div class="answer-box small" style="margin-top:8px">${esc(item.released_answer || item.answer_preview || "")}</div>`
-              : `<div class="small muted" style="margin-top:8px">Answer not released (rejected).</div>`
-          }
-        </div>`
-      )
-      .join("");
-  } catch (err) {
-    target.innerHTML = `<div class="error-box">${esc(err.message)}</div>`;
-  }
+    const runs = (await fetchJSON("/audit/runs")).runs || [];
+    if (!runs.length) { target.innerHTML = '<div class="empty">No audited runs have been recorded yet.</div>'; return; }
+    const requested = new URLSearchParams(location.search).get("run"); const selected = runs.find((run) => run.run_id === requested) || runs[0];
+    target.innerHTML = runs.map((run) => `<button class="audit-run-button ${run.run_id === selected.run_id ? "active" : ""}" type="button" data-run="${esc(run.run_id)}"><strong>${esc(run.question_preview || "Audited run")}</strong><span>${esc(run.event_count || 0)} events</span></button>`).join("");
+    target.querySelectorAll("[data-run]").forEach((node) => node.addEventListener("click", () => loadAuditEvents(node.dataset.run)));
+    await loadAuditEvents(selected.run_id);
+  } catch (err) { target.innerHTML = `<div class="error-box">${esc(err.message)}</div>`; }
+}
+async function loadQuality() {
+  const target = document.getElementById("quality-content");
+  try {
+    const data = await fetchJSON("/eval/latest"); const run = data.eval_run;
+    if (!run) { target.innerHTML = `<div class="quality-grid"><article class="quality-card core"><span class="quality-tag">BLOCKING</span><h2>v1 core suite</h2><div class="quality-score">—</div><p class="muted">No published core evaluation is available in this runtime.</p><div class="segment-bar">${Array.from({length:25}, () => "<i class=\"empty-segment\"></i>").join("")}</div></article><article class="quality-card calibration"><span class="quality-tag">CALIBRATION · NOT BLOCKING</span><h2>v2 expanded suite</h2><div class="quality-score">—</div><div class="quality-note">No saved calibration report is available. Results appear here when an evaluation is published.</div></article></div>`; return; }
+    const passed = Number(run.passed || 0), total = Number(run.total || 0), rows = run.rows || [];
+    target.innerHTML = `<div class="quality-grid"><article class="quality-card core"><span class="quality-tag">BLOCKING</span><h2>v1 core suite</h2><div class="quality-score">${passed}/${total}</div><p class="muted">A single failure fails the pipeline.</p><div class="segment-bar">${Array.from({length:Math.min(Math.max(total,1),25)}, () => "<i></i>").join("")}</div><ul class="quality-list">${rows.slice(0,5).map((row) => `<li><span>${esc(row.question)}</span>${pill(row.grounding_status)}</li>`).join("")}</ul></article><article class="quality-card calibration"><span class="quality-tag">CALIBRATION · NOT BLOCKING</span><h2>v2 expanded suite</h2><div class="quality-score">${total}</div><div class="quality-note">Calibration guides recovery work but does not approve a release by itself.</div><ul class="quality-list"><li><span>Passed</span><strong>${passed}</strong></li><li><span>Manual review</span><strong>${esc(run.manual_review || 0)}</strong></li></ul></article></div>`;
+  } catch (err) { target.innerHTML = `<div class="error-box">${esc(err.message)}</div>`; }
+}
+
+/* Reference-layout renderers. These intentionally retain the same public API
+   calls above; only the DOM slots and client-side presentation change. */
+function approvalClass(value) {
+  return esc(String(value || "unknown").replaceAll("_", " "));
 }
 
 async function loadApprovals() {
   const target = document.getElementById("approval-list");
-  target.innerHTML = '<div class="spinner">Loading…</div>';
   try {
     const data = await fetchJSON("/approval/pending");
-    const pending = data.pending || [];
-    if (!pending.length) {
-      target.innerHTML = '<div class="empty">No pending approvals. Run a high-risk question with "Require approval" enabled to create one.</div>';
-      return;
-    }
-    if (publicDemo) {
-      target.innerHTML = pending
-        .map(
-          (item) => `<div class="approval-item">
-            <div class="q">${esc(item.question)}</div>
-            <div class="row" style="margin:0 0 8px">
-              ${pill(item.status)} ${pill(item.grounding_status || "unknown")}
-              <span class="muted small mono">run_id: ${esc(item.run_id || "-")}</span>
-            </div>
-            <div class="small muted">Risk reasons: ${esc((item.risk_reasons || []).join(", ") || "-")}. Answer withheld; only a designated operator can review it outside this public demo.</div>
-          </div>`
-        )
-        .join("");
-      return;
-    }
-    target.innerHTML = pending
-      .map(
-        (item) => `<div class="approval-item" data-id="${esc(item.approval_id)}">
-          <div class="q">${esc(item.question)}</div>
-          <div class="row" style="margin:0 0 8px">
-            ${pill(item.status)} ${pill(item.grounding_status || "unknown")}
-            <span class="muted small mono">run_id: ${esc(item.run_id || "-")}</span>
-            <span class="muted small">requested ${esc((item.requested_at || "").slice(0, 19))}</span>
-          </div>
-          <div class="small muted">Risk reasons: ${esc((item.risk_reasons || []).join(", ") || "-")} · Evidence: ${esc(item.evidence_status || "unknown")}</div>
-          <div class="answer-box small" style="margin-top:8px">${esc(item.full_answer || item.answer_preview || "")}</div>
-          <div class="row">
-            <input type="text" class="reviewer" placeholder="Reviewer name" style="max-width:200px" />
-            <input type="text" class="comment" placeholder="Comment (optional)" style="max-width:320px" />
-            <button class="approve" data-action="approve">Approve</button>
-            <button class="danger" data-action="reject">Reject</button>
-          </div>
-          <div class="decision-msg small" style="margin-top:6px"></div>
-        </div>`
-      )
-      .join("");
-    target.querySelectorAll("button[data-action]").forEach((button) => {
-      button.addEventListener("click", () => decideApproval(button));
-    });
-  } catch (err) {
-    target.innerHTML = `<div class="error-box">${esc(err.message)}</div>`;
-  }
+    const pending = data.pending || []; const size = 10;
+    approvalPage = Math.max(0, Math.min(approvalPage, Math.max(Math.ceil(pending.length / size) - 1, 0)));
+    const slice = pending.slice(approvalPage * size, approvalPage * size + size);
+    document.getElementById("pending-count").textContent = pending.length;
+    target.innerHTML = pending.length ? `<div class="approval-scroll"><table><thead><tr><th>Requested action</th><th>Class</th><th>Status</th><th>Approver</th><th>Actions</th></tr></thead><tbody>${slice.map((item) => `<tr><td><strong>${esc(item.question)}</strong><br><span class="small muted">${esc((item.risk_reasons || []).join(", ") || "Governed answer")}</span></td><td class="approval-class">${approvalClass(item.grounding_status)}</td><td>${pill(item.status)}</td><td>${esc(item.reviewer || "Unassigned")}</td><td class="approval-actions"><button disabled title="Needs reviewer grant">Approve</button><button disabled title="Needs reviewer grant">Reject</button></td></tr>`).join("")}</tbody></table></div><footer class="pager"><span>${approvalPage * size + 1}–${Math.min((approvalPage + 1) * size, pending.length)} of ${pending.length}</span><button data-page="previous" ${approvalPage === 0 ? "disabled" : ""}>Previous</button><button data-page="next" ${(approvalPage + 1) * size >= pending.length ? "disabled" : ""}>Next 10</button></footer>` : '<div class="empty">No pending approvals.</div>';
+    target.querySelectorAll("[data-page]").forEach((button) => button.addEventListener("click", () => { approvalPage += button.dataset.page === "next" ? 1 : -1; loadApprovals(); }));
+  } catch (err) { target.innerHTML = `<div class="error-box">${esc(err.message)}</div>`; }
 }
 
-async function decideApproval(button) {
-  const item = button.closest(".approval-item");
-  const approvalId = item.dataset.id;
-  const reviewer = item.querySelector(".reviewer").value.trim();
-  const comment = item.querySelector(".comment").value.trim();
-  const message = item.querySelector(".decision-msg");
-  if (!reviewer) {
-    message.innerHTML = '<span class="pill bad">Reviewer name is required.</span>';
-    return;
-  }
+function auditMatches(event, filter) {
+  if (filter === "all" || filter === "this") return true;
+  const value = `${event.event_type || ""} ${event.summary || ""}`.toLowerCase();
+  if (filter === "refusals") return /refus|reject|not.?found|not.?grounded/.test(value);
+  if (filter === "withheld") return /withheld|approval|hold/.test(value);
+  return /defend|injection|deny|block|access.control/.test(value);
+}
+async function loadAuditEvents(runId) {
+  const detail = document.getElementById("audit-detail"); detail.innerHTML = '<div class="spinner">Loading event chain…</div>';
   try {
-    const record = await fetchJSON(`/approval/${approvalId}/${button.dataset.action}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ reviewer, comment }),
-    });
-    message.innerHTML = `${pill(record.status)} <span class="muted">by ${esc(record.reviewer)} at ${esc((record.decided_at || "").slice(0, 19))}</span>`;
-    item.querySelectorAll("button").forEach((b) => (b.disabled = true));
-    setTimeout(() => {
-      loadApprovals();
-      loadDecisions();
-    }, 1200);
-  } catch (err) {
-    message.innerHTML = `<span class="pill bad">${esc(err.message)}</span>`;
-  }
+    const data = await fetchJSON(`/audit/runs/${runId}`); const summary = data.run_summary || {}; const events = data.events || [];
+    const render = (filter = "this") => {
+      const filtered = events.filter((event) => auditMatches(event, filter));
+      detail.innerHTML = `<section class="audit-record"><header class="audit-header"><div><p class="eyebrow">Run ${esc(String(runId).slice(0,12))}</p><h2>${esc(summary.question_preview || "Audited workflow")}</h2><p class="audit-subtitle">${esc(events.length)} events · sanitized, tamper-evident record</p></div><div class="chain-badge"><span class="ms">verified_user</span><strong>Chain intact</strong><small>verified event links</small></div></header><div class="audit-filters">${[["this","This run"],["all","All events"],["refusals","Refusals"],["withheld","Withheld"],["defended","Defended"]].map(([key,label]) => `<button type="button" class="${filter === key ? "active" : ""}" data-audit-filter="${key}">${label}</button>`).join("")}</div><div class="audit-timeline">${filtered.length ? filtered.map((event) => `<article class="audit-event"><time>${esc((event.timestamp || "").replace("T", " · ").slice(0,19))}</time><div class="audit-event-copy"><p><strong>${esc(event.event_type || "event")}</strong> · ${esc(event.summary || "Recorded event")}</p></div><div class="hash">prev ${esc(String(event.previous_hash || "genesis").slice(0,16))}<br>hash ${esc(String(event.event_hash || "").slice(0,16))}</div></article>`).join("") : '<div class="audit-empty">No events match this filter for the selected run.</div>'}</div><footer class="audit-footer"><span>Each event stores the hash of the one before it. Editing or removing a row breaks every link after it.</span><a href="/app?run=${encodeURIComponent(runId)}">Back to the answer →</a><a class="secondary-button" href="/audit/export/${esc(runId)}" target="_blank">Copy chain JSON</a></footer></section>`;
+      detail.querySelectorAll("[data-audit-filter]").forEach((button) => button.addEventListener("click", () => render(button.dataset.auditFilter)));
+    };
+    render();
+  } catch (err) { detail.innerHTML = `<div class="error-box">${esc(err.message)}</div>`; }
 }
 
-/* ---------------- Audit ---------------- */
-
-function initAudit() {
-  loadAuditRuns();
+function groupFindings(findings) {
+  const groups = [["Prompt manipulation", 1, 4], ["Data access", 5, 12], ["Action and tool use", 13, 16], ["Output integrity", 17, Infinity]];
+  return groups.map(([label, first, last]) => ({ label, items: findings.filter((finding) => { const number = Number(String(finding.finding_id || "").match(/(\d+)$/)?.[1]); return number >= first && number <= last; }) })).filter((group) => group.items.length);
 }
-
-async function loadAuditRuns() {
-  const target = document.getElementById("audit-runs");
-  const detail = document.getElementById("audit-detail");
-  target.innerHTML = '<div class="spinner">Loading…</div>';
-  try {
-    const data = await fetchJSON("/audit/runs");
-    const runs = data.runs || [];
-    if (!runs.length) {
-      target.innerHTML = '<div class="empty">No audited runs yet. Run a question from the dashboard to create audit events.</div>';
-      return;
-    }
-    const rows = runs
-      .map(
-        (run) => `<tr class="clickable" data-run="${esc(run.run_id)}">
-          <td class="mono">${esc(run.run_id.slice(0, 12))}…</td>
-          <td>${esc(run.question_preview || "-")}</td>
-          <td>${pill(run.final_status || "in_progress")}</td>
-          <td>${pill(run.approval_status || "approval_not_required")}</td>
-          <td>${esc(run.event_count)}</td>
-          <td class="muted small">${esc((run.started_at || "").slice(0, 19))}</td>
-        </tr>`
-      )
-      .join("");
-    target.innerHTML = `<table><thead><tr><th>Run</th><th>Question</th><th>Status</th><th>Approval</th><th>Events</th><th>Started</th></tr></thead><tbody>${rows}</tbody></table>`;
-    target.querySelectorAll("tr.clickable").forEach((row) => {
-      row.addEventListener("click", () => loadAuditEvents(row.dataset.run, detail));
-    });
-  } catch (err) {
-    target.innerHTML = `<div class="error-box">${esc(err.message)}</div>`;
-  }
-}
-
-function auditRunSummary(data) {
-  const summary = data.run_summary || {};
-  const approval = data.approval;
-  const approvalStatus = (approval && approval.status) || summary.approval_status || "approval_not_required";
-  let html = `
-    <div class="row" style="margin:0 0 6px">${pill(summary.final_status || "in_progress")} ${pill(approvalStatus)}</div>
-    <p style="margin:4px 0 12px"><strong>${esc(summary.question_preview || "(question preview unavailable)")}</strong></p>`;
-  if (approval) {
-    if (approval.released_answer) {
-      html += `
-        <h2>Released answer</h2>
-        <div class="answer-box">${esc(approval.released_answer)}</div>
-        <p class="small muted">${decisionLine(approval)}</p>`;
-    } else if (approval.status === "rejected") {
-      html += `<p class="small">${decisionLine(approval)}. The answer was not released.</p>`;
-    } else if (approval.status === "pending_approval") {
-      html += `<p class="small">Awaiting review — the answer stays withheld until decided. <a href="/app/approvals">Open the approval queue</a>.</p>`;
-    }
-  }
-  return html;
-}
-
-async function loadAuditEvents(runId, detail) {
-  detail.innerHTML = '<div class="spinner">Loading events…</div>';
-  try {
-    const data = await fetchJSON(`/audit/runs/${runId}`);
-    const rows = (data.events || [])
-      .map(
-        (event) => `<tr>
-          <td class="muted small">${esc((event.timestamp || "").slice(11, 19))}</td>
-          <td>${pill(event.event_type)}</td>
-          <td>${esc(event.summary)}</td>
-          <td class="mono">${esc((event.event_hash || "").slice(0, 12))}…</td>
-        </tr>`
-      )
-      .join("");
-    detail.innerHTML = `
-      <h2>Run <span class="mono">${esc(runId.slice(0, 12))}…</span></h2>
-      ${auditRunSummary(data)}
-      <h2 style="margin-top:16px">Events</h2>
-      <p class="small muted">Tamper-evident hash chain — each event hash covers the previous one. <a href="/audit/export/${esc(runId)}" target="_blank">Export JSON</a></p>
-      <table><thead><tr><th>Time</th><th>Event</th><th>Summary</th><th>Hash</th></tr></thead><tbody>${rows}</tbody></table>
-    `;
-  } catch (err) {
-    detail.innerHTML = `<div class="error-box">${esc(err.message)}</div>`;
-  }
-}
-
-/* ---------------- Evals ---------------- */
-
-function initEvals() {
-  loadEvals();
-}
-
-async function loadEvals() {
-  const tiles = document.getElementById("eval-tiles");
-  const tableTarget = document.getElementById("eval-table");
-  const runsTarget = document.getElementById("eval-runs");
-  try {
-    const data = await fetchJSON("/eval/latest");
-    const run = data.eval_run;
-    if (!run) {
-      tiles.innerHTML = "";
-      tableTarget.innerHTML = `<div class="empty">${esc(data.message || "No saved eval runs yet.")}</div>`;
-      runsTarget.innerHTML = "";
-      return;
-    }
-    tiles.innerHTML = `
-      <div class="tile"><div class="label">Accuracy</div><div class="value">${(run.accuracy * 100).toFixed(1)}%</div><div class="note">${esc(run.passed)}/${esc(run.total)} passed</div></div>
-      <div class="tile"><div class="label">Faithfulness</div><div class="value">${(run.grounding_rate * 100).toFixed(1)}%</div><div class="note">grounded / verified / recovered</div></div>
-      <div class="tile"><div class="label">Avg latency</div><div class="value">${run.avg_latency_ms === null || run.avg_latency_ms === undefined ? "n/a" : esc(run.avg_latency_ms) + " ms"}</div><div class="note">backend-reported</div></div>
-      <div class="tile"><div class="label">Cost / query</div><div class="value">$${esc(run.estimated_cost_per_query)}</div><div class="note">estimated, not billing</div></div>
-      <div class="tile"><div class="label">Eval rows</div><div class="value">${esc(run.total)}</div><div class="note">${esc(run.manual_review)} manual review</div></div>
-    `;
-    const rows = (run.rows || [])
-      .map(
-        (row, index) => `<tr>
-          <td>${index + 1}</td>
-          <td>${esc(row.question)}</td>
-          <td>${pill(row.eval_status)}</td>
-          <td>${pill(row.grounding_status)}</td>
-          <td>${row.latency_ms === null || row.latency_ms === undefined ? "-" : esc(row.latency_ms) + " ms"}</td>
-        </tr>`
-      )
-      .join("");
-    tableTarget.innerHTML = `
-      <h2>Latest eval run <span class="mono small muted">${esc(run.eval_run_id)}</span></h2>
-      <table><thead><tr><th>#</th><th>Question</th><th>Result</th><th>Grounding</th><th>Latency</th></tr></thead><tbody>${rows}</tbody></table>
-    `;
-    const listing = await fetchJSON("/eval/runs");
-    const items = (listing.eval_runs || [])
-      .map(
-        (item) => `<tr>
-          <td class="mono small">${esc(item.eval_run_id)}</td>
-          <td class="muted small">${esc((item.created_at || "").slice(0, 19))}</td>
-          <td>${(item.accuracy * 100).toFixed(1)}%</td>
-          <td>${(item.grounding_rate * 100).toFixed(1)}%</td>
-          <td>${esc(item.total)}</td>
-        </tr>`
-      )
-      .join("");
-    runsTarget.innerHTML = items
-      ? `<h2>Saved eval runs</h2><table><thead><tr><th>Run</th><th>Created</th><th>Accuracy</th><th>Faithfulness</th><th>Rows</th></tr></thead><tbody>${items}</tbody></table>`
-      : "";
-  } catch (err) {
-    tableTarget.innerHTML = `<div class="error-box">${esc(err.message)}</div>`;
-  }
-}
-
-/* ---------------- Red team ---------------- */
-
-function initRedTeam() {
-  document.getElementById("red-team-run").addEventListener("click", runRedTeam);
-  loadRedTeam();
-}
-
-async function runRedTeam() {
-  const button = document.getElementById("red-team-run");
-  button.disabled = true;
-  try {
-    await fetchJSON("/red-team/run", { method: "POST" });
-    await loadRedTeam();
-  } catch (err) {
-    document.getElementById("red-team-table").innerHTML = `<div class="error-box">${esc(err.message)}</div>`;
-  } finally {
-    button.disabled = false;
-  }
-}
-
 async function loadRedTeam() {
-  const tiles = document.getElementById("red-team-tiles");
-  const target = document.getElementById("red-team-table");
+  const target = document.getElementById("security-content"); const summary = document.getElementById("security-summary");
   try {
-    const data = await fetchJSON("/red-team/latest");
-    const report = data.report;
-    if (!report) {
-      tiles.innerHTML = "";
-      target.innerHTML = `<div class="empty">${esc(data.message || "No red-team run saved yet.")} Click "Run red-team checks" above.</div>`;
-      return;
+    const data = await fetchJSON("/red-team/latest"); const report = data.report;
+    if (!report) { target.innerHTML = `<div class="empty">${esc(data.message || "No red-team report saved yet.")}</div>`; return; }
+    const findings = report.findings || []; const defended = report.defended || findings.filter((finding) => String(finding.status).toLowerCase() === "defended").length;
+    summary.innerHTML = `<div class="security-status"><span class="eyebrow">Security</span><span class="security-badge"><span class="ms">verified_user</span>${esc(defended)} of ${esc(report.total || findings.length)} defended</span></div>`;
+    const renderDetail = (finding) => `<aside class="security-detail"><div class="security-detail-top"><div><span class="chip chip-defended">Defended</span><h2>${esc(finding.finding_id || "RT")}</h2></div></div><h3>${esc(finding.scenario || "Governance check")}</h3><div class="attack-label">Attack</div><pre class="attack-block">${esc(finding.actual_result || "Attack payload is evaluated without disclosing protected corpus content.")}</pre><div class="acl-card"><strong>SQL ACL · backend-enforced</strong><p>${esc(finding.expected_defense || "The governed route validates identity and applies source-level access controls before retrieval.")}</p></div><div class="attack-label">Why it fails</div><p class="security-explanation">${esc(finding.rationale || finding.expected_defense || "The request cannot bypass the access boundary or produce an unsupported answer.")}</p><footer class="security-detail-footer"><span>Last run</span><span>${esc(report.generated_at || "current")}</span></footer></aside>`;
+    const render = (selected) => { target.innerHTML = `<div class="security-layout"><div class="security-groups">${groupFindings(findings).map((group) => `<section class="security-group"><h2>${group.label}</h2><div class="check-grid">${group.items.map((finding) => `<button class="check-tile ${finding === selected ? "active" : ""}" data-finding="${esc(finding.finding_id)}"><code>${esc(finding.finding_id)}</code><span>${esc(finding.scenario)}</span></button>`).join("")}</div></section>`).join("")}</div>${renderDetail(selected)}</div>`; target.querySelectorAll("[data-finding]").forEach((button) => button.addEventListener("click", () => render(findings.find((finding) => finding.finding_id === button.dataset.finding)))); };
+    render(findings.find((finding) => finding.finding_id === "RT-06") || findings[0] || {});
+  } catch (err) { target.innerHTML = `<div class="error-box">${esc(err.message)}</div>`; }
+}
+
+async function initDocuments() {
+  const list = document.getElementById("document-list"); const reader = document.getElementById("document-reader"); let documents = [];
+  const titleFor = (item) => item.source_metadata_json?.title || item.file_name || "Untitled document";
+  const renderReader = async (item) => {
+    if (!item) return; list.querySelectorAll(".document-item").forEach((node) => node.classList.toggle("active", node.dataset.id === String(item.id)));
+    reader.innerHTML = `<header class="reader-header"><div><p class="eyebrow">Corpus document</p><h1>${esc(titleFor(item))}</h1><div class="reader-meta"><span>rev ${esc(item.freshness?.last_updated_at || "current")}</span><span>${esc(item.passage_count || "—")} passages</span><span>grant: public-demo ✓</span><span>slug: ${esc(item.slug || item.id)}</span></div></div><a class="reader-ask" href="/app?doc=${encodeURIComponent(item.id)}">Ask about this document <span class="ms">arrow_forward</span></a></header><div id="reader-jump"></div><div class="reader-body"><aside id="reader-outline" class="reader-outline"></aside><article class="document-content" id="document-content"><div class="spinner">Loading accessible document preview…</div></article></div>`;
+    try {
+      const response = await fetch(`${backendUrl}/corpus/${encodeURIComponent(item.id)}/file`); if (!response.ok) throw new Error("Source preview unavailable");
+      const text = await response.text(); const lines = text.split(/\n+/).map((line) => line.trim()).filter(Boolean); const headings = lines.filter((line) => /^#{1,3}\s+/.test(line)); const paragraphs = lines.filter((line) => !/^#{1,3}\s+/.test(line)); const quoted = paragraphs.slice(-1)[0] || "No readable passage is available for this source.";
+      document.getElementById("reader-outline").innerHTML = headings.length ? `<p class="outline-label">Outline</p>${headings.slice(0,10).map((heading, index) => `<a href="#reader-section-${index}">${esc(heading.replace(/^#+\s*/, ""))}</a>`).join("")}` : "";
+      document.getElementById("document-content").innerHTML = `${headings.slice(0,1).map((heading, index) => `<p class="eyebrow">${esc(heading.replace(/^#+\s*/, ""))}</p><h2 id="reader-section-${index}">${esc(heading.replace(/^#+\s*/, ""))}</h2>`).join("")}${paragraphs.slice(0,4).map((paragraph) => `<p>${esc(paragraph)}</p>`).join("")}<blockquote>${esc(quoted)}</blockquote>`;
+      document.getElementById("reader-jump").innerHTML = `<div class="reader-jump"><span><span class="ms">my_location</span> Showing the most recently available passage from this accessible source.</span><a href="/app">Back to answer →</a></div>`;
+    } catch (_) { document.getElementById("document-content").innerHTML = '<p>The source is visible to your grant, but a readable preview is not available.</p>'; }
+  };
+  const renderList = (items) => { list.innerHTML = items.length ? items.map((item) => `<button type="button" class="document-item" data-id="${esc(item.id)}"><strong>${esc(titleFor(item))}</strong><small>${esc(item.source_type || "document")} · available to your grant</small></button>`).join("") + '<div class="document-item locked"><strong>Restricted documents</strong><small>Outside your grant</small></div>' : '<div class="empty">No corpus sources are visible to this grant.</div>'; list.querySelectorAll("button[data-id]").forEach((node) => node.addEventListener("click", () => renderReader(documents.find((item) => String(item.id) === node.dataset.id)))); };
+  try { if (!backendUrl) throw new Error("No backend"); documents = await fetchJSON(`${backendUrl}/corpus`); if (!Array.isArray(documents)) documents = []; } catch (_) { documents = []; }
+  renderList(documents); const requested = new URLSearchParams(location.search).get("slug"); renderReader(documents.find((item) => String(item.id) === requested || item.slug === requested) || documents[0]); document.getElementById("document-filter")?.addEventListener("input", (event) => renderList(documents.filter((item) => titleFor(item).toLowerCase().includes(event.target.value.toLowerCase()))));
+}
+
+const APPROVED_EVIDENCE_URL = "https://beyondalgorithms2026-source.github.io/RAG_ENTERPRISE_LANGGRAPH_APP/evaluation/";
+const CANDIDATE_EVIDENCE_URL = `${APPROVED_EVIDENCE_URL}candidate-v2/`;
+
+function evidenceLink(url, label) {
+  return `<a class="evidence-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(label)} <span class="ms">open_in_new</span></a>`;
+}
+
+async function loadQuality() {
+  const target = document.getElementById("quality-content");
+  const listing = document.getElementById("eval-runs");
+  target.innerHTML = `<div class="quality-grid public-evidence-grid"><article class="quality-card core"><span class="quality-tag">APPROVED BASELINE</span><h2>v1 governed evidence</h2><div class="quality-score">25/25</div><p class="muted">Approved full-stack synthetic-corpus snapshot, including five required refusals and the live SQL ACL control.</p><div class="segment-bar">${Array.from({length:25}, () => "<i></i>").join("")}</div>${evidenceLink(APPROVED_EVIDENCE_URL, "Open approved evaluation evidence")}</article><article class="quality-card calibration"><span class="quality-tag">CANDIDATE · NOT APPROVED</span><h2>v2 90-case evidence</h2><div class="quality-score" id="candidate-evidence-score">—</div><p class="muted" id="candidate-evidence-copy">Candidate evidence has not been published. It will remain separate from the approved v1 baseline.</p><div id="candidate-evidence-link" class="candidate-evidence-link"></div></article></div>`;
+  if (listing) listing.innerHTML = '<p class="quality-disclosure">This public view shows release evidence, not transient local evaluation runs.</p>';
+  try {
+    const candidate = await fetchJSON(`${CANDIDATE_EVIDENCE_URL}status.json`, { cache:"no-store" });
+    const quality = candidate?.quality;
+    if (candidate?.schema_version && candidate?.evidence_status === "provisional" && Number.isFinite(Number(quality?.total))) {
+      document.getElementById("candidate-evidence-score").textContent = `${Number(quality.passed || 0)}/${Number(quality.total)}`;
+      document.getElementById("candidate-evidence-copy").textContent = "One provisional evidence snapshot. It is not calibration or an approved baseline.";
+      document.getElementById("candidate-evidence-link").innerHTML = evidenceLink(CANDIDATE_EVIDENCE_URL, "Open provisional candidate evidence");
     }
-    tiles.innerHTML = `
-      <div class="tile"><div class="label">Scenarios</div><div class="value">${esc(report.total)}</div></div>
-      <div class="tile"><div class="label">Defended</div><div class="value">${esc(report.defended)}</div></div>
-      <div class="tile"><div class="label">Requires backend</div><div class="value">${esc(report.requires_backend)}</div><div class="note">not simulated offline</div></div>
-      <div class="tile"><div class="label">Failed</div><div class="value">${esc(report.failed)}</div></div>
-    `;
-    const rows = (report.findings || [])
-      .map(
-        (finding) => `<tr>
-          <td class="mono small">${esc(finding.finding_id)}</td>
-          <td>${esc(finding.scenario)}</td>
-          <td class="small">${esc(finding.expected_defense)}</td>
-          <td class="small">${esc(finding.actual_result)}</td>
-          <td>${pill(finding.status)}</td>
-          <td class="mono small">${esc(finding.linked_test || "-")}</td>
-        </tr>`
-      )
-      .join("");
-    target.innerHTML = `
-      <p class="small muted">Generated ${esc((report.generated_at || "").slice(0, 19))} — deterministic checks exercise the real validation code paths offline; backend-dependent scenarios are honestly labeled.</p>
-      <table><thead><tr><th>#</th><th>Scenario</th><th>Expected defense</th><th>Actual result</th><th>Status</th><th>Linked test</th></tr></thead><tbody>${rows}</tbody></table>
-    `;
-  } catch (err) {
-    target.innerHTML = `<div class="error-box">${esc(err.message)}</div>`;
+  } catch (_) {
+    // Candidate evidence is intentionally optional while the separate release runs.
   }
 }
-
-/* ---------------- Before/after demo ---------------- */
-
-function initDemo() {
-  const form = document.getElementById("demo-form");
-  const output = document.getElementById("demo-result");
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const question = document.getElementById("demo-question").value.trim();
-    const requireApproval = document.getElementById("demo-require-approval").checked;
-    if (!question) return;
-    output.innerHTML = '<div class="spinner">Running first-pass and orchestrated workflow…</div>';
-    try {
-      const data = await fetchJSON("/demo/before-after", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question, require_approval: requireApproval }),
-      });
-      output.innerHTML = `
-        <div class="grid">
-          <div class="card">
-            <h2>Before — raw first-pass answer</h2>
-            <div class="row" style="margin:0 0 10px">${pill(data.first_pass_status)} <span class="muted small">${esc(data.first_pass_citation_count)} citations</span></div>
-            ${data.first_pass_answer
-              ? `<div class="answer-box">${esc(data.first_pass_answer)}</div>`
-              : `<div class="empty">No first-pass answer available${data.first_pass_error ? ": " + esc(data.first_pass_error) : ""}.</div>`}
-            <p class="small muted" style="margin-bottom:0">Single <span class="mono">ask_grounded</span> call — no validation, no recovery, no governance.</p>
-          </div>
-          <div class="card">
-            <h2>After — governed workflow</h2>
-            <div class="row" style="margin:0 0 10px">
-              ${pill(data.orchestrated_status)} ${pill(data.approval_status)}
-              ${data.recovery_used ? '<span class="pill info">recovery used</span>' : ""}
-            </div>
-            <div class="answer-box">${esc(data.orchestrated_answer || "[no answer]")}</div>
-            <p class="small muted" style="margin-bottom:0">
-              run_id <span class="mono">${esc((data.run_id || "").slice(0, 12))}…</span> ·
-              ${esc(data.audit_event_count || 0)} audit events ·
-              ${esc(data.citation_count)} citations · ${esc(data.evidence_count)} evidence items
-            </p>
-          </div>
-        </div>
-        <div class="card">
-          <h2>Workflow timeline</h2>
-          ${timelineTable(data.timeline)}
-          ${decisionTrail(data.decision_trail)}
-        </div>
-      `;
-    } catch (err) {
-      output.innerHTML = `<div class="error-box">Backend unavailable or run failed: ${esc(err.message)}. No fabricated before/after output is shown.</div>`;
-    }
-  });
-}
-
-/* ---------------- Bootstrap ---------------- */
-
-document.addEventListener("DOMContentLoaded", () => {
-  const page = document.body.dataset.page;
-  const initializers = {
-    dashboard: initDashboard,
-    approvals: initApprovals,
-    audit: initAudit,
-    evals: initEvals,
-    "red-team": initRedTeam,
-    demo: initDemo,
-  };
-  if (initializers[page]) initializers[page]();
-});

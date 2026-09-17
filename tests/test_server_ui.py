@@ -26,8 +26,12 @@ def test_ui_routes_return_200(app_env):
     client, _ = app_env
     for path in (
         "/app",
+        "/app/documents",
         "/app/audit",
         "/app/approvals",
+        "/app/quality",
+        "/app/security",
+        "/app/compare",
         "/app/evals",
         "/app/red-team",
         "/app/demo",
@@ -68,8 +72,19 @@ def test_public_demo_is_read_only_and_hides_pending_answer(tmp_path):
     assert page.status_code == 200
     assert 'data-public-demo="true"' in page.text
     assert 'content="https://backend.example.test"' in page.text
-    assert "1 · Answerable" in page.text
+    assert page.text.count('class="starter-card"') == 4
+    assert "Ask a governed policy question with evidence you can inspect." in page.text
+    assert "Governance evidence" in page.text
+    assert "Demonstrates an access-controlled refusal." in page.text
     assert 'data-recovery="0"' in page.text
+    assert "ask-require-approval" not in page.text
+
+    quality = client.get("/app/quality")
+    assert quality.status_code == 200
+    script = client.get("/app/static/app.js").text
+    assert "APPROVED_EVIDENCE_URL" in script
+    assert "CANDIDATE_EVIDENCE_URL" in script
+    assert "Candidate evidence has not been published" in script
 
     pending = client.get("/approval/pending").json()["pending"]
     fetched = client.get(f"/approval/{record['approval_id']}").json()
