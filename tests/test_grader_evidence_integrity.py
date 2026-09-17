@@ -182,10 +182,10 @@ def test_judge_schema_has_unique_required_fields_and_validates_scoped_quote(monk
                                 "content": json.dumps(
                                     {
                                         "assertions": {
-                                        "assertion_0": {
+                                            "assertion_0": {
                                                 "state": "supported",
                                                 "answer_span": ANSWER,
-                                            "evidence_span": quote,
+                                                "evidence_span": quote,
                                                 "explanation": "Duration comparison.",
                                             }
                                         }
