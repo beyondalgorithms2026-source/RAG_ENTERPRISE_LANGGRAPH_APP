@@ -9,7 +9,7 @@ from pathlib import Path
 
 from rag_enterprise_langgraph import eval_assertions
 from rag_enterprise_langgraph.demo_proof import redact_for_sharing
-from rag_enterprise_langgraph.eval_judge import judge
+from rag_enterprise_langgraph.eval_judge import JudgeInfrastructureError, judge
 from rag_enterprise_langgraph.eval_runner import _typed_order, read_eval_json
 
 
@@ -68,7 +68,7 @@ async def regrade(pack: Path, fixture: dict, *, semantic_judge=None, use_judge=F
                 error = "offline_judge_infrastructure_failure"
                 metadata = {
                     "failure_reason": str(exc)
-                    if isinstance(exc, eval_assertions.AssertionError)
+                    if isinstance(exc, JudgeInfrastructureError)
                     else "judge_transport_or_response_failure"
                 }
         required = [a for a in result["assertions"] if a["required"]]

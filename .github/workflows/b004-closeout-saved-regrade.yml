@@ -44,6 +44,7 @@ jobs:
         env:
           EVAL_OPENAI_API_KEY: ${{ secrets.EVAL_OPENAI_API_KEY }}
         run: |
+          set +e
           python scripts/regrade_saved_answers.py \
             --pack config/eval-set-operations-manual-v3.2-candidate.json \
             --fixture preserved/manual-eval-report.json \
@@ -51,6 +52,12 @@ jobs:
             --semantic-judge \
             --case-id OM-004 \
             --case-id OM-069
+          result=$?
+          if [ -f preserved/two-case-regrade.json ]; then
+            jq -r '.rows[] | "\(.case_id): \(.judge_metadata.failure_reason // "graded")"' \
+              preserved/two-case-regrade.json >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit "$result"
 
       - name: Recombine without regenerating answers
         run: |
