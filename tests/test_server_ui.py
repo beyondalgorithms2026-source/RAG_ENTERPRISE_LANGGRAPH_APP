@@ -461,7 +461,7 @@ def test_committed_demo_evidence_is_consistent():
     recorded = json.loads(
         (REPO_ROOT / "config" / "demo" / "before-after-recorded.json").read_text(encoding="utf-8")
     )
-    assert len(recorded["comparisons"]) == 3
+    assert len(recorded["comparisons"]) == 2
     audited_run_ids = {run["run_id"] for run in runs}
     transport_failures = {"backend_timeout", "backend_auth_failed", "tool_error", "unavailable"}
     for comparison in recorded["comparisons"]:

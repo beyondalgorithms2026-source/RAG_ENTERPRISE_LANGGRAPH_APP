@@ -7,7 +7,8 @@
     "mcp_server_commit": "986de635e93cae0c31b3f64bf0eef7bc77af9b90",
     "app_commit": "55125a26989c5d06205330506b71fa7fb48d2ac1",
     "synthesis_enabled": false,
-    "data": "synthetic public-demo corpus"
+    "data": "synthetic public-demo corpus",
+    "omitted_from_display": "The 'Who approves a €20,000 purchase?' comparison (run_id 512da1441f0842c38204a5f34976206b) was recorded but omitted from this page by the owner; its run remains unedited in the audit log."
   },
   "comparisons": [
     {
@@ -91,86 +92,6 @@
         },
         "evidence_support": "complete",
         "review_recommended": true,
-        "reason": "answer_shape_and_citations_supported"
-      }
-    },
-    {
-      "question": "Who approves a €20,000 purchase?",
-      "first_pass_answer": "A €20,000 purchase requires approval from the authority specified in Table 2.1, which indicates that for capital expenditure, amounts up to €18,750 can be approved by Band 4–5, while amounts above €18,750 and up to €247,500 require Band 6+ approval. Therefore, a €20,000 purchase would need Band 6+ approval [S1].",
-      "first_pass_status": "grounded",
-      "first_pass_error": null,
-      "first_pass_citation_count": 1,
-      "orchestrated_answer": "A €20,000 purchase requires approval from the authority specified in Table 2.1 of the Delegation of Authority Matrix. For capital expenditure, the maximum amount that can be approved without Board approval is €18,750, so a €20,000 purchase would require Board approval. For operating expenditure, the limit is €28,600, which would allow for this amount without Board approval. Therefore, the specific approval needed depends on whether the purchase is classified as capital or operating expenditure [S1].",
-      "orchestrated_status": "verified",
-      "recovery_used": false,
-      "recovery_successful": false,
-      "approval_status": "approval_not_required",
-      "approval_id": null,
-      "risk_reasons": [],
-      "run_id": "512da1441f0842c38204a5f34976206b",
-      "audit_event_count": 7,
-      "timeline": [
-        {
-          "step": 1,
-          "tool_name": "ask_grounded",
-          "purpose": "initial_grounded_answer",
-          "result_status": "grounded",
-          "citation_count": 1,
-          "result_count": 0,
-          "used_chunks_count": 6,
-          "mode": "hybrid",
-          "latency_ms": 2619,
-          "recovery_reason": null,
-          "failure_reason": null,
-          "source_id": null,
-          "source_part_id": null
-        }
-      ],
-      "decision_trail": [
-        {
-          "step": 1,
-          "label": "Question classified",
-          "summary": "person_or_org",
-          "safe": true
-        },
-        {
-          "step": 2,
-          "label": "Expected answer shape",
-          "summary": "grounded explanatory answer",
-          "safe": true
-        },
-        {
-          "step": 3,
-          "label": "First answer reviewed",
-          "summary": "verified: answer_shape_and_citations_supported",
-          "safe": true
-        },
-        {
-          "step": 4,
-          "label": "Finalized",
-          "summary": "First answer passed answer-shape and citation-support checks.",
-          "safe": true
-        }
-      ],
-      "citation_count": 1,
-      "evidence_count": 1,
-      "validation_summary": {
-        "final_status": "verified",
-        "question_types": [
-          "person_or_org"
-        ],
-        "expected_answer_shape": {
-          "item_count": null,
-          "requires_numeric": false,
-          "requires_percentage": false,
-          "requires_date": false,
-          "requires_location": false,
-          "requires_named_entity": true,
-          "requires_exact_quote": false,
-          "requires_cited_support_per_item": false
-        },
-        "evidence_support": "complete",
-        "review_recommended": false,
         "reason": "answer_shape_and_citations_supported"
       }
     },
