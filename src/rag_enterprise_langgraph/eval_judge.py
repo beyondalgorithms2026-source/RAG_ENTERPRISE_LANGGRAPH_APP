@@ -11,7 +11,7 @@ import urllib.error
 import urllib.request
 from typing import Any
 
-from rag_enterprise_langgraph.eval_assertions import _literal_span, judge_payload
+from rag_enterprise_langgraph.eval_assertions import _answer_span, _literal_span, judge_payload
 
 MODEL = "gpt-4o-mini-2024-07-18"
 SYSTEM = (
@@ -24,7 +24,9 @@ SYSTEM = (
     "sentences, remove list labels, insert ellipses, paraphrase quotes or change their punctuation. "
     "The answer quote itself must state the required concept; matching words or the reference alone "
     "do not make an omitted concept supported. Give a nonempty explanation for every assertion. "
-    "Select literal quote choices from the answer and each assertion's scoped evidence. For missing "
+    "Select literal quote choices from the answer and each assertion's scoped evidence. The evidence "
+    "quote must come from the reference text, never from the answer. For a table, quote the text of "
+    "one cell only, without any | characters, and do not join a header to a cell. For missing "
     "concepts quote the answer showing the omission and the relevant reference requirement. "
     "Use uncertain when interpretation is ambiguous. Do not infer facts absent from reference evidence."
 )
@@ -181,7 +183,7 @@ def _request_once(payload: str) -> dict[str, Any]:
             # hard-wrapped reference text by whitespace only, never by wording.
             if row.get("state") not in {"supported", "contradicted"}:
                 continue
-            if _literal_span(answer, row.get("answer_span")) is None:
+            if _answer_span(answer, row.get("answer_span")) is None:
                 raise ValueError("invalid literal answer span")
             if not any(
                 _literal_span(reference, row.get("evidence_span")) is not None
@@ -211,12 +213,9 @@ def _request_once(payload: str) -> dict[str, Any]:
         raise error from exc
 
 
-_SAFE_RESPONSE_REASONS = {
-    "invalid assertion set",
-    "invalid assertion row",
-    "invalid literal answer span",
-    "invalid scoped evidence span",
-}
+# A well-formed reply whose quotes do not check out is unverifiable, not an outage.
+UNVERIFIABLE_REASONS = frozenset({"invalid literal answer span", "invalid scoped evidence span"})
+_SAFE_RESPONSE_REASONS = {"invalid assertion set", "invalid assertion row", *UNVERIFIABLE_REASONS}
 
 
 def _request(payload: str) -> dict[str, Any]:

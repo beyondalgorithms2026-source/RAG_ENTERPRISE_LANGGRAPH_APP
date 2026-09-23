@@ -659,6 +659,15 @@ def _judge_error_detail(exc: Exception) -> str:
     return type(exc).__name__
 
 
+def _judge_unverifiable(exc: Exception) -> bool:
+    """The judge replied, but its verdict failed literal-span or contract checks."""
+    from rag_enterprise_langgraph.eval_judge import UNVERIFIABLE_REASONS, JudgeInfrastructureError
+
+    if isinstance(exc, eval_assertions.AssertionError):
+        return True
+    return isinstance(exc, JudgeInfrastructureError) and exc.last_reason in UNVERIFIABLE_REASONS
+
+
 def _typed_order(answer: str, case: EvalCase, typed: dict[str, Any]) -> bool | None:
     if not case.ordered_fact_ids:
         return True
@@ -779,8 +788,18 @@ async def run_eval(
                             "latency_ms": round((time.perf_counter() - judge_started) * 1000, 3),
                         }
                     except Exception as exc:
-                        expected_eval["judge_error"] = "offline_judge_infrastructure_failure"
-                        expected_eval["judge_error_detail"] = _judge_error_detail(exc)
+                        if _judge_unverifiable(exc):
+                            # The judge answered but its quotes could not be verified:
+                            # discard the verdict and route the case to human review.
+                            expected_eval["judge_unverifiable"] = _judge_error_detail(exc)
+                            concept_ids = {a["id"] for a in concepts}
+                            for row in typed["assertions"]:
+                                if row["id"] in concept_ids and row["state"] == "supported":
+                                    row["state"] = "uncertain"
+                                    row["method"] = "judge_unverifiable"
+                        else:
+                            expected_eval["judge_error"] = "offline_judge_infrastructure_failure"
+                            expected_eval["judge_error_detail"] = _judge_error_detail(exc)
                 expected_eval["ordered_facts_matched"] = _typed_order(answer, case, typed)
         else:
             expected_eval = evaluate_expected_answer(

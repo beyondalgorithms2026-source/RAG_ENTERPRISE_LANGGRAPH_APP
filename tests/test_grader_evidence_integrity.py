@@ -347,3 +347,12 @@ def test_exhausted_judge_retries_keep_a_safe_reason(monkeypatch):
     detail = _judge_error_detail(exc_info.value)
     assert detail == "offline judge retry budget exhausted: invalid scoped evidence span"
     assert "SECRET" not in detail
+
+
+def test_answer_quotes_ignore_inline_citation_markers_only():
+    answer = "6. State regulatory notification risk. 7. State next update time [S2]."
+    assert grading._answer_span(answer, "State next update time.") is not None
+    assert grading._answer_span(answer, "State next update time [S2].") is not None
+    assert grading._answer_span(answer, "State the next update time.") is None
+    assert grading._answer_span(answer, "State next update time. [S3]") is not None
+    assert grading._answer_span(answer, "Report next update time.") is None

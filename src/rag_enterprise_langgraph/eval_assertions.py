@@ -7,7 +7,7 @@ import re
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
-GRADER_VERSION = "2.0.1"
+GRADER_VERSION = "2.0.2"
 TYPES = {"concept", "identifier", "numeric", "polarity", "classification", "citation"}
 
 
@@ -324,6 +324,16 @@ def _literal_span(text: str, quote: Any) -> str | None:
     return match.group() if match else None
 
 
+_CITATION_MARKER = re.compile(r"\s*\[S\d+\]")
+
+
+def _answer_span(answer: str, quote: Any) -> str | None:
+    """Like _literal_span, but inline citation markers such as [S1] are not wording."""
+    if not isinstance(quote, str):
+        return None
+    return _literal_span(_CITATION_MARKER.sub("", answer), _CITATION_MARKER.sub("", quote))
+
+
 def factual_quotes(references: list[dict]) -> list[str]:
     """Literal factual units, excluding titles, table headers and separators."""
     quotes = set()
@@ -398,7 +408,7 @@ def apply_judgement(
             raise AssertionError("unknown judge state")
         if not isinstance(row.get("explanation"), str) or not row["explanation"].strip():
             raise AssertionError("judge explanation required")
-        answer_span = _literal_span(answer, row.get("answer_span"))
+        answer_span = _answer_span(answer, row.get("answer_span"))
         source_ids = contracts.get(row["id"], {}).get("source_refs")
         scoped = [r for r in references if source_ids is None or r["id"] in source_ids]
         evidence_span = _literal_span(_factual_text(scoped), row.get("evidence_span"))
