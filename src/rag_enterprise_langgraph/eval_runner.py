@@ -648,6 +648,17 @@ def _backend_request_ids(run: dict[str, Any]) -> list[str]:
     return request_ids
 
 
+def _judge_error_detail(exc: Exception) -> str:
+    """Code-defined failure category only; provider text and payloads are never exported."""
+    from rag_enterprise_langgraph.eval_judge import JudgeInfrastructureError
+
+    if isinstance(exc, JudgeInfrastructureError):
+        return f"{exc}: {exc.last_reason}" if exc.last_reason else str(exc)
+    if isinstance(exc, eval_assertions.AssertionError):
+        return f"judgement rejected: {exc}"
+    return type(exc).__name__
+
+
 def _typed_order(answer: str, case: EvalCase, typed: dict[str, Any]) -> bool | None:
     if not case.ordered_fact_ids:
         return True
@@ -767,8 +778,9 @@ async def run_eval(
                             "usage": judged.get("usage", {}),
                             "latency_ms": round((time.perf_counter() - judge_started) * 1000, 3),
                         }
-                    except Exception:
+                    except Exception as exc:
                         expected_eval["judge_error"] = "offline_judge_infrastructure_failure"
+                        expected_eval["judge_error_detail"] = _judge_error_detail(exc)
                 expected_eval["ordered_facts_matched"] = _typed_order(answer, case, typed)
         else:
             expected_eval = evaluate_expected_answer(
