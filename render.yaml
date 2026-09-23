@@ -28,3 +28,7 @@ services:
         value: docs/evaluation/status.json
       - key: RAG_AGENT_RED_TEAM_LATEST_PATH
         value: docs/evaluation/red-team-release.json
+      - key: RAG_AGENT_AUDIT_LOG_PATH
+        value: config/demo/audit-log.jsonl
+      - key: RAG_AGENT_RECORDED_COMPARISONS_PATH
+        value: config/demo/before-after-recorded.json

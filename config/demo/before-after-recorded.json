@@ -1,0 +1,226 @@
+{
+  "schema_version": "1.0",
+  "recorded_at": "2026-09-23T16:15:18.396039+00:00",
+  "provenance": {
+    "method": "POST /demo/before-after on a local instance with RAG_AGENT_PUBLIC_DEMO=false",
+    "backend": "https://rag-enterprise-starter-demo.onrender.com (anonymous public grant, no bearer token)",
+    "mcp_server_commit": "986de635e93cae0c31b3f64bf0eef7bc77af9b90",
+    "app_commit": "55125a26989c5d06205330506b71fa7fb48d2ac1",
+    "synthesis_enabled": false,
+    "data": "synthetic public-demo corpus",
+    "omitted_from_display": "The 'Who approves a €20,000 purchase?' comparison (run_id 512da1441f0842c38204a5f34976206b) was recorded but omitted from this page by the owner; its run remains unedited in the audit log."
+  },
+  "comparisons": [
+    {
+      "question": "What is the maximum value of a gift that may be accepted under company policy?",
+      "first_pass_answer": "The maximum value of a gift that may be accepted under company policy is 50 EUR. Gifts with a value above this amount may not be accepted [S1].",
+      "first_pass_status": "grounded",
+      "first_pass_error": null,
+      "first_pass_citation_count": 1,
+      "orchestrated_answer": "The maximum value of a gift that may be accepted under company policy is 50 EUR. Gifts with a value above this amount may not be accepted [S1].",
+      "orchestrated_status": "verified",
+      "recovery_used": false,
+      "recovery_successful": false,
+      "approval_status": "approval_not_required",
+      "approval_id": null,
+      "risk_reasons": [
+        "high_risk_category:compliance",
+        "review_recommended"
+      ],
+      "run_id": "65f1eddbfa324d5996c009271d969c0c",
+      "audit_event_count": 7,
+      "timeline": [
+        {
+          "step": 1,
+          "tool_name": "ask_grounded",
+          "purpose": "initial_grounded_answer",
+          "result_status": "grounded",
+          "citation_count": 1,
+          "result_count": 0,
+          "used_chunks_count": 5,
+          "mode": "hybrid",
+          "latency_ms": 1593,
+          "recovery_reason": null,
+          "failure_reason": null,
+          "source_id": null,
+          "source_part_id": null
+        }
+      ],
+      "decision_trail": [
+        {
+          "step": 1,
+          "label": "Question classified",
+          "summary": "definition, policy_or_compliance",
+          "safe": true
+        },
+        {
+          "step": 2,
+          "label": "Expected answer shape",
+          "summary": "grounded explanatory answer",
+          "safe": true
+        },
+        {
+          "step": 3,
+          "label": "First answer reviewed",
+          "summary": "verified: answer_shape_and_citations_supported",
+          "safe": true
+        },
+        {
+          "step": 4,
+          "label": "Finalized",
+          "summary": "First answer passed answer-shape and citation-support checks.",
+          "safe": true
+        }
+      ],
+      "citation_count": 1,
+      "evidence_count": 1,
+      "validation_summary": {
+        "final_status": "verified",
+        "question_types": [
+          "definition",
+          "policy_or_compliance"
+        ],
+        "expected_answer_shape": {
+          "item_count": null,
+          "requires_numeric": false,
+          "requires_percentage": false,
+          "requires_date": false,
+          "requires_location": false,
+          "requires_named_entity": false,
+          "requires_exact_quote": false,
+          "requires_cited_support_per_item": false
+        },
+        "evidence_support": "complete",
+        "review_recommended": true,
+        "reason": "answer_shape_and_citations_supported"
+      }
+    },
+    {
+      "question": "Is there ever an exception for a facilitation payment?",
+      "first_pass_answer": "Not found in provided sources.",
+      "first_pass_status": "candidate_evidence_present",
+      "first_pass_error": null,
+      "first_pass_citation_count": 0,
+      "orchestrated_answer": "No grounded answer could be produced from the available MCP evidence.",
+      "orchestrated_status": "not_found",
+      "recovery_used": true,
+      "recovery_successful": false,
+      "approval_status": "approval_not_required",
+      "approval_id": null,
+      "risk_reasons": [],
+      "run_id": "bb8150c908284ba79bbc56e3641e6e52",
+      "audit_event_count": 18,
+      "timeline": [
+        {
+          "step": 1,
+          "tool_name": "ask_grounded",
+          "purpose": "initial_grounded_answer",
+          "result_status": "candidate_evidence_present",
+          "citation_count": 0,
+          "result_count": 0,
+          "used_chunks_count": 5,
+          "mode": "hybrid",
+          "latency_ms": 3145,
+          "recovery_reason": "not_found_with_candidate_evidence",
+          "failure_reason": null,
+          "source_id": null,
+          "source_part_id": null
+        },
+        {
+          "step": 2,
+          "tool_name": "ask_grounded",
+          "purpose": "keyword_grounded_recovery",
+          "result_status": "candidate_evidence_present",
+          "citation_count": 0,
+          "result_count": 0,
+          "used_chunks_count": 3,
+          "mode": "keyword",
+          "latency_ms": 2121,
+          "recovery_reason": "not_found_with_candidate_evidence",
+          "failure_reason": null,
+          "source_id": null,
+          "source_part_id": null
+        },
+        {
+          "step": 3,
+          "tool_name": "search_documents",
+          "purpose": "keyword_evidence_search",
+          "result_status": "candidate_evidence_found",
+          "citation_count": 0,
+          "result_count": 8,
+          "used_chunks_count": null,
+          "mode": "keyword",
+          "latency_ms": 38,
+          "recovery_reason": "retrieval_only_recovery",
+          "failure_reason": null,
+          "source_id": 139,
+          "source_part_id": null
+        },
+        {
+          "step": 4,
+          "tool_name": "search_documents",
+          "purpose": "neighbor_keyword_evidence_search",
+          "result_status": "candidate_evidence_found",
+          "citation_count": 0,
+          "result_count": 8,
+          "used_chunks_count": null,
+          "mode": "keyword",
+          "latency_ms": 32,
+          "recovery_reason": "retrieval_only_recovery",
+          "failure_reason": null,
+          "source_id": 139,
+          "source_part_id": null
+        },
+        {
+          "step": 5,
+          "tool_name": "get_document_excerpt",
+          "purpose": "raw_excerpt_lookup",
+          "result_status": "evidence_found",
+          "citation_count": 0,
+          "result_count": 0,
+          "used_chunks_count": null,
+          "mode": null,
+          "latency_ms": null,
+          "recovery_reason": "raw_excerpt_lookup",
+          "failure_reason": null,
+          "source_id": 139,
+          "source_part_id": null
+        }
+      ],
+      "decision_trail": [
+        {
+          "step": 1,
+          "label": "Question classified",
+          "summary": "yes_no",
+          "safe": true
+        },
+        {
+          "step": 2,
+          "label": "Expected answer shape",
+          "summary": "grounded explanatory answer",
+          "safe": true
+        },
+        {
+          "step": 3,
+          "label": "Evidence recovery",
+          "summary": "Searching with keyword mode for question anchors.",
+          "safe": true
+        },
+        {
+          "step": 4,
+          "label": "Finalized",
+          "summary": "not_found: no adequate evidence found",
+          "safe": true
+        }
+      ],
+      "citation_count": 0,
+      "evidence_count": 0,
+      "validation_summary": {
+        "final_status": "not_found",
+        "question_types": [],
+        "evidence_support": "irrelevant",
+        "review_recommended": false
+      }
+    }
+  ]
+}

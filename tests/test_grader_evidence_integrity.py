@@ -209,3 +209,150 @@ def test_judge_schema_has_unique_required_fields_and_validates_scoped_quote(monk
         )
     )
     assert response["judgement"]["assertions"][0]["id"] == "trigger"
+
+
+WRAPPED_REFS = [
+    {
+        "id": "travel",
+        "document": "travel",
+        "section": "Daily allowance",
+        "text": "## Daily allowance\n\nThe daily meal allowance is 45 EUR for domestic travel and\n65 EUR for international travel.\n\n## Booking\n\n|Class|Approver|\n|---|---|\n|Economy|Line manager|\n|Premium|Department head|",
+    }
+]
+WRAPPED_ASSERTIONS = [
+    {"id": "allowance", "type": "concept", "any_of": ["65 EUR"], "source_refs": ["travel"]}
+]
+WRAPPED_ANSWER = "The daily meal allowance for international travel is 65 EUR [S1]."
+WRAPPED_QUOTE = "45 EUR for domestic travel and 65 EUR for international travel."
+
+
+def _judge_response(rows):
+    content = json.dumps({"assertions": rows})
+    body = {"choices": [{"finish_reason": "stop", "message": {"content": content}}]}
+    return StringIO(json.dumps(body))
+
+
+def _wrapped_payload():
+    return grading.judge_payload(
+        question="What is the daily meal allowance for international travel?",
+        answer=WRAPPED_ANSWER,
+        assertions=WRAPPED_ASSERTIONS,
+        references=WRAPPED_REFS,
+        citations=[],
+    )
+
+
+def test_judge_accepts_quote_across_hard_line_wrap(monkeypatch):
+    monkeypatch.setenv("EVAL_OPENAI_API_KEY", "unit-test-only")
+    row = {
+        "state": "supported",
+        "answer_span": "65 EUR",
+        "evidence_span": WRAPPED_QUOTE,
+        "explanation": "The answer states the international allowance.",
+    }
+    monkeypatch.setattr(
+        eval_judge.urllib.request,
+        "urlopen",
+        lambda request, timeout: _judge_response({"assertion_0": row}),
+    )
+    response = eval_judge._request(_wrapped_payload())
+    graded = grading.evaluate(
+        answer=WRAPPED_ANSWER,
+        evidence=[],
+        citations=[],
+        assertions=WRAPPED_ASSERTIONS,
+        references=WRAPPED_REFS,
+    )
+    grading.apply_judgement(
+        graded,
+        response["judgement"],
+        answer=WRAPPED_ANSWER,
+        references=WRAPPED_REFS,
+        assertions=WRAPPED_ASSERTIONS,
+    )
+    assert graded["assertions"][0]["state"] == "supported"
+    assert graded["assertions"][0]["evidence_span"].replace("\n", " ") == WRAPPED_QUOTE
+
+
+def test_judge_missing_verdict_does_not_need_literal_spans(monkeypatch):
+    monkeypatch.setenv("EVAL_OPENAI_API_KEY", "unit-test-only")
+    row = {
+        "state": "missing",
+        "answer_span": "(the answer does not mention this)",
+        "evidence_span": "a paraphrase of the requirement",
+        "explanation": "The answer omits the requirement.",
+    }
+    monkeypatch.setattr(
+        eval_judge.urllib.request,
+        "urlopen",
+        lambda request, timeout: _judge_response({"assertion_0": row}),
+    )
+    response = eval_judge._request(_wrapped_payload())
+    assert response["judgement"]["assertions"][0]["state"] == "missing"
+
+
+@pytest.mark.parametrize(
+    "quote",
+    [
+        "65 EUR for international travel. Booking",  # crosses an excluded heading
+        "|Economy|Line manager| |Premium|Department head|",  # joins two table rows
+        "45 EUR for domestic travel or 65 EUR for international travel.",  # paraphrase
+    ],
+)
+def test_ordered_evidence_still_rejects_joined_or_paraphrased_quotes(quote):
+    graded = grading.evaluate(
+        answer=WRAPPED_ANSWER,
+        evidence=[],
+        citations=[],
+        assertions=WRAPPED_ASSERTIONS,
+        references=WRAPPED_REFS,
+    )
+    row = {
+        "id": "allowance",
+        "state": "supported",
+        "answer_span": "65 EUR",
+        "evidence_span": quote,
+        "explanation": "Attempted support.",
+    }
+    with pytest.raises(grading.AssertionError):
+        grading.apply_judgement(
+            graded,
+            {"assertions": [row]},
+            answer=WRAPPED_ANSWER,
+            references=WRAPPED_REFS,
+            assertions=WRAPPED_ASSERTIONS,
+        )
+
+
+def test_exhausted_judge_retries_keep_a_safe_reason(monkeypatch):
+    monkeypatch.setenv("EVAL_OPENAI_API_KEY", "unit-test-only")
+    monkeypatch.setattr(eval_judge.time, "sleep", lambda _seconds: None)
+    row = {
+        "state": "supported",
+        "answer_span": "65 EUR",
+        "evidence_span": "SECRET invented quote",
+        "explanation": "Fabricated.",
+    }
+    monkeypatch.setattr(
+        eval_judge.urllib.request,
+        "urlopen",
+        lambda request, timeout: _judge_response({"assertion_0": row}),
+    )
+    with pytest.raises(eval_judge.JudgeInfrastructureError) as exc_info:
+        eval_judge._request(_wrapped_payload())
+    assert exc_info.value.last_reason == "invalid scoped evidence span"
+
+    from rag_enterprise_langgraph.eval_runner import _judge_error_detail
+
+    detail = _judge_error_detail(exc_info.value)
+    assert detail == "offline judge retry budget exhausted: invalid scoped evidence span"
+    assert "SECRET" not in detail
+
+
+def test_answer_quotes_ignore_inline_citation_markers_only():
+    answer = "6. State regulatory notification risk. 7. State next update time [S2]."
+    assert grading._answer_span(answer, "State next update time.") is not None
+    assert grading._answer_span(answer, "State next update time [S2].") is not None
+    assert grading._answer_span(answer, "State the next update time.") is None
+    assert grading._answer_span(answer, "State next update time. [S3]") is not None
+    assert grading._answer_span(answer, "Report next update time.") is None

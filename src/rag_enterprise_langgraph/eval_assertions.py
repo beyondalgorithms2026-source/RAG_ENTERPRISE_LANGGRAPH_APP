@@ -7,7 +7,7 @@ import re
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
-GRADER_VERSION = "2.0.1"
+GRADER_VERSION = "2.0.2"
 TYPES = {"concept", "identifier", "numeric", "polarity", "classification", "citation"}
 
 
@@ -324,6 +324,16 @@ def _literal_span(text: str, quote: Any) -> str | None:
     return match.group() if match else None
 
 
+_CITATION_MARKER = re.compile(r"\s*\[S\d+\]")
+
+
+def _answer_span(answer: str, quote: Any) -> str | None:
+    """Like _literal_span, but inline citation markers such as [S1] are not wording."""
+    if not isinstance(quote, str):
+        return None
+    return _literal_span(_CITATION_MARKER.sub("", answer), _CITATION_MARKER.sub("", quote))
+
+
 def factual_quotes(references: list[dict]) -> list[str]:
     """Literal factual units, excluding titles, table headers and separators."""
     quotes = set()
@@ -340,6 +350,35 @@ def factual_quotes(references: list[dict]) -> list[str]:
                     m.group().strip() for m in re.finditer(r"\S.*?(?:[.!?;](?=\s|$)|$)", line)
                 )
     return sorted(quotes)
+
+
+_BLOCK_BREAK = "\n¶\n"
+
+
+def _factual_text(references: list[dict]) -> str:
+    """Factual lines in document order, so quotes may span a hard line wrap.
+
+    Titles, table headers and separators break the text into blocks, and each table
+    row is its own block, so no quote can join excluded or unrelated lines.
+    """
+    blocks: list[str] = []
+    for reference in references:
+        lines = [line.strip() for line in reference["text"].splitlines() if line.strip()]
+        current: list[str] = []
+        for index, line in enumerate(lines):
+            separator = bool(re.fullmatch(r"[|:\-\s]+", line))
+            header = index + 1 < len(lines) and bool(re.fullmatch(r"[|:\-\s]+", lines[index + 1]))
+            if separator or header or line.startswith("#") or line.startswith("|"):
+                if current:
+                    blocks.append("\n".join(current))
+                    current = []
+                if line.startswith("|") and not (separator or header):
+                    blocks.append(line)
+                continue
+            current.append(line)
+        if current:
+            blocks.append("\n".join(current))
+    return _BLOCK_BREAK.join(blocks)
 
 
 def apply_judgement(
@@ -369,11 +408,10 @@ def apply_judgement(
             raise AssertionError("unknown judge state")
         if not isinstance(row.get("explanation"), str) or not row["explanation"].strip():
             raise AssertionError("judge explanation required")
-        answer_span = _literal_span(answer, row.get("answer_span"))
+        answer_span = _answer_span(answer, row.get("answer_span"))
         source_ids = contracts.get(row["id"], {}).get("source_refs")
         scoped = [r for r in references if source_ids is None or r["id"] in source_ids]
-        evidence = "\n".join(factual_quotes(scoped))
-        evidence_span = _literal_span(evidence, row.get("evidence_span"))
+        evidence_span = _literal_span(_factual_text(scoped), row.get("evidence_span"))
         if row["state"] in {"supported", "contradicted"} and (
             answer_span is None or evidence_span is None
         ):

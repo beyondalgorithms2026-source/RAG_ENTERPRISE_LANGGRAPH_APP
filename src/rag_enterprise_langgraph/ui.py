@@ -38,6 +38,14 @@ NAV_ITEMS = (
 )
 
 
+def _demo_only_banner(detail: str) -> str:
+    return (
+        f'<div class="inspect-banner demo-only-banner">{ICONS["eye"]}<span><strong>Demo only.'
+        f"</strong> {detail} In a live deployment, what you can see here follows your access."
+        "</span></div>"
+    )
+
+
 def _shell(*, title: str, page: str, active: str, body: str, settings: Settings) -> str:
     nav = "".join(
         '<a class="rail-item{active}" href="{href}" title="{label}">{icon}<span>{label}</span></a>'.format(
@@ -121,13 +129,21 @@ def build_ui_router(settings: Settings | None = None) -> APIRouter:
 
     @router.get("/app/audit", response_class=HTMLResponse)
     async def audit_page():
+        banner = (
+            _demo_only_banner(
+                "Recorded runs plus runs started by any visitor to this shared demo, all on"
+                " synthetic data."
+            )
+            if runtime_settings.public_demo
+            else ""
+        )
         return _shell(
             settings=runtime_settings,
             title="Audit",
             page="audit",
             active="/app/audit",
-            body="""
-<header class="page-header"><p class="eyebrow">Tamper-evident record</p><h1>Audit trail</h1><p class="page-summary">Every orchestrated run has a sanitized, hash-chained event timeline.</p></header><section class="page-content audit-page"><div id="audit-runs" class="audit-run-list"><div class="spinner">Loading audited runs…</div></div><section id="audit-detail" class="audit-detail"><div class="empty">Select a run to inspect its event chain.</div></section></section>""",
+            body=f"""
+<header class="page-header"><p class="eyebrow">Tamper-evident record</p><h1>Audit trail</h1><p class="page-summary">Every orchestrated run has a sanitized, hash-chained event timeline.</p>{banner}</header><section class="page-content audit-page"><div id="audit-runs" class="audit-run-list"><div class="spinner">Loading audited runs…</div></div><section id="audit-detail" class="audit-detail"><div class="empty">Select a run to inspect its event chain.</div></section></section>""",
         )
 
     @router.get("/app/quality", response_class=HTMLResponse)
@@ -156,13 +172,17 @@ def build_ui_router(settings: Settings | None = None) -> APIRouter:
     @router.get("/app/compare", response_class=HTMLResponse)
     async def compare_page():
         if runtime_settings.public_demo:
+            banner = _demo_only_banner(
+                "Recorded comparisons on synthetic data. Running new comparisons is disabled in"
+                " this public demo."
+            )
             return _shell(
                 settings=runtime_settings,
                 title="Compare",
                 page="compare",
                 active="/app/compare",
-                body="""
-<header class="page-header"><p class="eyebrow">Recorded comparison evidence</p><h1>Operator-only comparison execution is disabled publicly</h1><p class="page-summary">The public demo keeps model-consuming comparison controls disabled. Use Ask for the governed path, or inspect Quality, Security, and Audit for committed evidence.</p></header><section class="page-content"><div class="quality-note">This preserves the free-tier budget and prevents anonymous visitors from invoking deliberately blocked operator routes.</div></section>""",
+                body=f"""
+<header class="page-header"><p class="eyebrow">Recorded comparison evidence</p><h1>Same question, same model, two paths</h1><p class="page-summary">Recorded side-by-side runs: a raw first pass next to the governed workflow that validates evidence, applies approval gates, and records an audit trail.</p>{banner}</header><section class="page-content"><div id="demo-result" class="compare-empty"><div class="spinner">Loading recorded comparisons…</div></div></section>""",
             )
         return _shell(
             settings=runtime_settings,

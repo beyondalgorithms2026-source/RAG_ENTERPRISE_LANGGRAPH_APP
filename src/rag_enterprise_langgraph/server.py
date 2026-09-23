@@ -177,6 +177,24 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             approval_mode=request.approval_mode,
         )
 
+    @app.get("/demo/before-after/recorded")
+    async def demo_before_after_recorded():
+        """Serve committed before/after comparisons recorded from real runs; never runs one."""
+        path = Path(runtime_settings.recorded_comparisons_path)
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return JSONResponse(
+                status_code=503,
+                content={"detail": "Recorded comparison evidence is unavailable."},
+            )
+        if not isinstance(payload, dict) or not isinstance(payload.get("comparisons"), list):
+            return JSONResponse(
+                status_code=503,
+                content={"detail": "Recorded comparison evidence is unavailable."},
+            )
+        return payload
+
     app.include_router(
         build_approval_router(approval_store, audit_log, read_only=runtime_settings.public_demo)
     )

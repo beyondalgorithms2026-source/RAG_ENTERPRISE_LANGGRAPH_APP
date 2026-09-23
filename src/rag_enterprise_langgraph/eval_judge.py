@@ -11,7 +11,7 @@ import urllib.error
 import urllib.request
 from typing import Any
 
-from rag_enterprise_langgraph.eval_assertions import judge_payload
+from rag_enterprise_langgraph.eval_assertions import _answer_span, _literal_span, judge_payload
 
 MODEL = "gpt-4o-mini-2024-07-18"
 SYSTEM = (
@@ -24,7 +24,9 @@ SYSTEM = (
     "sentences, remove list labels, insert ellipses, paraphrase quotes or change their punctuation. "
     "The answer quote itself must state the required concept; matching words or the reference alone "
     "do not make an omitted concept supported. Give a nonempty explanation for every assertion. "
-    "Select literal quote choices from the answer and each assertion's scoped evidence. For missing "
+    "Select literal quote choices from the answer and each assertion's scoped evidence. The evidence "
+    "quote must come from the reference text, never from the answer. For a table, quote the text of "
+    "one cell only, without any | characters, and do not join a header to a cell. For missing "
     "concepts quote the answer showing the omission and the relevant reference requirement. "
     "Use uncertain when interpretation is ambiguous. Do not infer facts absent from reference evidence."
 )
@@ -43,7 +45,8 @@ ROW_SCHEMA = {
 
 
 class JudgeInfrastructureError(RuntimeError):
-    pass
+    # Safe, code-defined category of the last failed attempt; never provider text.
+    last_reason: str | None = None
 
 
 class RetryableJudgeInfrastructureError(JudgeInfrastructureError):
@@ -175,12 +178,16 @@ def _request_once(payload: str) -> dict[str, Any]:
         for schema_key, row in assertion_rows.items():
             if not isinstance(row, dict) or not str(row.get("explanation") or "").strip():
                 raise ValueError("invalid assertion row")
-            answer_span = str(row.get("answer_span") or "")
-            evidence_span = str(row.get("evidence_span") or "")
-            if not answer_span or answer_span not in answer:
+            # Spans only prove supported/contradicted verdicts (as in apply_judgement);
+            # missing/uncertain can never pass a case. Quotes may differ from the
+            # hard-wrapped reference text by whitespace only, never by wording.
+            if row.get("state") not in {"supported", "contradicted"}:
+                continue
+            if _answer_span(answer, row.get("answer_span")) is None:
                 raise ValueError("invalid literal answer span")
-            if not evidence_span or not any(
-                evidence_span in reference for reference in evidence_texts[schema_key]
+            if not any(
+                _literal_span(reference, row.get("evidence_span")) is not None
+                for reference in evidence_texts[schema_key]
             ):
                 raise ValueError("invalid scoped evidence span")
         return {
@@ -199,18 +206,27 @@ def _request_once(payload: str) -> dict[str, Any]:
         raise
     except (KeyError, IndexError, TypeError, ValueError) as exc:
         # Do not export HTTP bodies, credential-bearing requests or raw diagnostics.
-        raise RetryableJudgeInfrastructureError(
-            "offline judge structured response invalid"
-        ) from exc
+        error = RetryableJudgeInfrastructureError("offline judge structured response invalid")
+        error.last_reason = (
+            str(exc) if str(exc) in _SAFE_RESPONSE_REASONS else "unparseable response"
+        )
+        raise error from exc
+
+
+# A well-formed reply whose quotes do not check out is unverifiable, not an outage.
+UNVERIFIABLE_REASONS = frozenset({"invalid literal answer span", "invalid scoped evidence span"})
+_SAFE_RESPONSE_REASONS = {"invalid assertion set", "invalid assertion row", *UNVERIFIABLE_REASONS}
 
 
 def _request(payload: str) -> dict[str, Any]:
     for attempt in range(MAX_ATTEMPTS):
         try:
             return _request_once(payload)
-        except RetryableJudgeInfrastructureError:
+        except RetryableJudgeInfrastructureError as exc:
             if attempt + 1 >= MAX_ATTEMPTS:
-                raise JudgeInfrastructureError("offline judge retry budget exhausted") from None
+                exhausted = JudgeInfrastructureError("offline judge retry budget exhausted")
+                exhausted.last_reason = exc.last_reason or str(exc)
+                raise exhausted from None
             time.sleep(RETRY_BACKOFF_SECONDS[attempt])
     raise AssertionError("unreachable")
 
