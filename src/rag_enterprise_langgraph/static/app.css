@@ -89,3 +89,5 @@ button:focus-visible,a:focus-visible,input:focus-visible { outline:3px solid rgb
 .check-tile small { display:block; margin-top:7px; color:var(--ink-muted); font:9px 'IBM Plex Mono',monospace; text-transform:uppercase; }
 @media (max-width:900px) { .starter-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media (max-width:768px) { .readiness { padding:7px 18px; }.starter-grid { display:flex; }.reader-header,.security-detail,.quality-card { overflow-wrap:anywhere; } }
+.page-header .demo-only-banner { margin:14px 0 0; }.recorded-comparison + .recorded-comparison { margin-top:32px; padding-top:24px; border-top:1px solid var(--stone-200); }.recorded-comparison h2 { margin:4px 0 14px; font-size:18px; }
+.audit-page .audit-run-list { display:flex; gap:8px; max-height:none; overflow-x:auto; margin:0; padding:12px 44px; border:0; border-bottom:1px solid var(--stone-200); border-radius:0; }.audit-page .audit-run-button { flex:0 0 260px; width:auto; border:1px solid var(--stone-200); border-radius:8px; }@media (max-width:768px) { .audit-page .audit-run-list { padding:12px 18px; } }

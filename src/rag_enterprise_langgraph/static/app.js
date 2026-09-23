@@ -278,7 +278,10 @@ async function loadAuditRuns() {
   try {
     const runs = (await fetchJSON("/audit/runs")).runs || [];
     target.innerHTML = runs.length ? runs.map((run) => `<button class="audit-run-button" type="button" data-run="${esc(run.run_id)}"><strong>${esc(run.question_preview || "Audited run")}</strong><span>${pill(run.final_status || "in progress")} · ${esc(run.event_count || 0)} events</span></button>`).join("") : '<div class="empty">No audited runs yet.</div>';
-    target.querySelectorAll("[data-run]").forEach((node) => node.addEventListener("click", () => loadAuditEvents(node.dataset.run)));
+    const buttons = target.querySelectorAll("[data-run]");
+    const select = (node) => { buttons.forEach((item) => item.classList.toggle("active", item === node)); loadAuditEvents(node.dataset.run); };
+    buttons.forEach((node) => node.addEventListener("click", () => select(node)));
+    if (buttons.length) select(buttons[0]);
   } catch (error) { target.innerHTML = `<div class="error-box">${esc(error.message)}</div>`; }
 }
 
@@ -288,7 +291,10 @@ async function loadAuditEvents(runId) {
   try {
     const data = await fetchJSON(`/audit/runs/${runId}`);
     const events = data.events || [];
-    detail.innerHTML = `<header class="audit-header"><p class="eyebrow">Run ${esc(String(runId).slice(0, 12))}</p><h2>${esc(data.run_summary?.question_preview || "Audited workflow")}</h2><span class="chain-badge">● Chain intact · ${events.length} events</span></header><div class="audit-timeline">${events.map((event) => `<article class="audit-event"><time>${esc((event.timestamp || "").slice(0, 19))}</time><p><strong>${esc(event.event_type)}</strong> · ${esc(event.summary)}</p><div class="hash">prev ${esc(String(event.previous_hash || "genesis").slice(0, 16))} · hash ${esc(String(event.event_hash || "").slice(0, 16))}</div></article>`).join("")}</div>`;
+    let chain = null;
+    try { chain = (await fetchJSON(`/audit/export/${encodeURIComponent(runId)}`)).chain_verification; } catch (_) { /* badge reports unverified */ }
+    const chainBadge = chain?.valid ? `● Chain verified · ${events.length} events` : `○ Chain not verified · ${events.length} events`;
+    detail.innerHTML = `<header class="audit-header"><p class="eyebrow">Run ${esc(String(runId).slice(0, 12))}</p><h2>${esc(data.run_summary?.question_preview || "Audited workflow")}</h2><span class="chain-badge">${esc(chainBadge)}</span></header><div class="audit-timeline">${events.map((event) => `<article class="audit-event"><time>${esc((event.timestamp || "").slice(0, 19))}</time><p><strong>${esc(event.event_type)}</strong> · ${esc(event.summary)}</p><div class="hash">prev ${esc(String(event.previous_hash || "genesis").slice(0, 16))} · hash ${esc(String(event.event_hash || "").slice(0, 16))}</div></article>`).join("")}</div>`;
   } catch (error) { detail.innerHTML = `<div class="error-box">${esc(error.message)}</div>`; }
 }
 
@@ -356,10 +362,27 @@ function initSecurity() {
   loadRedTeam();
 }
 
+function renderComparison(data) {
+  return `<div class="compare-split"><article class="compare-panel raw"><h2>Ungoverned first pass</h2><div class="answer-box">${esc(data.first_pass_answer || data.first_pass_error || "No first-pass answer available.")}</div></article><article class="compare-panel governed"><h2>Governed release path</h2><div class="answer-box">${esc(data.orchestrated_answer || "[No answer released]")}</div><p>${pill(data.orchestrated_status)} ${pill(data.approval_status)}</p></article></div>${timelineTable(data.timeline)}`;
+}
+
+async function loadRecordedComparisons(output) {
+  try {
+    const payload = await fetchJSON("/demo/before-after/recorded", { cache: "no-store" });
+    const comparisons = payload.comparisons || [];
+    const recordedAt = payload.recorded_at ? ` · recorded ${esc(String(payload.recorded_at).slice(0, 10))}` : "";
+    output.innerHTML = comparisons.length
+      ? comparisons.map((data) => `<section class="recorded-comparison"><p class="eyebrow">Recorded run${recordedAt}</p><h2>${esc(data.question)}</h2>${renderComparison(data)}</section>`).join("")
+      : '<div class="empty">No recorded comparisons are available.</div>';
+  } catch (error) { output.innerHTML = `<div class="error-box">${esc(error.message)}. No fabricated comparison is shown.</div>`; }
+}
+
 function initCompare() {
-  const form = document.getElementById("demo-form");
   const output = document.getElementById("demo-result");
-  if (!form || !output) return;
+  if (!output) return;
+  if (publicDemo) { loadRecordedComparisons(output); return; }
+  const form = document.getElementById("demo-form");
+  if (!form) return;
   document.querySelectorAll("[data-demo-question]").forEach((button) => button.addEventListener("click", () => {
     document.getElementById("demo-question").value = button.dataset.demoQuestion;
     form.requestSubmit();
@@ -371,7 +394,7 @@ function initCompare() {
     output.innerHTML = '<div class="spinner">Running both paths…</div>';
     try {
       const data = await fetchJSON("/demo/before-after", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question, require_approval: document.getElementById("demo-require-approval").checked }) });
-      output.innerHTML = `<div class="compare-split"><article class="compare-panel raw"><h2>Ungoverned first pass</h2><div class="answer-box">${esc(data.first_pass_answer || data.first_pass_error || "No first-pass answer available.")}</div></article><article class="compare-panel governed"><h2>Governed release path</h2><div class="answer-box">${esc(data.orchestrated_answer || "[No answer released]")}</div><p>${pill(data.orchestrated_status)} ${pill(data.approval_status)}</p></article></div>${timelineTable(data.timeline)}`;
+      output.innerHTML = renderComparison(data);
     } catch (error) { output.innerHTML = `<div class="error-box">${esc(error.message)}. No fabricated comparison is shown.</div>`; }
   });
 }

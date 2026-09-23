@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -9,6 +10,8 @@ from rag_enterprise_langgraph.audit import AuditLog
 from rag_enterprise_langgraph.config import Settings
 from rag_enterprise_langgraph.eval_store import EvalStore, build_eval_run_summary
 from rag_enterprise_langgraph.server import create_app
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 @pytest.fixture()
@@ -384,3 +387,84 @@ def test_red_team_api_endpoints(app_env):
 
     latest = client.get("/red-team/latest").json()["report"]
     assert latest["total"] == 20
+
+
+def test_public_demo_serves_recorded_evidence_read_only(tmp_path):
+    recorded_path = tmp_path / "before-after-recorded.json"
+    settings = Settings(
+        public_demo=True,
+        audit_log_path=str(tmp_path / "audit-log.jsonl"),
+        approvals_path=str(tmp_path / "approvals.jsonl"),
+        eval_runs_dir=str(tmp_path / "eval-runs"),
+        red_team_latest_path=str(tmp_path / "red-team-latest.json"),
+        run_results_dir=str(tmp_path / "run-results"),
+        recorded_comparisons_path=str(recorded_path),
+    )
+    client = TestClient(create_app(settings))
+
+    assert client.get("/demo/before-after/recorded").status_code == 503
+
+    recorded_path.write_text(
+        json.dumps(
+            {
+                "schema_version": "1.0",
+                "comparisons": [
+                    {
+                        "question": "Q",
+                        "first_pass_status": "verified",
+                        "orchestrated_status": "verified",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    response = client.get("/demo/before-after/recorded")
+    assert response.status_code == 200
+    assert response.json()["comparisons"][0]["question"] == "Q"
+    assert client.post("/demo/before-after", json={"question": "Q"}).status_code == 403
+
+    compare = client.get("/app/compare").text
+    assert "Demo only." in compare
+    assert "follows your access" in compare
+    assert 'id="demo-result"' in compare
+    assert 'id="demo-form"' not in compare
+
+    audit = client.get("/app/audit").text
+    assert "Demo only." in audit
+    assert 'id="audit-runs"' in audit
+
+    script = client.get("/app/static/app.js").text
+    assert 'fetchJSON("/demo/before-after/recorded"' in script
+    assert "Chain intact" not in script
+    assert "if (buttons.length) select(buttons[0]);" in script
+    styles = client.get("/app/static/app.css").text
+    assert ".audit-page .audit-run-list { display:flex;" in styles
+
+
+def test_operator_mode_keeps_live_compare_without_demo_banner(app_env):
+    client, _ = app_env
+    compare = client.get("/app/compare").text
+    assert 'id="demo-form"' in compare
+    assert "Demo only." not in compare
+    assert "Demo only." not in client.get("/app/audit").text
+
+
+def test_committed_demo_evidence_is_consistent():
+    audit = AuditLog(REPO_ROOT / "config" / "demo" / "audit-log.jsonl")
+    chain = audit.verify_chain()
+    assert chain["valid"] is True
+    assert chain["checked"] > 0
+    runs = audit.runs()
+    assert len(runs) == 7
+
+    recorded = json.loads(
+        (REPO_ROOT / "config" / "demo" / "before-after-recorded.json").read_text(encoding="utf-8")
+    )
+    assert len(recorded["comparisons"]) == 3
+    audited_run_ids = {run["run_id"] for run in runs}
+    transport_failures = {"backend_timeout", "backend_auth_failed", "tool_error", "unavailable"}
+    for comparison in recorded["comparisons"]:
+        assert comparison["run_id"] in audited_run_ids
+        assert comparison["first_pass_status"] not in transport_failures
+        assert comparison["orchestrated_status"] not in transport_failures
