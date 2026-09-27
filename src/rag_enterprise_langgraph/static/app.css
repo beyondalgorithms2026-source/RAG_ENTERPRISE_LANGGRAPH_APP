@@ -94,3 +94,9 @@ button:focus-visible,a:focus-visible,input:focus-visible { outline:3px solid rgb
 
 /* Mobile/tablet: artboard hero rule above pins a 372px column at all widths; collapse it. */
 @media (max-width:900px) { .ask-header .hero-grid { grid-template-columns:1fr; gap:20px; } }
+
+/* Mobile: 1fr grid tracks grow to the timeline table's min-content and get clipped; the later
+   desktop rail rules (top:0, 24px padding, 37px items) leak into the bottom bar, and the label
+   hide rule also hid the .ms icon spans. */
+@media (max-width:900px) { .ask-result-filled { grid-template-columns:minmax(0,1fr); } }
+@media (max-width:768px) { .app-rail { top:auto; padding:5px 8px; }.rail-item { height:auto; }.rail-item span:not(.ms) { display:none; }.rail-item .ms { display:inline-block; } }
