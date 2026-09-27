@@ -16,7 +16,7 @@ def _icon(name: str) -> str:
 
 
 ICONS = {
-    "search_spark": _icon("search_spark"),
+    "search_spark": _icon("search"),
     "library_books": _icon("library_books"),
     "fact_check": _icon("fact_check"),
     "approval": _icon("approval"),
