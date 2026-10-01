@@ -20,7 +20,6 @@ from rag_enterprise_langgraph.red_team import build_red_team_router
 from rag_enterprise_langgraph.run_store import RunStore, build_runs_router
 from rag_enterprise_langgraph.ui import build_ui_router
 
-
 # A corpus is one fictional company's document set, e.g. "western_northline".
 CORPUS_NAME_PATTERN = r"^[A-Za-z0-9_.-]{1,64}$"
 

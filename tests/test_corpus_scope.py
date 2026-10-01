@@ -25,7 +25,9 @@ def _recording_orchestrator(settings: Settings | None = None):
                 "answer": "Not found in provided sources.",
                 "citations": [],
                 "debug_info": {
-                    "retrieval_trace": {"score_diagnostics": [{"chunk_id": 1, "keyword_score": 1.0}]}
+                    "retrieval_trace": {
+                        "score_diagnostics": [{"chunk_id": 1, "keyword_score": 1.0}]
+                    }
                 },
             }, {}
         if name == "search_documents":
@@ -79,7 +81,12 @@ def test_unscoped_run_leaves_tool_arguments_unchanged():
 
     asyncio.run(orchestrator.run("What is the London hotel cap?", max_recovery_steps=0))
 
-    assert calls == [("ask_grounded", {"question": "What is the London hotel cap?", "k_chunks": 6, "mode": "hybrid"})]
+    assert calls == [
+        (
+            "ask_grounded",
+            {"question": "What is the London hotel cap?", "k_chunks": 6, "mode": "hybrid"},
+        )
+    ]
 
 
 def test_scope_merges_with_existing_filters_and_overrides_caller_corpus():
