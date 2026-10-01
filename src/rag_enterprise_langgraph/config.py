@@ -91,6 +91,10 @@ class Settings(BaseSettings):
     public_demo: bool = False
     public_backend_url: str = ""
 
+    # Corpus (fictional company) every tool call is scoped to when a request does not
+    # name one, e.g. "western_northline". Empty leaves retrieval unscoped.
+    default_corpus: str = ""
+
     def _dotenv_values(self) -> dict[str, str]:
         values = dotenv_values(".env")
         return {key: str(value).strip() for key, value in values.items() if value is not None}

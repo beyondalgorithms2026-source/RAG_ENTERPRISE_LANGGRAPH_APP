@@ -43,6 +43,7 @@ _ALLOWED_ARGUMENTS = {
         "source_part_id",
         "locator_filter",
         "metadata_filters",
+        "corpus",
         "mode",
         "max_chars",
     },

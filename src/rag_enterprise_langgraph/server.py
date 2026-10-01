@@ -20,6 +20,9 @@ from rag_enterprise_langgraph.red_team import build_red_team_router
 from rag_enterprise_langgraph.run_store import RunStore, build_runs_router
 from rag_enterprise_langgraph.ui import build_ui_router
 
+# A corpus is one fictional company's document set, e.g. "western_northline".
+CORPUS_NAME_PATTERN = r"^[A-Za-z0-9_.-]{1,64}$"
+
 
 class AskRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -37,11 +40,13 @@ class AskOrchestratedRequest(BaseModel):
     journal_path: str | None = None
     require_approval: bool = False
     approval_mode: str = "off"
+    corpus: str | None = Field(default=None, pattern=CORPUS_NAME_PATTERN)
 
 
 class BeforeAfterRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     question: str = Field(min_length=1, max_length=12000)
+    corpus: str | None = Field(default=None, pattern=CORPUS_NAME_PATTERN)
     max_recovery_steps: int = 3
     validation_mode: str = "balanced"
     require_approval: bool = False
@@ -163,6 +168,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             journal_path=request.journal_path,
             require_approval=request.require_approval,
             approval_mode=request.approval_mode,
+            corpus=request.corpus,
         )
         return result.to_dict()
 
@@ -175,6 +181,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             validation_mode=request.validation_mode,
             require_approval=request.require_approval,
             approval_mode=request.approval_mode,
+            corpus=request.corpus,
         )
 
     @app.get("/demo/before-after/recorded")

@@ -220,6 +220,20 @@ def _unwrap_mcp_text_blocks(value: Any) -> Any:
     return value
 
 
+def scope_tool_arguments(
+    tool_name: str, arguments: dict[str, Any], corpus: str | None
+) -> dict[str, Any]:
+    """Limit a tool call to one corpus; the backend enforces it next to its ACL."""
+    if not corpus:
+        return arguments
+    scoped = dict(arguments)
+    if tool_name == "get_document_excerpt":
+        scoped["corpus"] = [corpus]
+    else:
+        scoped["filters"] = {**(arguments.get("filters") or {}), "corpus": [corpus]}
+    return scoped
+
+
 def _content_dict(value: Any) -> dict[str, Any]:
     parsed = _unwrap_mcp_text_blocks(_safe_json_parse(value))
     if isinstance(parsed, dict):
@@ -1267,8 +1281,10 @@ class EnterpriseRagOrchestrator:
         audit_log: AuditLog | None = None,
         approval_store: ApprovalStore | None = None,
         run_store=None,
+        corpus: str | None = None,
     ) -> OrchestratedRunResult:
         token = set_current_question(question)
+        corpus_scope = (corpus or self.settings.default_corpus or "").strip() or None
         tool_outputs: list[dict[str, Any]] = []
         timeline: list[OrchestrationStep] = []
         tools_used: list[str] = []
@@ -1470,6 +1486,7 @@ class EnterpriseRagOrchestrator:
             return result
 
         async def call(name: str, purpose: str, arguments: dict[str, Any]) -> dict[str, Any]:
+            arguments = scope_tool_arguments(name, arguments, corpus_scope)
             emit("tool_call_started", f"{name} ({purpose})", {"tool": name, "purpose": purpose})
             started_at = time.perf_counter()
             with suppress_mcp_stdio_stderr(self.quiet_mcp):
@@ -2260,6 +2277,7 @@ async def run_before_after(
     approval_mode: str = "off",
     audit_log: AuditLog | None = None,
     approval_store: ApprovalStore | None = None,
+    corpus: str | None = None,
 ) -> dict[str, Any]:
     """Run a raw first-pass ask_grounded call, then the full orchestrated workflow.
 
@@ -2272,8 +2290,14 @@ async def run_before_after(
     first_pass_citation_count = 0
     try:
         with suppress_mcp_stdio_stderr(orchestrator.quiet_mcp):
+            corpus_scope = (corpus or orchestrator.settings.default_corpus or "").strip() or None
             content, _ = await orchestrator._call_tool(
-                "ask_grounded", {"question": question, "k_chunks": 6, "mode": "hybrid"}
+                "ask_grounded",
+                scope_tool_arguments(
+                    "ask_grounded",
+                    {"question": question, "k_chunks": 6, "mode": "hybrid"},
+                    corpus_scope,
+                ),
             )
         failure = classify_transport_failure(content)
         if failure:
@@ -2298,6 +2322,7 @@ async def run_before_after(
         approval_mode=approval_mode,
         audit_log=audit_log,
         approval_store=approval_store,
+        corpus=corpus,
     )
     run = result.to_dict()
     return {
