@@ -44,6 +44,7 @@ EXPECTED_SCHEMAS: dict[str, dict[str, dict[str, Any]]] = {
         "source_part_id": {"type": "integer"},
         "locator_filter": {"type": "string"},
         "metadata_filters": {"type": "object"},
+        "corpus": {"type": "array", "items": {"type": "string"}},
         "mode": {"type": "string", "enum": MODES, "default": "keyword"},
         "max_chars": {
             "type": "integer",
@@ -158,6 +159,18 @@ def _literal_alias_values(path: Path, name: str) -> list[str]:
     raise SystemExit(f"Unable to locate Literal alias {name} in {path}")
 
 
+# Properties being rolled out across repositories: the MCP may not publish them yet.
+# Track B: remove "corpus" here in the APP change that pins the MCP commit shipping it.
+TRANSITIONAL_PROPERTIES: dict[str, set[str]] = {"get_document_excerpt": {"corpus"}}
+
+
+def _properties_match(name: str, actual: Any, expected: dict[str, Any]) -> bool:
+    if actual == expected:
+        return True
+    pending = TRANSITIONAL_PROPERTIES.get(name, set())
+    return actual == {key: value for key, value in expected.items() if key not in pending}
+
+
 def _assert_backend_field_contract(
     tool_name: str, schema: dict[str, Any], backend: dict[str, dict[str, Any]]
 ) -> None:
@@ -166,6 +179,7 @@ def _assert_backend_field_contract(
         "source_part_id": "filters",
         "locator_filter": "filters",
         "metadata_filters": "filters",
+        "corpus": "filters",
         "max_chars": None,
     }
     for field, property_schema in schema.items():
@@ -263,7 +277,7 @@ def main() -> int:
             raise SystemExit(f"{name} must remain a closed object schema")
         if schema.get("required") != ["question"]:
             raise SystemExit(f"{name} must require question")
-        if schema.get("properties") != expected_properties:
+        if not _properties_match(name, schema.get("properties"), expected_properties):
             raise SystemExit(f"{name} type/default/range/enum schema drifted")
         model_name, relative_path = BACKEND_REQUESTS[name]
         backend = _field_details(args.starter / relative_path, model_name)
@@ -281,6 +295,7 @@ def main() -> int:
         "source_part_id",
         "locator_filter",
         "metadata_filters",
+        "corpus",
     }
     if not expected_filter_fields <= model_fields.get("SearchFilters", set()):
         raise SystemExit("STARTER SearchFilters shape drifted")

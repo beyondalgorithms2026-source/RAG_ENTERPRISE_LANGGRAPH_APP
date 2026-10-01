@@ -201,3 +201,37 @@ def test_judge_outage_remains_an_infrastructure_failure(tmp_path):
     assert row["failure_class"] == "infrastructure"
     assert row["expected_eval"]["judge_error"] == "offline_judge_infrastructure_failure"
     assert report["infrastructure_failures"] == 1
+
+
+class _TwoCitationOrchestrator:
+    async def run(self, question: str, **_kwargs):
+        return OrchestratedRunResult(
+            question=question,
+            answer="The London cap is 240 GBP [S1][S2].",
+            grounding_status="verified",
+            tools_used=["ask_grounded"],
+            execution_timeline=[],
+            citations=[
+                {"file_name": "corpus/western/NL-FIN-EXPENSE-APPENDIX-RATES.md", "snippet": "240"},
+                {"file_name": "NL-FIN-EXPENSE-2026.md", "snippet": "cap"},
+                {"file_name": "NL-FIN-EXPENSE-2026.md", "snippet": "again"},
+            ],
+            evidence=[],
+            evidence_count=0,
+            portfolio_safe=True,
+        )
+
+
+def test_eval_rows_record_cited_documents_without_paths(tmp_path):
+    report = asyncio.run(
+        run_eval(
+            eval_path=_meal_allowance_pack(tmp_path),
+            orchestrator=_TwoCitationOrchestrator(),
+            semantic_judge=_failing_judge("unused"),
+        )
+    )
+
+    assert report["rows"][0]["cited_documents"] == [
+        "nl-fin-expense-2026",
+        "nl-fin-expense-appendix-rates",
+    ]

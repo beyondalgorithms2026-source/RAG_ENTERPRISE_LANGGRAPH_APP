@@ -534,6 +534,19 @@ def _expected_document_matched(
     return found == expected if match_policy == "all" else bool(found)
 
 
+def _cited_documents(run: dict[str, Any]) -> list[str]:
+    """Document names (no paths) cited by the final answer, for per-case scorecards."""
+    names: set[str] = set()
+    for item in run.get("citations") or []:
+        if isinstance(item, dict):
+            for key in ("file_name", "source", "document", "document_name"):
+                normalized = _normalized_document(item.get(key))
+                if normalized:
+                    names.add(normalized)
+                    break
+    return sorted(names)
+
+
 def _eval_status(
     run: dict[str, Any],
     expected_eval: dict[str, Any],
@@ -872,6 +885,7 @@ async def run_eval(
                 "expectation": case.expectation,
                 "refusal_passed": eval_status == "pass" if case.expect_refusal else None,
                 "expected_document_matched": expected_document_matched,
+                "cited_documents": _cited_documents(run),
                 "expected_documents": list(case.expected_documents),
                 "document_match_policy": case.document_match_policy,
                 "question_type": case.question_type,
