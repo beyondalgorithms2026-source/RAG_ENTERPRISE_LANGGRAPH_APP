@@ -251,7 +251,9 @@ def _recorded_evidence_banner(
     )
 
 
-def _shell(*, title: str, page: str, active: str, body: str, settings: Settings) -> str:
+def _shell(
+    *, title: str, page: str, active: str, body: str, settings: Settings, extra_head: str = ""
+) -> str:
     nav = "".join(
         '<a class="rail-item{active}" href="{href}" title="{label}">{icon}<span>{label}</span></a>'.format(
             href=href, active=" active" if href == active else "", icon=ICONS[icon], label=label
@@ -262,12 +264,12 @@ def _shell(*, title: str, page: str, active: str, body: str, settings: Settings)
 <html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="rag-backend-url" content="{escape(settings.public_backend_url, quote=True)}" /><title>{title} — Governed RAG</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
-<link rel="icon" href="{BRAND_FAVICON}" /><link rel="stylesheet" href="/app/static/app.css" /></head>
+<link rel="icon" href="{BRAND_FAVICON}" /><link rel="stylesheet" href="/app/static/app.css" />{extra_head}</head>
 <body data-page="{page}" data-public-demo="{str(settings.public_demo).lower()}"><!-- LangGraph/MCP RAG Orchestration --><div class="app-layout">
 <nav class="app-rail" aria-label="Application navigation"><a class="rail-brand" href="/app"><div class="rail-brand-name">{BRAND_MARK}<span>{BRAND_NAME}</span></div><div class="rail-brand-sub">Public demo · {BRAND_TAGLINE}</div></a>
 <div class="rail-nav">{nav}</div><div class="rail-run" id="rail-run" hidden></div>
-<div class="rail-footer"><div class="rail-role-pill"><span class="rail-dot"></span>Public visitor</div><p class="rail-disclaimer">Inspect-only. You can run questions. You cannot approve, edit, or export.</p><button class="rail-drawer-toggle" type="button" aria-expanded="false">How it's built <span>›</span></button></div></nav>
-<main class="app-main"><div class="app-topbar"><a class="topbar-brand" href="/app">{BRAND_MARK}<span>{BRAND_NAME}</span><em>Public demo</em></a><div id="backend-readiness" class="readiness readiness-waking" role="status" aria-live="polite"><strong>Waking</strong><span>Checking the free-tier data service…</span></div></div>{body}</main></div><script src="/app/static/app.js"></script></body></html>"""
+<div class="rail-footer"><div class="rail-role-pill"><span class="rail-dot"></span>Public visitor</div><p class="rail-disclaimer">Inspect-only. You can run questions. You cannot approve, edit, or export.</p><a class="rail-drawer-toggle{" active" if active == "/app/how-it-works" else ""}" href="/app/how-it-works">How it's built <span>›</span></a></div></nav>
+<main class="app-main"><div class="app-topbar"><a class="topbar-brand" href="/app">{BRAND_MARK}<span>{BRAND_NAME}</span><em>Public demo</em></a><a class="topbar-info" href="/app/how-it-works">How it works</a><div id="backend-readiness" class="readiness readiness-waking" role="status" aria-live="polite"><strong>Waking</strong><span>Checking the free-tier data service…</span></div></div>{body}</main></div><script src="/app/static/app.js"></script></body></html>"""
 
 
 def build_ui_router(settings: Settings | None = None) -> APIRouter:
@@ -282,6 +284,31 @@ def build_ui_router(settings: Settings | None = None) -> APIRouter:
     async def app_css():
         return Response(
             (STATIC_DIR / "app.css").read_text(encoding="utf-8"), media_type="text/css"
+        )
+
+    @router.get("/app/static/how-it-works.css", include_in_schema=False)
+    async def how_it_works_css():
+        return Response(
+            (STATIC_DIR / "how-it-works.css").read_text(encoding="utf-8"), media_type="text/css"
+        )
+
+    @router.get("/app/static/how-it-works.js", include_in_schema=False)
+    async def how_it_works_js():
+        return Response(
+            (STATIC_DIR / "how-it-works.js").read_text(encoding="utf-8"),
+            media_type="application/javascript",
+        )
+
+    @router.get("/app/how-it-works", response_class=HTMLResponse)
+    async def how_it_works_page():
+        fragment = (STATIC_DIR / "how-it-works.html").read_text(encoding="utf-8")
+        return _shell(
+            settings=runtime_settings,
+            title="How it works",
+            page="how-it-works",
+            active="/app/how-it-works",
+            extra_head='<link rel="stylesheet" href="/app/static/how-it-works.css" />',
+            body=fragment + '<script src="/app/static/how-it-works.js" defer></script>',
         )
 
     @router.get("/app/static/app.js", include_in_schema=False)

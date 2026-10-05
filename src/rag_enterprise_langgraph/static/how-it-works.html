@@ -1,0 +1,262 @@
+<div class="hiw">
+<section class="wrap case">
+  <nav class="pagenav" aria-label="On this page"><a href="#exhibits">Exhibits</a><a href="#pieces">How it fits</a><a href="#ledger">Results</a><a href="#build">The build</a><a href="#limits">Limits</a></nav>
+  <div class="casehead"><span>Dossier · Governed RAG</span><span>Six claims · each with its proof</span><span>As of 5 Oct 2026</span></div>
+  <h1>Every claim on this page links to its proof.</h1>
+  <p>Governed RAG answers questions from internal policy documents with citations, or says it cannot. Rather than ask you to trust that, this page lists what the system promises and where each promise is tested, recorded or visible in the live demo.</p>
+  <div class="actions">
+    <a class="btn primary" href="/app" target="_blank" rel="noopener noreferrer">Open the live demo →</a>
+    <a class="btn ghost" href="https://github.com/beyondalgorithms2026-source/RAG_ENTERPRISE_LANGGRAPH_APP" target="_blank" rel="noopener noreferrer">Read the code</a>
+  </div>
+</section>
+
+<section class="wrap" id="exhibits" aria-label="Exhibits">
+  <ol class="index">
+    <li><a href="#e1"><b>01</b>Restricted text never leaves the database</a></li>
+    <li><a href="#e2"><b>02</b>No citation, no answer</a></li>
+    <li><a href="#e3"><b>03</b>Weak evidence triggers recovery</a></li>
+    <li><a href="#e4"><b>04</b>Risky answers wait for a person</a></li>
+    <li><a href="#e5"><b>05</b>Every run is tamper-evident</a></li>
+    <li><a href="#e6"><b>06</b>Attacks are tested</a></li>
+  </ol>
+
+  <div class="exhibits">
+    <article class="exhibit" id="e1">
+      <div class="tag"><b>Exhibit</b><strong>01</strong></div>
+      <div>
+        <h2>Restricted documents never leave the database.</h2>
+        <p>Who may see a document is written into the search query itself. An anonymous visitor matches only public sources, and the company scope adds a narrower condition on top. A restricted policy is never selected, so no later layer can leak it.</p>
+        <p><code>s.sensitivity_label = 'public' AND corpus = ANY(:corpora)</code></p>
+      </div>
+      <div class="side">
+        <span class="stamp">Verified live</span>
+        <ul class="proofs">
+          <li><span>CI run</span><a href="https://github.com/beyondalgorithms2026-source/RAG_ENTERPRISE_LANGGRAPH_APP/actions/runs/35186725102" target="_blank" rel="noopener noreferrer">RT-06 · RT-16 backend checks</a></li>
+          <li><span>code</span><a href="https://github.com/beyondalgorithms2026-source/RAG_ENTERPRISE_STARTER/blob/main/backend/app/auth/access_strategy.py" target="_blank" rel="noopener noreferrer">access_strategy.py</a></li>
+          <li><span>eval</span><a href="https://github.com/beyondalgorithms2026-source/RAG_ENTERPRISE_STARTER/blob/main/docs/evaluation/western/scorecard.md" target="_blank" rel="noopener noreferrer">WQ-12 access denial</a></li>
+        </ul>
+        <a class="live" href="/app?company=western_northline&amp;question=What%20should%20the%20team%20do%20first%20when%20a%20Sev1%20production%20outage%20is%20declared%3F" target="_blank" rel="noopener noreferrer">See it refuse →</a>
+      </div>
+    </article>
+
+    <article class="exhibit" id="e2">
+      <div class="tag"><b>Exhibit</b><strong>02</strong></div>
+      <div>
+        <h2>No citation, no answer.</h2>
+        <p>If no valid citation survives, the reply is exactly "Not found in provided sources." The system never fills a gap with a plausible guess, and a refusal on a question the documents don't cover counts as a success in every evaluation.</p>
+      </div>
+      <div class="side">
+        <span class="stamp">Measured</span>
+        <ul class="proofs">
+          <li><span>result</span><span style="color:var(--ink)">Refusals 5/5 Northline · 8/8 Northwind</span></li>
+          <li><span>code</span><a href="https://github.com/beyondalgorithms2026-source/RAG_ENTERPRISE_STARTER/blob/main/backend/app/core_rag/answering.py" target="_blank" rel="noopener noreferrer">answering.py</a></li>
+        </ul>
+        <a class="live" href="/app?company=western_northline&amp;question=What%20is%20Northline%27s%20India%20Provident%20Fund%20(PF%2FEPF)%20employer%20contribution%20rate%3F" target="_blank" rel="noopener noreferrer">See a refusal →</a>
+      </div>
+    </article>
+
+    <article class="exhibit" id="e3">
+      <div class="tag"><b>Exhibit</b><strong>03</strong></div>
+      <div>
+        <h2>Weak evidence triggers recovery, not guessing.</h2>
+        <p>A fixed plan runs one hybrid search first, then at most three narrower steps: keyword search, neighbouring passages, an exact excerpt. Recovered evidence is used only when it earns a "supports" verdict, which needs a score of at least 0.65, and the answer's numbers must appear in the cited text.</p>
+      </div>
+      <div class="side">
+        <span class="stamp">Tested</span>
+        <ul class="proofs">
+          <li><span>tests</span><a href="https://github.com/beyondalgorithms2026-source/RAG_ENTERPRISE_LANGGRAPH_APP/blob/main/tests/test_orchestrator.py" target="_blank" rel="noopener noreferrer">test_orchestrator.py</a></li>
+          <li><span>code</span><a href="https://github.com/beyondalgorithms2026-source/RAG_ENTERPRISE_LANGGRAPH_APP/blob/main/src/rag_enterprise_langgraph/evidence.py" target="_blank" rel="noopener noreferrer">evidence.py</a></li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="exhibit" id="e4">
+      <div class="tag"><b>Exhibit</b><strong>04</strong></div>
+      <div>
+        <h2>Risky answers wait for a person.</h2>
+        <p>Questions about HR, legal, finance, medical, security or compliance can require approval. The answer is found, then withheld until a named reviewer approves it. Visitors to the public demo can watch the queue but cannot approve anything.</p>
+      </div>
+      <div class="side">
+        <span class="stamp">Verified live</span>
+        <ul class="proofs">
+          <li><span>test</span><a href="https://github.com/beyondalgorithms2026-source/RAG_ENTERPRISE_LANGGRAPH_APP/blob/main/tests/test_red_team.py" target="_blank" rel="noopener noreferrer">RT-09 high-risk approval</a></li>
+          <li><span>code</span><a href="https://github.com/beyondalgorithms2026-source/RAG_ENTERPRISE_LANGGRAPH_APP/blob/main/src/rag_enterprise_langgraph/approval.py" target="_blank" rel="noopener noreferrer">approval.py</a></li>
+        </ul>
+        <a class="live" href="/app?company=western_northline&amp;question=How%20much%20enhanced%20maternity%20pay%20does%20a%20UK%20employee%20receive%2C%20and%20for%20how%20many%20weeks%3F" target="_blank" rel="noopener noreferrer">See it withheld →</a>
+      </div>
+    </article>
+
+    <article class="exhibit" id="e5">
+      <div class="tag"><b>Exhibit</b><strong>05</strong></div>
+      <div>
+        <h2>Every run is tamper-evident.</h2>
+        <p>Each step of a run, from screening to release, is appended to a SHA-256 hash chain. Changing any recorded event breaks verification, and the Audit page shows the check result for every run.</p>
+      </div>
+      <div class="side">
+        <span class="stamp">Visible live</span>
+        <ul class="proofs">
+          <li><span>code</span><a href="https://github.com/beyondalgorithms2026-source/RAG_ENTERPRISE_LANGGRAPH_APP/blob/main/src/rag_enterprise_langgraph/audit.py" target="_blank" rel="noopener noreferrer">audit.py</a></li>
+          <li><span>record</span><span style="color:var(--ink)">chain checked on every run</span></li>
+        </ul>
+        <a class="live" href="/app/audit" target="_blank" rel="noopener noreferrer">Open the audit trail →</a>
+      </div>
+    </article>
+
+    <article class="exhibit" id="e6">
+      <div class="tag"><b>Exhibit</b><strong>06</strong></div>
+      <div>
+        <h2>Attacks are tested, not assumed.</h2>
+        <p>Twenty red-team scenarios cover prompt injection, grounding, information disclosure, access control and tool misuse: eighteen deterministic checks and two live checks against the deployed backend. A poisoned document planted in the Northline corpus was never cited.</p>
+      </div>
+      <div class="side">
+        <span class="stamp">20 / 20 defended</span>
+        <ul class="proofs">
+          <li><span>tests</span><a href="https://github.com/beyondalgorithms2026-source/RAG_ENTERPRISE_LANGGRAPH_APP/blob/main/tests/test_red_team.py" target="_blank" rel="noopener noreferrer">test_red_team.py</a></li>
+          <li><span>release</span><a href="https://github.com/beyondalgorithms2026-source/RAG_ENTERPRISE_LANGGRAPH_APP/blob/main/docs/evaluation/red-team-release.json" target="_blank" rel="noopener noreferrer">red-team-release.json</a></li>
+        </ul>
+        <a class="live" href="/app/security" target="_blank" rel="noopener noreferrer">Open the check map →</a>
+      </div>
+    </article>
+  </div>
+</section>
+
+
+<section class="wrap pieces" id="pieces">
+  <h2>How the pieces fit</h2>
+  <p>The exhibits above hold because of where each control lives. Select any component to see what it owns, which files implement it and how it is tested. The dashed amber lines are the trust boundaries the design depends on.</p>
+  <div class="board">
+  <div class="sheet">
+    <svg viewBox="0 0 980 440" role="group" aria-label="Architecture diagram. Select a component.">
+      <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="#2b6f74"/></marker></defs>
+      <rect class="frame" x="180" y="40" width="404" height="300" rx="10"/>
+      <text class="frame-label" x="194" y="60">RENDER · GOVERNANCE SERVICE</text>
+      <rect class="frame" x="626" y="40" width="182" height="300" rx="10"/>
+      <text class="frame-label" x="640" y="60">RENDER · DATA SERVICE</text>
+      <rect class="frame" x="828" y="40" width="138" height="170" rx="10"/>
+      <text class="frame-label" x="842" y="60">SUPABASE</text>
+
+      <path class="wire" d="M146 205 H196" marker-end="url(#arrow)"/>
+      <path class="wire" d="M426 205 H448" marker-end="url(#arrow)"/>
+      <path class="wire" d="M570 205 H642" marker-end="url(#arrow)"/>
+      <text class="wire-label" x="580" y="196">HTTP</text>
+      <path class="wire" d="M792 145 H842" marker-end="url(#arrow)"/>
+      <text class="wire-label" x="798" y="136">SQL</text>
+      <path class="wire" d="M717 300 V352 H842" marker-end="url(#arrow)"/>
+      <text class="wire-label" x="730" y="345">embed · generate</text>
+      <text class="wire-label" x="432" y="196">stdio</text>
+
+      <line class="fence" x1="605" y1="26" x2="605" y2="410"/>
+      <text class="fence-label" x="612" y="400">no database credentials to the left</text>
+      <line class="fence" x1="642" y1="318" x2="792" y2="318"/>
+      <text class="fence-label" x="646" y="334">access decided here, in SQL</text>
+
+      <g class="node" data-node="visitor" tabindex="0" role="button" aria-label="Visitor and demo UI">
+        <rect class="box" x="16" y="165" width="130" height="80" rx="10"/>
+        <text class="name" x="30" y="196">Visitor</text><text class="sub" x="30" y="216">Ask · Documents</text><text class="sub" x="30" y="231">Audit · Quality</text>
+      </g>
+      <g class="node" data-node="app" tabindex="0" role="button" aria-label="APP orchestration">
+        <rect class="box" x="196" y="84" width="230" height="240" rx="10"/>
+        <text class="name" x="212" y="114">APP</text><text class="sub" x="212" y="134">orchestration layer</text>
+        <text class="sub" x="212" y="166">› input screening</text><text class="sub" x="212" y="186">› fixed recovery plan</text>
+        <text class="sub" x="212" y="206">› evidence + answer shape</text><text class="sub" x="212" y="226">› approval gate</text>
+        <text class="sub" x="212" y="246">› hash-chained audit</text><text class="sub" x="212" y="266">› evals · red-team</text>
+        <text class="sub" x="212" y="304">288 tests</text>
+      </g>
+      <g class="node" data-node="mcp" tabindex="0" role="button" aria-label="MCP tool boundary">
+        <rect class="box" x="448" y="150" width="122" height="110" rx="10"/>
+        <text class="name" x="462" y="178">MCP</text><text class="sub" x="462" y="198">3 read-only</text><text class="sub" x="462" y="213">tools</text><text class="sub" x="462" y="243">42 tests</text>
+      </g>
+      <g class="node" data-node="starter" tabindex="0" role="button" aria-label="STARTER data layer">
+        <rect class="box" x="642" y="84" width="150" height="216" rx="10"/>
+        <text class="name" x="656" y="114">STARTER</text><text class="sub" x="656" y="134">data layer</text>
+        <text class="sub" x="656" y="166">› hybrid search</text><text class="sub" x="656" y="186">› access in SQL</text>
+        <text class="sub" x="656" y="206">› company scope</text><text class="sub" x="656" y="226">› citations</text>
+        <text class="sub" x="656" y="246">› "Not found"</text><text class="sub" x="656" y="282">148 tests</text>
+      </g>
+      <g class="node" data-node="db" tabindex="0" role="button" aria-label="PostgreSQL with pgvector">
+        <rect class="box" x="842" y="84" width="112" height="112" rx="10"/>
+        <text class="name" x="856" y="114">Postgres</text><text class="sub" x="856" y="134">pgvector</text><text class="sub" x="856" y="164">384-d vectors</text><text class="sub" x="856" y="180">ACL tables</text>
+      </g>
+      <g class="node" data-node="openai" tabindex="0" role="button" aria-label="OpenAI models">
+        <rect class="box" x="842" y="316" width="122" height="78" rx="10"/>
+        <text class="name" x="856" y="344">OpenAI</text><text class="sub" x="856" y="364">pinned models</text><text class="sub" x="856" y="379">$1/month cap</text>
+      </g>
+    </svg>
+    <div class="legend">solid: request path · dashed grey: hosting · dashed amber: trust boundary</div>
+  </div>
+
+  <aside class="inspector" aria-live="polite">
+    <div class="picker" id="picker" aria-label="Components"></div>
+    <span class="kind" id="i-kind">Component</span>
+    <h2 id="i-name">STARTER</h2>
+    <p id="i-summary"></p>
+    <ul id="i-owns"></ul>
+    <div class="files" id="i-files"></div>
+    <div class="meta" id="i-meta"></div>
+  </aside>
+</div>
+  <h3>Where each control is enforced</h3>
+  <div class="matrix">
+    <table>
+      <thead><tr><th>Control</th><th class="c">APP</th><th class="c">MCP</th><th class="c">STARTER</th><th class="c">Database</th></tr></thead>
+      <tbody>
+        <tr><td>Prompt-injection screening<small>before any tool call</small></td><td class="c yes">●</td><td class="c">—</td><td class="c">—</td><td class="c">—</td></tr>
+        <tr><td>Closed tool schemas and bounds<small>unknown arguments dropped</small></td><td class="c yes">●</td><td class="c yes">●</td><td class="c">—</td><td class="c">—</td></tr>
+        <tr><td>No database credentials in the agent<small>by construction</small></td><td class="c yes">●</td><td class="c yes">●</td><td class="c">—</td><td class="c">—</td></tr>
+        <tr><td>Access control<small>five strategies, composed into the query</small></td><td class="c">—</td><td class="c">—</td><td class="c yes">●</td><td class="c yes">●</td></tr>
+        <tr><td>Company scope<small>can only narrow access</small></td><td class="c pass">○</td><td class="c pass">○</td><td class="c yes">●</td><td class="c yes">●</td></tr>
+        <tr><td>Citations required, else "Not found"</td><td class="c">—</td><td class="c">—</td><td class="c yes">●</td><td class="c">—</td></tr>
+        <tr><td>Evidence verdict and answer shape<small>"supports" needs score ≥ 0.65</small></td><td class="c yes">●</td><td class="c">—</td><td class="c">—</td><td class="c">—</td></tr>
+        <tr><td>Bounded recovery<small>at most three extra steps</small></td><td class="c yes">●</td><td class="c">—</td><td class="c">—</td><td class="c">—</td></tr>
+        <tr><td>Human approval for high-risk answers</td><td class="c yes">●</td><td class="c">—</td><td class="c">—</td><td class="c">—</td></tr>
+        <tr><td>Hash-chained audit</td><td class="c yes">●</td><td class="c">—</td><td class="c yes">●<small>admin log</small></td><td class="c">—</td></tr>
+        <tr><td>Rate limits</td><td class="c">—</td><td class="c">—</td><td class="c yes">●</td><td class="c">—</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="wrap ledger" id="ledger">
+  <h2>Results, labelled by how much to trust them</h2>
+  <p>Numbers are only useful with their status. An approved baseline is frozen and blocks releases; a candidate is measured but not yet approved; a demo run is a single published run.</p>
+  <div class="ladder">
+    <table>
+      <thead><tr><th>Suite</th><th>Status</th><th>Passed</th><th>Refusals</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Northwind v1 core</td><td><span class="pill a">Approved baseline</span></td><td class="n">25/25</td><td class="n">5/5</td><td>Release gate; changes only by review</td></tr>
+        <tr><td>Northwind v2 expanded</td><td><span class="pill c">Candidate</span></td><td class="n">82/90</td><td class="n">8/8</td><td>Harder manual questions; 3 failed, 5 in review</td></tr>
+        <tr><td>Northline demo set</td><td><span class="pill d">Demo run</span></td><td class="n">15/20</td><td class="n">5/5</td><td>Misses are declines or partial answers; none invented</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="wrap build" id="build">
+  <h2>Built across three repositories</h2>
+  <p>Each repository has one job, its own tests and its own continuous integration. A cross-repository contract check fails the build if any one of them drifts from the others.</p>
+  <div class="repos">
+    <article class="repo"><b>Orchestration</b><h3>APP</h3><p>Decides whether an answer may be released: screening, recovery plan, evidence review, approvals, audit, evaluations.</p><span class="count">288 <small>tests</small></span><a href="https://github.com/beyondalgorithms2026-source/RAG_ENTERPRISE_LANGGRAPH_APP" target="_blank" rel="noopener noreferrer">View repository</a></article>
+    <article class="repo"><b>Boundary</b><h3>MCP server</h3><p>Three read-only tools between the agent and the data. No database credentials, no third-party dependencies.</p><span class="count">42 <small>tests</small></span><a href="https://github.com/beyondalgorithms2026-source/RAG_Langgraph_MCP_server" target="_blank" rel="noopener noreferrer">View repository</a></article>
+    <article class="repo"><b>Data layer</b><h3>STARTER</h3><p>Ingest, hybrid search, access control inside SQL, company scope, citations and refusals.</p><span class="count">148 <small>tests</small></span><a href="https://github.com/beyondalgorithms2026-source/RAG_ENTERPRISE_STARTER" target="_blank" rel="noopener noreferrer">View repository</a></article>
+  </div>
+  <ol class="timeline" aria-label="Build record">
+    <li><time datetime="2026-09-17">17 Sep 2026</time><span>Evaluation and security release: approved 25/25 baseline, 20/20 red-team, cost-guarded evaluation workflows.</span></li>
+    <li><time datetime="2026-09-23">23 Sep 2026</time><span>Public demo gains the audit trail and recorded raw-versus-governed comparisons.</span></li>
+    <li><time datetime="2026-10-01">1 Oct 2026</time><span>Per-request company scope shipped across all three repositories; the Northline corpus ingested.</span></li>
+    <li><time datetime="2026-10-05">5 Oct 2026</time><span>Northline demo scorecard published; company-aware Documents, Audit, Approvals and Quality pages.</span></li>
+  </ol>
+  <div class="cost"><span>A full 90-question evaluation costs about $0.03</span><span>Paid evaluations run only on manual approval</span><span>OpenAI project capped at $1 per month</span></div>
+</section>
+
+<section class="wrap limits" id="limits">
+  <h2>What we deliberately don't claim</h2>
+  <ul>
+    <li>Not a production or client deployment; free hosting with cold starts.</li>
+    <li>Not multi-tenant, and runs as a single process by design.</li>
+    <li>No certifications or compliance attestations.</li>
+    <li>Candidate and demo results are not approved baselines.</li>
+    <li>Outbound actions such as email or Slack are prepared but never sent.</li>
+    <li>All documents are synthetic, for two fictional companies.</li>
+  </ul>
+</section>
+</div>
