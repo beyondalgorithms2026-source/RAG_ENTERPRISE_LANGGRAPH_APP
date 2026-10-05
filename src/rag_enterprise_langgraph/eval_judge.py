@@ -110,7 +110,19 @@ def _safe_rejection_reason(exc: urllib.error.HTTPError) -> str:
     return f"offline judge request rejected (HTTP {exc.code}{suffix})"
 
 
-def _request_once(payload: str) -> dict[str, Any]:
+def _span_feedback(rejected: list[dict[str, Any]]) -> str:
+    """Tell the judge which quote failed. The rule is unchanged; only the retry is informed."""
+    last = rejected[-1]
+    return (
+        f"Your previous reply was rejected ({last.get('reason')}) for "
+        f"{last.get('assertion_id')}: answer quote {last.get('answer_span')!r}, evidence quote "
+        f"{last.get('evidence_span')!r}. Reply again. Every quote must be ONE contiguous passage "
+        "copied character for character from the answer or from that assertion's reference text: "
+        "no ellipses, no joined cells, no | characters, no rewording. For a table, quote one cell."
+    )
+
+
+def _request_once(payload: str, feedback: str | None = None) -> dict[str, Any]:
     key = os.environ.get("EVAL_OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
     if not key:
         raise JudgeInfrastructureError("offline judge credential unavailable")
@@ -154,7 +166,11 @@ def _request_once(payload: str) -> dict[str, Any]:
         "model": MODEL,
         "temperature": 0,
         "max_tokens": 2500,
-        "messages": [{"role": "system", "content": SYSTEM}, {"role": "user", "content": payload}],
+        "messages": [
+            {"role": "system", "content": SYSTEM},
+            {"role": "user", "content": payload},
+            *([{"role": "user", "content": feedback}] if feedback else []),
+        ],
         "response_format": {
             "type": "json_schema",
             "json_schema": {
@@ -249,7 +265,11 @@ def _request(payload: str) -> dict[str, Any]:
     rejected_spans: list[dict[str, Any]] = []
     for attempt in range(MAX_ATTEMPTS):
         try:
-            return _request_once(payload)
+            # At temperature 0 an identical retry repeats the same reply, so a retry after a
+            # rejected quote says what was rejected.
+            return _request_once(
+                payload, _span_feedback(rejected_spans) if rejected_spans else None
+            )
         except RetryableJudgeInfrastructureError as exc:
             rejected_spans.extend(exc.rejected_spans or [])
             if attempt + 1 >= MAX_ATTEMPTS:

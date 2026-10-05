@@ -130,3 +130,29 @@ def test_rejected_spans_are_bounded(monkeypatch):
         )
     assert raised.value.last_reason == "invalid literal answer span"
     assert all(len(span["answer_span"]) == 300 for span in raised.value.rejected_spans)
+
+
+def test_retry_after_a_rejected_quote_tells_the_judge_why(monkeypatch):
+    monkeypatch.setenv("EVAL_OPENAI_API_KEY", "unit-test-only")
+    monkeypatch.setattr(eval_judge.time, "sleep", lambda seconds: None)
+    stitched = {
+        "state": "supported",
+        "answer_span": "more than 5 consecutive minutes",
+        "evidence_span": "Temperature Excursion...for more than 5 consecutive minutes.",
+        "explanation": "Definition threshold.",
+    }
+    contiguous = {**stitched, "evidence_span": "for more than 5 consecutive minutes."}
+    requests = []
+
+    def transport(request, timeout):
+        requests.append(json.loads(request.data))
+        return _response({"assertion_0": stitched if len(requests) == 1 else contiguous})
+
+    monkeypatch.setattr(eval_judge.urllib.request, "urlopen", transport)
+    response = eval_judge._request(_payload([_assertion("threshold", "5 consecutive minutes")]))
+
+    assert response["judgement"]["assertions"][0]["evidence_span"] == contiguous["evidence_span"]
+    assert len(requests) == 2
+    assert len(requests[0]["messages"]) == 2
+    feedback = requests[1]["messages"][-1]["content"]
+    assert "invalid scoped evidence span" in feedback and "no ellipses" in feedback
