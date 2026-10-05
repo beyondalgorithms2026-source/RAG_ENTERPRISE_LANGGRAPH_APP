@@ -24,6 +24,37 @@ from rag_enterprise_langgraph.ui import build_ui_router
 CORPUS_NAME_PATTERN = r"^[A-Za-z0-9_.-]{1,64}$"
 
 
+def _miss_outcome(row: dict) -> str:
+    """Plain-language outcome of an eval case that did not pass."""
+    status = row.get("grounding_status")
+    if status in {"not_found", "not_grounded"}:
+        return "declined"
+    if status == "needs_review":
+        return "held for human review"
+    if status == "partial":
+        return "partial answer"
+    if row.get("eval_status") == "manual_review":
+        return "answered; awaiting manual review"
+    return "answered; failed grading"
+
+
+def _candidate_miss_details(report_path: Path, limitations: dict) -> list[dict]:
+    wanted = [
+        *(limitations.get("failed_case_ids") or []),
+        *(limitations.get("manual_review_case_ids") or []),
+    ]
+    try:
+        rows = json.loads(report_path.read_text(encoding="utf-8")).get("rows") or []
+    except (OSError, ValueError, AttributeError):
+        return []
+    by_id = {row.get("case_id"): row for row in rows if isinstance(row, dict)}
+    return [
+        {"case_id": case_id, "outcome": _miss_outcome(by_id[case_id])}
+        for case_id in wanted
+        if case_id in by_id
+    ]
+
+
 class AskRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     question: str = Field(min_length=1, max_length=12000)
@@ -100,6 +131,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 status_code=503,
                 content={"detail": "Committed evidence status is unavailable."},
             )
+        # status.json is checksum-pinned; miss types are derived from the committed report.
+        payload["miss_details"] = _candidate_miss_details(
+            path.with_name("candidate-v2-report.json"), payload.get("limitations") or {}
+        )
         return payload
 
     @app.get("/evidence/northline")
