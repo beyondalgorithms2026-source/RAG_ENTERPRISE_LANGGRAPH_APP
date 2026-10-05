@@ -79,6 +79,8 @@ class _Schema11Orchestrator:
             recovery_successful=True,
             attempts=[{"tool": "ask_grounded"}, {"tool": "search_documents"}],
             portfolio_safe=True,
+            synthesis_verified=True,
+            synthesis_reason="verified",
         )
 
 
@@ -214,6 +216,8 @@ def test_schema_11_scores_all_facts_boundary_refusal_and_metrics(tmp_path):
     assert first["expected_eval"]["ordered_facts_matched"] is True
     assert first["recovery_attempted"] is True
     assert first["recovery_successful"] is True
+    assert first["synthesis_verified"] is True
+    assert first["synthesis_reason"] == "verified"
     assert first["attempt_count"] == 2
     assert first["end_to_end_latency_ms"] >= 0
 

@@ -15,5 +15,8 @@ def test_active_prompts_are_hash_verified_and_keep_legacy_constants():
         ("app_agent", SYSTEM_PROMPT),
         ("app_synthesis", SYNTHESIS_SYSTEM_PROMPT),
     ):
-        assert metadata[prompt_id]["version"] == "1.0.0"
+        assert (
+            metadata[prompt_id]["version"]
+            == {"app_agent": "1.0.0", "app_synthesis": "1.1.0"}[prompt_id]
+        )
         assert metadata[prompt_id]["sha256"] == hashlib.sha256(prompt.encode("utf-8")).hexdigest()

@@ -19,6 +19,7 @@ _REFUSAL_MARKERS = (
 )
 
 _STOP_ENTITIES = {
+    "Yes",  # yes/no answers start with it; it is not a named entity
     "The",
     "This",
     "That",
@@ -47,7 +48,8 @@ def _evidence_text(evidence: Sequence[dict[str, Any]]) -> str:
 def _numeric_tokens(text: str) -> list[str]:
     # Percentages, decimals, and integers (with optional commas), normalized.
     tokens = re.findall(r"\d+(?:[.,]\d+)?\s*%|\d[\d,]*(?:\.\d+)?", text)
-    return [re.sub(r"\s+", "", token) for token in tokens]
+    # "250,000," at the end of a clause is the number 250,000, not a different token.
+    return [re.sub(r"\s+", "", token).rstrip(",") for token in tokens]
 
 
 def _capitalized_entities(text: str) -> list[str]:
@@ -72,7 +74,10 @@ def verify_against_evidence(
 
     evidence_text = _evidence_text(evidence)
     evidence_norm = _normalize(evidence_text)
-    evidence_numeric = set(_numeric_tokens(evidence_text))
+    # Values and names the question itself supplies may be restated for comparison
+    # ("EUR 260,000 is above the EUR 250,000 threshold"); they are not invented facts.
+    question_norm = _normalize(question)
+    evidence_numeric = set(_numeric_tokens(evidence_text)) | set(_numeric_tokens(question))
 
     for token in _numeric_tokens(answer_text):
         if token in evidence_numeric:
@@ -84,7 +89,7 @@ def verify_against_evidence(
         return {"verified": False, "reason": f"unsupported_number:{token}"}
 
     for entity in _capitalized_entities(answer_text):
-        if entity.lower() not in evidence_norm:
+        if entity.lower() not in evidence_norm and entity.lower() not in question_norm:
             return {"verified": False, "reason": f"unsupported_entity:{entity}"}
 
     # Require real lexical overlap with the source so the answer is grounded, not generic.

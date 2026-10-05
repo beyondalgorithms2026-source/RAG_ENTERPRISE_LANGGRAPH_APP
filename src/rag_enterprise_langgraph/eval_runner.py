@@ -911,6 +911,8 @@ async def run_eval(
                 "end_to_end_latency_ms": end_to_end_latency_ms,
                 "recovery_attempted": bool(run.get("recovery_attempted")),
                 "recovery_successful": bool(run.get("recovery_successful")),
+                "synthesis_verified": bool(run.get("synthesis_verified")),
+                "synthesis_reason": run.get("synthesis_reason"),
                 "attempt_count": len(run.get("attempts") or []),
                 "attempt_diagnostics": [
                     {

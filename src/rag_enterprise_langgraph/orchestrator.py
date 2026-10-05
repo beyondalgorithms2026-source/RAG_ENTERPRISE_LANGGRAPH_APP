@@ -765,6 +765,85 @@ def _with_explicit_absence_boundary(question: str, answer: str) -> str:
     return f"{boundary} {answer}".strip()
 
 
+_SENTENCE_STARTERS = frozenset(
+    {
+        "a",
+        "an",
+        "the",
+        "is",
+        "are",
+        "does",
+        "do",
+        "did",
+        "can",
+        "may",
+        "must",
+        "should",
+        "what",
+        "which",
+        "who",
+        "when",
+        "where",
+        "why",
+        "how",
+        "if",
+        "in",
+        "for",
+        "under",
+    }
+)
+
+
+def _defined_term_candidates(question: str) -> list[str]:
+    """Title-Case phrases inside the question that may name a defined term.
+
+    Policy manuals capitalise defined terms ("Temperature Excursion", "Working Day",
+    "Immediately"). A sentence-initial word is skipped because it is capitalised
+    anyway. Multi-word phrases come first; candidates are only acted on when a
+    source table row literally defines them.
+    """
+
+    candidates: list[str] = []
+    for sentence in re.split(r"(?<=[.?!])\s+", question.strip()):
+        words = re.findall(r"[A-Za-z][A-Za-z'-]*|\S", sentence)
+        index = 1 if words else 0
+        while index < len(words):
+            if words[index][:1].isupper() and words[index][1:2].islower():
+                phrase = [words[index]]
+                while (
+                    index + len(phrase) < len(words)
+                    and len(phrase) < 4
+                    and words[index + len(phrase)][:1].isupper()
+                    and words[index + len(phrase)][1:2].islower()
+                ):
+                    phrase.append(words[index + len(phrase)])
+                term = " ".join(phrase)
+                if len(term) >= 4 and term.casefold() not in _SENTENCE_STARTERS:
+                    candidates.append(term)
+                index += len(phrase)
+            else:
+                index += 1
+    unique = list(dict.fromkeys(candidates))
+    return sorted(unique, key=lambda term: (-len(term.split()), unique.index(term)))
+
+
+def _definition_rows(text: str, terms: Sequence[str]) -> list[str]:
+    """Return "Term: meaning" for markdown table rows whose first cell is one of the terms."""
+
+    wanted = {term.casefold(): term for term in terms}
+    found: dict[str, str] = {}
+    for row in re.split(r"\|\s*\n\s*\||\|\s+\|", text):
+        cells = [cell.strip() for cell in row.strip().strip("|").split("|")]
+        if len(cells) < 2 or not cells[0] or set(cells[0]) <= {"-", ":", " "}:
+            continue
+        key = cells[0].casefold()
+        if key in wanted and key not in found:
+            meaning = " ".join(cell for cell in cells[1:] if cell)
+            if meaning:
+                found[key] = f"{cells[0]}: {meaning}"
+    return [found[term.casefold()] for term in terms if term.casefold() in found]
+
+
 def _focused_evidence_text(
     *,
     question: str,
@@ -795,6 +874,16 @@ def _focused_evidence_text(
     if complete:
         return max(complete, key=lambda item: item[0])[1].strip()
     text = " ".join(str(item.get("snippet") or item.get("excerpt") or "") for item in evidence)
+    # A question that names a defined term is answered by that term's table row, not by
+    # the opening rows of a definitions table that happen to share the chunk.
+    terms = _defined_term_candidates(question)
+    definitions: list[str] = []
+    for item in evidence:  # per item, so text after one table never joins its last cell
+        for row in _definition_rows(str(item.get("snippet") or item.get("excerpt") or ""), terms):
+            if row not in definitions:
+                definitions.append(row)
+    if definitions:
+        return " ".join(definitions)[:1200].strip()
     sentences = _split_evidence_sentences(text)
     if not sentences:
         return ""
@@ -2000,6 +2089,72 @@ class EnterpriseRagOrchestrator:
                 )
                 evidence = [selected_evidence]
                 final_verdict = selected_verdict
+            definition_evidence: list[dict[str, Any]] = []
+            defined_terms = _defined_term_candidates(question)[:1]
+            evidence_text = " ".join(str(item.get("snippet") or "") for item in evidence)
+            if max_recovery_steps >= 2 and not _definition_rows(evidence_text, defined_terms):
+                # Keyword recovery often finds the procedure that *uses* a defined term
+                # rather than the definition itself. Look the term up directly and put
+                # its definition row first; it is used only if a table row defines it.
+                for term in defined_terms:
+                    lookup = await call(
+                        "search_documents",
+                        "definition_lookup",
+                        {"question": f"{term} defined meaning", "k": 4, "mode": "keyword"},
+                    )
+                    if classify_transport_failure(lookup):
+                        break
+                    for item in _results(lookup):
+                        rows = _definition_rows(str(item.get("snippet") or ""), [term])
+                        if rows:
+                            definition_evidence.append(
+                                {
+                                    **{
+                                        key: item.get(key)
+                                        for key in (
+                                            "source_id",
+                                            "source_part_id",
+                                            "chunk_id",
+                                            "file_name",
+                                            "locator",
+                                        )
+                                    },
+                                    # Kept in table-row form so the verdict and the
+                                    # answer focus recognise it as the term's row.
+                                    "snippet": "|{}|{}|".format(*rows[0].split(": ", 1)),
+                                    "evidence_type": "definition",
+                                }
+                            )
+                            break
+            if definition_evidence:
+                decision_trail.append(
+                    _decision_step(
+                        len(decision_trail) + 1,
+                        "Definition lookup",
+                        f"Added the source definition of {definition_evidence[0]['snippet'].split('|')[1]}.",
+                    )
+                )
+                evidence = definition_evidence + evidence
+                final_verdict = validate_evidence(
+                    question=question,
+                    evidence=evidence,
+                    anchors=anchors,
+                    rules=self.rules,
+                    expected_answer=expected_answer,
+                )
+            defined_rows = _definition_rows(
+                " ".join(str(item.get("snippet") or "") for item in evidence),
+                _defined_term_candidates(question),
+            )
+            if defined_rows and (not final_verdict or final_verdict.status != "supports"):
+                # A source table row keyed by the exact term the question names is direct
+                # evidence for that term, even when its wording shares few question words.
+                final_verdict = EvidenceVerdict(
+                    status="supports",
+                    score=max(final_verdict.score if final_verdict else 0.0, 0.65),
+                    reason="defined_term_row",
+                    anchor_hits=[row.split(":", 1)[0] for row in defined_rows],
+                )
             if evidence and final_verdict and final_verdict.status == "supports":
                 composed = await self._compose_answer(
                     question=question,
