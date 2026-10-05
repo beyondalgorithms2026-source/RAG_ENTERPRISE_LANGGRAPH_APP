@@ -40,7 +40,7 @@ def test_how_it_works_page_renders_inside_the_shell(tmp_path):
     assert "How the pieces fit" in text and "What we deliberately don" in text
     assert '<link rel="stylesheet" href="/app/static/how-it-works.css" />' in text
     assert '<script src="/app/static/how-it-works.js" defer></script>' in text
-    assert 'class="rail-drawer-toggle active" href="/app/how-it-works"' in text
+    assert 'class="app-bar-how active" href="/app/how-it-works"' in text
     assert client.get("/app/static/how-it-works.css").status_code == 200
     assert client.get("/app/static/how-it-works.js").status_code == 200
 
@@ -49,8 +49,7 @@ def test_every_page_links_to_how_it_works(tmp_path):
     client = _client(tmp_path)
     for path in ("/app", "/app/documents", "/app/quality", "/app/security"):
         text = client.get(path).text
-        assert 'class="rail-drawer-toggle" href="/app/how-it-works"' in text, path
-        assert 'class="topbar-info" href="/app/how-it-works"' in text, path
+        assert 'class="app-bar-how" href="/app/how-it-works"' in text, path
 
 
 def test_links_are_internal_or_point_at_the_three_repositories(tmp_path):
@@ -79,3 +78,15 @@ def test_page_styles_cannot_leak_into_other_pages():
         selector.startswith(".hiw") or selector.split("{")[-1].strip().startswith(".hiw")
         for selector in selectors
     ), [s for s in selectors if not s.startswith(".hiw")][:5]
+
+
+def test_ask_page_invites_new_visitors_to_how_it_works(tmp_path):
+    text = _client(tmp_path).get("/app").text
+    assert '<a class="howit-card" href="/app/how-it-works"><strong>New here?</strong>' in text
+
+
+def test_shell_has_no_fixed_canvas_that_unpins_the_sidebar():
+    css = (STATIC / "app.css").read_text(encoding="utf-8")
+    # A fixed-width canvas with overflow:hidden made the sidebar scroll away on wide screens.
+    assert "width:1440px" not in css
+    assert "@media (min-width:769px) { .app-rail { top:var(--bar-h);" in css
