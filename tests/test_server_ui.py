@@ -100,9 +100,13 @@ def test_public_demo_is_read_only_and_hides_pending_answer(tmp_path):
     assert page.status_code == 200
     assert 'data-public-demo="true"' in page.text
     assert 'content="https://backend.example.test"' in page.text
-    assert page.text.count('class="starter-card"') == 4
+    # Four starter cards per fictional company; only the default company's are visible.
+    assert page.text.count('class="starter-card"') == 8
+    assert (
+        page.text.count('class="starter-card" data-corpus="northwind-public-demo" data-needs') == 4
+    )
     assert "Ask a governed policy question with evidence you can inspect." in page.text
-    assert "Public-demo corpus" in page.text
+    assert "Two fictional companies, one governed system." in page.text
     assert "Unsupported fact is not invented" in page.text
     assert "High-risk answer requires approval" in page.text
     assert "Restricted data remains unavailable" in page.text
@@ -468,3 +472,39 @@ def test_committed_demo_evidence_is_consistent():
         assert comparison["run_id"] in audited_run_ids
         assert comparison["first_pass_status"] not in transport_failures
         assert comparison["orchestrated_status"] not in transport_failures
+
+
+def test_company_switch_follows_default_corpus_and_scopes_requests(tmp_path):
+    def page_for(default_corpus: str):
+        settings = Settings(
+            mcp_server_repo=tmp_path,
+            public_demo=True,
+            public_backend_url="https://backend.example.test",
+            default_corpus=default_corpus,
+            audit_log_path=str(tmp_path / "audit.jsonl"),
+            approvals_path=str(tmp_path / "approvals.jsonl"),
+            run_results_dir=str(tmp_path / "run-results"),
+        )
+        return TestClient(create_app(settings))
+
+    northline = page_for("western_northline")
+    ask = northline.get("/app").text
+    assert 'value="western_northline" data-hidden-note=' in ask
+    assert 'value="western_northline" data-hidden-note="+1 restricted' in ask
+    assert " checked /><strong>Northline Analytics</strong>" in ask
+    assert 'data-corpus="western_northline" data-needs-backend' in ask
+    assert 'data-corpus="northwind-public-demo" hidden' in ask
+    assert "London hotel cap" in ask and "Band 6 salary range" in ask
+
+    unknown = page_for("someone-else").get("/app").text
+    assert " checked /><strong>Northwind Logistics</strong>" in unknown
+
+    documents = northline.get("/app/documents").text
+    assert 'name="company"' in documents and 'id="document-hidden-note"' in documents
+
+    quality = northline.get("/app/quality").text
+    assert "docs/evaluation/western/scorecard.md" in quality
+
+    script = northline.get("/app/static/app.js").text
+    assert "corpus: selectedCompany() || undefined" in script
+    assert "/corpus${scope}" in script

@@ -28,8 +28,8 @@ plausible questions about the fictional company with no supporting document anyw
 
 > **All five were refused. None were answered.**
 
-The blocking full-stack run uses the pinned OpenAI snapshot documented in the approved
-baseline. Optional local-model runs are compatibility experiments, not published quality
+The full-stack run (manual dispatch only; it is not a required PR check) uses the pinned
+OpenAI snapshot documented in the approved baseline. Optional local-model runs are compatibility experiments, not published quality
 evidence.
 
 When evidence is weak but not absent, the system does not simply give up: it retries with
@@ -49,7 +49,7 @@ hand or inferred from an unapproved local run.
 | Candidate v2 snapshot | **82 passed, 3 failed, 5 manual review** across 90 cases; not an approved baseline |
 | Candidate safety cases | **8/8 refusals** and **2/2 safe-boundary cases** |
 | Red-team scenarios | **18 deterministic defenses plus RT-06 and RT-16 live backend controls; 20/20 defended** |
-| Current offline APP suite | **254 passed** on the B004 closeout branch |
+| Current offline APP suite | **277 passed** on `main` |
 
 The report publishes the pinned model, embedding, chunking, retrieval, prompt, and corpus
 metadata needed to interpret the result. Baseline changes require an explicit reviewed
@@ -63,12 +63,16 @@ question and expected answer is in `config/eval-set-northwind.json`.
 ## What this is NOT
 
 - **Not a production or client deployment.** The data layer is available as a public
-  Render Free portfolio demo over 28 synthetic documents, with a public governed UI at
+  Render Free portfolio demo over two synthetic companies (Northwind Logistics, the
+  original 28-document corpus, and Northline Analytics, a 14-document US/EU corpus), with
+  a public governed UI at
   [`rag-enterprise-governance-demo.onrender.com/app`](https://rag-enterprise-governance-demo.onrender.com/app).
   It has no real users or real-workload evidence.
 - **Not a general benchmark.** The approved v1 claim covers 25 questions on the isolated
   27-document corpus. The 90-case, 28-source v2 suite remains unapproved until its
-  calibration completes. Both describe only this synthetic system.
+  calibration completes. The Northline
+  [demo scorecard](https://github.com/beyondalgorithms2026-source/RAG_ENTERPRISE_STARTER/blob/main/docs/evaluation/western/scorecard.md)
+  is a 20-question demo set, not a benchmark. All of these describe only this synthetic system.
 - **Not a finished product.** Agentic actions (email, Slack, calendar) are deliberately
   non-dispatching: the approval, audit and policy machinery around them is real, the
   outbound effect is not.
@@ -80,17 +84,20 @@ question and expected answer is in `config/eval-set-northwind.json`.
 
 **[Try it live →](https://rag-enterprise-governance-demo.onrender.com/app)** (free tier; may take 30–90 seconds to wake)
 
-The governed UI has seven pages a visitor can inspect:
+The demo holds two fictional companies. A switch on Ask and Documents picks
+**Northline Analytics** (US/EU policies) or **Northwind Logistics** (the original demo);
+every tool call in a run is scoped to the chosen company, so an answer never mixes their
+policies. The governed UI has seven pages a visitor can inspect:
 
 | Page | What you see |
 |:--|:--|
-| **Ask** | Submit a policy question. The answer appears beside a governance panel showing evidence status, cited passages, source links, and the full audit timeline with latencies per tool call. Four preset scenarios demonstrate a grounded answer, an explicit refusal, approval withholding, and restricted-data denial. |
-| **Documents** | Browse the 14 anonymous-visible synthetic policy documents. Each shows metadata, a preview, and a link to the full source. Internal and restricted documents are excluded by SQL before retrieval — their names do not appear. |
+| **Ask** | Submit a policy question. The answer appears beside a governance panel showing evidence status, cited passages, source links, and the full audit timeline with latencies per tool call. Four preset scenarios per company demonstrate a grounded answer, an explicit refusal, approval withholding, and restricted-data denial. |
+| **Documents** | Browse the anonymous-visible synthetic policy documents of the selected company (14 Northwind, 13 Northline). Each shows metadata, a preview, and a link to the full source. Internal and restricted documents are excluded by SQL before retrieval — their names do not appear. |
 | **Quality** | Side-by-side comparison: the approved v1 baseline (25/25) and the v2 candidate snapshot (82/90), with failed and manual-review case IDs disclosed. |
 | **Security** | All 20 red-team scenarios grouped by attack category (prompt injection, grounding, faithfulness, access control). Each card shows the defense mechanism and whether it was proved deterministically or against the live backend. |
-| **Audit** | Hash-chained event timeline for each orchestrated run — every tool call, decision, and latency is recorded. |
+| **Audit** | Hash-chained event timeline for each orchestrated run — every tool call, decision, and latency is recorded. Demo only: recorded Northwind runs plus runs from any visitor, shared by everyone and reset on redeploy. |
 | **Approvals** | The human-oversight queue. High-risk answers sit here as `pending_approval` until a named reviewer decides. Public visitors can inspect but not approve — the greyed-out buttons are the proof. |
-| **Compare** | Side-by-side model and configuration comparison. |
+| **Compare** | Recorded side-by-side runs on the Northwind corpus: a raw first pass next to the governed workflow, same model. Demo only; running new comparisons is disabled on the public demo. |
 
 ## Architecture — three repositories, on purpose
 
@@ -131,7 +138,9 @@ The other two repositories:
 
 ## Setup
 
-Requires Python 3.12, Docker, and [Ollama](https://ollama.com).
+Requires Python 3.12. A full local stack also needs Docker (PostgreSQL/pgvector for the
+data layer) and either an OpenAI key, as in the hosted demo and published evidence, or
+[Ollama](https://ollama.com) for local experiments.
 
 ```bash
 git clone https://github.com/beyondalgorithms2026-source/RAG_ENTERPRISE_LANGGRAPH_APP.git
