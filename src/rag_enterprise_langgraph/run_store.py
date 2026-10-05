@@ -25,6 +25,7 @@ STORED_FIELDS = (
     "synthesized_answer",
     "verbatim_answer",
     "synthesis_verified",
+    "synthesis_reason",
     "citation_count",
     "evidence_count",
     "decision_trail",

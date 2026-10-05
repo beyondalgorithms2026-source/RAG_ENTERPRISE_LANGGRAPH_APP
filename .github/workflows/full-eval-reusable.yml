@@ -21,6 +21,11 @@ on:
         required: false
         default: main
         type: string
+      answer_prompt_version:
+        description: Optional STARTER answer prompt history version to pin (empty = STARTER default)
+        required: false
+        default: ""
+        type: string
     secrets:
       EVAL_OPENAI_API_KEY:
         required: false
@@ -90,6 +95,7 @@ jobs:
     env:
       DATABASE_URL: postgresql://rag_enterprise_starter:rag_enterprise_starter_dev_pass@127.0.0.1:55432/rag_enterprise_starter
       UPLOAD_DIR: ${{ github.workspace }}/northwind-corpus
+      ANSWER_PROMPT_VERSION: ${{ inputs.answer_prompt_version }}
       APP_ENV: local
       AUTH_ENABLED: "false"
       AUTH_MODE: none
