@@ -239,7 +239,8 @@ async function initDocuments() {
     try {
       const response = await fetch(sourceHref(item.id), { cache: "no-store" });
       if (!response.ok) throw new HTTPError(response.status, `Preview HTTP ${response.status}`);
-      const text = await response.text();
+      // Some synthetic sources open with a SYNTHETIC marker and a --- metadata block; show the policy text.
+      const text = (await response.text()).replace(/^\s*(?:SYNTHETIC\s*)?---\r?\n[\s\S]*?\r?\n---\r?\n/, "");
       const lines = text.split(/\n+/).map((line) => line.trim()).filter(Boolean);
       const headings = lines.filter((line) => /^#{1,3}\s+/.test(line));
       const paragraphs = lines.filter((line) => !/^#{1,3}\s+/.test(line));

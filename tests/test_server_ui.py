@@ -508,3 +508,5 @@ def test_company_switch_follows_default_corpus_and_scopes_requests(tmp_path):
     script = northline.get("/app/static/app.js").text
     assert "corpus: selectedCompany() || undefined" in script
     assert "/corpus${scope}" in script
+    # Sources with a SYNTHETIC marker and --- metadata block preview from the policy text.
+    assert "(?:SYNTHETIC\\s*)?---" in script
