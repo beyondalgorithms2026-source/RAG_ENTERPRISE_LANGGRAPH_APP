@@ -8,9 +8,9 @@ version = "0.1.0"
 description = "Minimal LangGraph app that uses the rag-enterprise-mcp server as its tool layer."
 requires-python = ">=3.10"
 dependencies = [
-  "fastapi>=0.136,<0.137",
-  "langchain>=1.3.2,<1.4",
-  "langchain-mcp-adapters>=0.2.2,<0.3",
+  "fastapi>=0.136,<0.142",
+  "langchain>=1.3.2,<1.5",
+  "langchain-mcp-adapters>=0.2.2,<0.4",
   # langchain-mcp-adapters 0.2.x imports RequestContext from mcp.shared.context,
   # which mcp 2.x removed. Unpinned, a clean install resolves mcp 2.x and the
   # app fails on import. Pinned to the major version the suite is tested against.
@@ -22,7 +22,7 @@ dependencies = [
   "langgraph>=1.2.2,<1.3",
   "python-dotenv>=1.2,<2",
   "pydantic-settings>=2.14.1,<3",
-  "uvicorn>=0.48,<0.49",
+  "uvicorn>=0.48,<0.53",
 ]
 
 [project.optional-dependencies]
