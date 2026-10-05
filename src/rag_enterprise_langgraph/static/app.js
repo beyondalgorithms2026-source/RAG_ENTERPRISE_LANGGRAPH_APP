@@ -231,6 +231,99 @@ function documentsFailureMessage(error) {
   return "The corpus request could not cross the configured public-origin boundary. Check service health and CORS.";
 }
 
+// Sectioned, readable preview of a markdown source: every outline entry has a target.
+// The whole file is already downloaded for the preview, so sections cost no extra request.
+function inlineMarkdown(text) {
+  return esc(text).replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>").replace(/`([^`]+)`/g, "<code>$1</code>");
+}
+const TABLE_DIVIDER = /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/;
+function markdownTable(rows) {
+  const cells = (row) => row.trim().replace(/^\||\|$/g, "").split("|").map((cell) => cell.trim());
+  const [head, ...rest] = rows.filter((row) => !TABLE_DIVIDER.test(row));
+  if (!head) return "";
+  return `<div class="doc-table"><table><thead><tr>${cells(head).map((cell) => `<th>${inlineMarkdown(cell)}</th>`).join("")}</tr></thead><tbody>${rest.map((row) => `<tr>${cells(row).map((cell) => `<td>${inlineMarkdown(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+}
+const LIST_ITEM = /^\s*([-*]|\d+[.)])\s+/;
+const BLOCK_START = /^(```|\s*\||>|#{1,6}\s|\s*-{3,}\s*$)/;
+function markdownBlocks(lines) {
+  const html = [];
+  let index = 0;
+  while (index < lines.length) {
+    const line = lines[index];
+    if (!line.trim()) { index += 1; continue; }
+    if (/^```/.test(line.trim())) {
+      const body = [];
+      index += 1;
+      while (index < lines.length && !/^```/.test(lines[index].trim())) body.push(lines[index++]);
+      index += 1;
+      html.push(`<pre class="doc-code">${esc(body.join("\n"))}</pre>`);
+    } else if (/^\s*-{3,}\s*$/.test(line)) {
+      html.push("<hr>");
+      index += 1;
+    } else if (/^\s*\|/.test(line)) {
+      const rows = [];
+      while (index < lines.length && /^\s*\|/.test(lines[index])) rows.push(lines[index++]);
+      html.push(markdownTable(rows));
+    } else if (LIST_ITEM.test(line)) {
+      const ordered = /^\s*\d/.test(line);
+      const items = [];
+      while (index < lines.length && LIST_ITEM.test(lines[index])) items.push(lines[index++].replace(LIST_ITEM, ""));
+      const tag = ordered ? "ol" : "ul";
+      html.push(`<${tag}>${items.map((item) => `<li>${inlineMarkdown(item)}</li>`).join("")}</${tag}>`);
+    } else if (/^>\s?/.test(line)) {
+      const quote = [];
+      while (index < lines.length && /^>\s?/.test(lines[index])) quote.push(lines[index++].replace(/^>\s?/, ""));
+      html.push(`<blockquote>${inlineMarkdown(quote.join(" "))}</blockquote>`);
+    } else {
+      const paragraph = [];
+      while (index < lines.length && lines[index].trim() && !BLOCK_START.test(lines[index]) && !LIST_ITEM.test(lines[index])) paragraph.push(lines[index++].trim());
+      if (paragraph.length) html.push(`<p>${inlineMarkdown(paragraph.join(" "))}</p>`);
+      else index += 1;
+    }
+  }
+  return html.join("");
+}
+function documentSections(text) {
+  const sections = [];
+  let current = { level: 0, title: "", lines: [] };
+  let inFence = false;
+  text.split(/\r?\n/).forEach((line) => {
+    if (/^```/.test(line.trim())) inFence = !inFence;
+    const heading = inFence ? null : line.match(/^(#{1,3})\s+(.+?)\s*#*\s*$/);
+    if (heading) {
+      sections.push(current);
+      current = { level: heading[1].length, title: heading[2], lines: [] };
+    } else current.lines.push(line);
+  });
+  sections.push(current);
+  return sections.filter((section) => section.title || section.lines.some((line) => line.trim()));
+}
+function bindOutline(outline, select) {
+  const links = [...outline.querySelectorAll("a[data-section]")];
+  const activate = (id) => {
+    links.forEach((link) => link.classList.toggle("active", link.dataset.section === id));
+    if (select) select.value = id;
+  };
+  const jump = (id) => {
+    const target = document.getElementById(id);
+    if (!target) return;
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+    target.classList.remove("flash");
+    void target.offsetWidth;
+    target.classList.add("flash");
+    activate(id);
+  };
+  links.forEach((link) => link.addEventListener("click", (event) => { event.preventDefault(); jump(link.dataset.section); }));
+  select?.addEventListener("change", () => jump(select.value));
+  if ("IntersectionObserver" in window) {
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+      if (visible) activate(visible.target.id);
+    }, { rootMargin: "-80px 0px -60% 0px" });
+    links.forEach((link) => { const target = document.getElementById(link.dataset.section); if (target) observer.observe(target); });
+  }
+}
+
 async function initDocuments() {
   const list = document.getElementById("document-list");
   const reader = document.getElementById("document-reader");
@@ -247,11 +340,14 @@ async function initDocuments() {
       if (!response.ok) throw new HTTPError(response.status, `Preview HTTP ${response.status}`);
       // Some synthetic sources open with a SYNTHETIC marker and a --- metadata block; show the policy text.
       const text = (await response.text()).replace(/^\s*(?:SYNTHETIC\s*)?---\r?\n[\s\S]*?\r?\n---\r?\n/, "");
-      const lines = text.split(/\n+/).map((line) => line.trim()).filter(Boolean);
-      const headings = lines.filter((line) => /^#{1,3}\s+/.test(line));
-      const paragraphs = lines.filter((line) => !/^#{1,3}\s+/.test(line));
-      document.getElementById("reader-outline").innerHTML = headings.length ? `<p class="outline-label">Outline</p>${headings.slice(0, 12).map((heading, index) => `<a href="#reader-section-${index}">${esc(heading.replace(/^#+\s*/, ""))}</a>`).join("")}` : '<p class="outline-label">Preview</p>';
-      document.getElementById("document-content").innerHTML = `${headings.slice(0, 1).map((heading) => `<h2 id="reader-section-0">${esc(heading.replace(/^#+\s*/, ""))}</h2>`).join("")}${paragraphs.slice(0, 8).map((paragraph) => `<p>${esc(paragraph)}</p>`).join("")}<p><a href="${esc(sourceHref(item.id))}" target="_blank" rel="noopener noreferrer">Open the complete source →</a></p>`;
+      const sections = documentSections(text);
+      const titled = sections.map((section, index) => ({ ...section, id: `reader-section-${index}` })).filter((section) => section.title);
+      const outline = document.getElementById("reader-outline");
+      outline.innerHTML = titled.length
+        ? `<p class="outline-label">Outline</p><label class="sr-only" for="outline-select">Jump to section</label><select id="outline-select" class="outline-select">${titled.map((section) => `<option value="${section.id}">${esc(section.title)}</option>`).join("")}</select><nav class="outline-links" aria-label="Document outline">${titled.map((section) => `<a href="#${section.id}" data-section="${section.id}" class="outline-l${section.level}">${esc(section.title)}</a>`).join("")}</nav>`
+        : '<p class="outline-label">Preview</p>';
+      document.getElementById("document-content").innerHTML = `${sections.map((section, index) => `<section class="reader-section" id="reader-section-${index}">${section.title ? `<${section.level >= 3 ? "h3" : "h2"}>${inlineMarkdown(section.title)}</${section.level >= 3 ? "h3" : "h2"}>` : ""}${markdownBlocks(section.lines)}</section>`).join("")}<p><a href="${esc(sourceHref(item.id))}" target="_blank" rel="noopener noreferrer">Open the complete source →</a></p>`;
+      bindOutline(outline, document.getElementById("outline-select"));
     } catch (error) {
       const denied = error instanceof HTTPError && error.status === 403;
       document.getElementById("document-content").innerHTML = `<div class="${denied ? "empty" : "error-box"}">${esc(denied ? "This grant cannot open that source." : "The source is listed but its preview is temporarily unavailable.")}</div>`;
