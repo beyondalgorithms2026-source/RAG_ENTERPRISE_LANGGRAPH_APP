@@ -298,6 +298,14 @@ function documentSections(text) {
   sections.push(current);
   return sections.filter((section) => section.title || section.lines.some((line) => line.trim()));
 }
+// Height covered by pinned bars (app bar, plus the pinned dropdown on narrow screens), so the
+// outline marks the section actually being read.
+function pinnedHeight() {
+  const bar = document.querySelector(".app-bar")?.offsetHeight || 0;
+  const select = document.getElementById("outline-select");
+  const dropdown = select && getComputedStyle(select).display !== "none" ? select.offsetHeight + 24 : 0;
+  return bar + dropdown + 8;
+}
 function bindOutline(outline, select) {
   const links = [...outline.querySelectorAll("a[data-section]")];
   const activate = (id) => {
@@ -321,7 +329,7 @@ function bindOutline(outline, select) {
     const observer = new IntersectionObserver((entries) => {
       const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
       if (visible) activate(visible.target.id);
-    }, { rootMargin: "-80px 0px -60% 0px" });
+    }, { rootMargin: `-${pinnedHeight()}px 0px -55% 0px` });
     links.forEach((link) => { const target = document.getElementById(link.dataset.section); if (target) observer.observe(target); });
   }
 }

@@ -125,8 +125,10 @@ def test_every_page_carries_the_brand_and_favicon(tmp_path):
     client = _client(tmp_path)
     for path in ("/app", "/app/documents", "/app/audit", "/app/quality", "/app/security"):
         page = client.get(path).text
-        assert 'class="topbar-brand"' in page, path
-        assert page.count('class="brand-mark"') == 2, path  # sidebar and mobile top bar
+        assert '<header class="app-bar">' in page, path
+        assert page.count('class="brand-mark"') == 1, path  # one global app bar
+        assert 'class="app-bar-name">Governed RAG</span>' in page, path
+        assert "Public visitor" in page.split('<div class="rail-nav">')[0], path  # above the links
         assert '<link rel="icon" href="data:image/svg+xml,' in page, path
         assert "Cited answers or an honest refusal" in page, path
 
