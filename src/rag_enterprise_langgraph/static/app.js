@@ -75,6 +75,34 @@ function sourceHref(sourceId) {
   return backendUrl && Number.isInteger(id) && id > 0 ? `${backendUrl}/corpus/${id}/file` : "";
 }
 
+// Backends return a citation locator as text, as JSON such as {"section": "Hotel caps", "heading_level": 2},
+// or as a Python dict repr such as {'section': 'Hotel caps'}.
+function citationPlace(locator) {
+  let value = locator;
+  if (typeof value === "string") {
+    const text = value.trim();
+    if (!text.startsWith("{")) return text;
+    try {
+      value = JSON.parse(text);
+    } catch (_) {
+      value = {};
+      for (const key of ["section", "heading", "page", "sheet", "range", "row"]) {
+        const match = text.match(new RegExp(`["']${key}["']\\s*:\\s*(?:["']([^"']*)["']|(\\d+))`));
+        if (match) value[key] = match[1] ?? match[2];
+      }
+      if (!Object.keys(value).length) return text;
+    }
+  }
+  if (!value || typeof value !== "object") return "";
+  const parts = [];
+  if (value.section || value.heading) parts.push(String(value.section || value.heading));
+  if (value.page != null) parts.push(`page ${value.page}`);
+  if (value.sheet) parts.push(`sheet ${value.sheet}`);
+  if (value.range) parts.push(String(value.range));
+  if (value.row != null) parts.push(`row ${value.row}`);
+  return parts.join(" · ");
+}
+
 function timelineTable(timeline) {
   if (!timeline?.length) return '<div class="empty">No tool calls recorded.</div>';
   return `<div class="table-card"><table><thead><tr><th>Step</th><th>Tool</th><th>Purpose</th><th>Status</th><th>Latency</th></tr></thead><tbody>${timeline.map((step) => `<tr><td>${esc(step.step)}</td><td class="mono">${esc(step.tool_name)}</td><td>${esc(step.purpose || "—")}</td><td>${pill(step.result_status)}</td><td>${step.latency_ms == null ? "—" : `${esc(step.latency_ms)} ms`}</td></tr>`).join("")}</tbody></table></div>`;
@@ -92,7 +120,7 @@ function renderRunResult(result, output) {
   const evidence = citations.length ? citations.map((item, index) => {
     const href = sourceHref(item.source_id);
     const label = `[${index + 1}] ${item.file_name || item.source_id || "Source"}`;
-    return `<article class="evidence-card">${href ? `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>` : `<strong>${esc(label)}</strong>`}<p>${esc(item.locator || item.quote || item.snippet_preview || "Citation returned by the workflow.")}</p></article>`;
+    return `<article class="evidence-card">${href ? `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>` : `<strong>${esc(label)}</strong>`}<p>${esc(citationPlace(item.locator) || item.quote || item.snippet_preview || "Citation returned by the workflow.")}</p></article>`;
   }).join("") : '<div class="empty">No citations returned.</div>';
   const pending = result.approval_status === "pending_approval" && result.approval_id;
   output.classList.add("ask-result-filled");
