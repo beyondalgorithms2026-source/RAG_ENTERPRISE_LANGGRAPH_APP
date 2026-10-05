@@ -13,16 +13,20 @@ APP → MCP → STARTER → PostgreSQL/pgvector stack with the pinned OpenAI con
 ## Run locally
 
 Generate and seed the applicable STARTER corpus, start STARTER, and point MCP at it.
-Then run an individual phase:
+Then run an individual phase. From 5 October 2026 the v2 calibration runs use the
+correction-candidate question sets (`config/eval-suite-correction-candidate.json`): the
+same 90 questions with explicit required facts and accepted wording variants. The approved
+v1 baseline is unchanged and still built from `config/eval-set-northwind.json`.
+
 
 ```bash
 rag-enterprise-agent \
-  --eval-set config/eval-set-northwind.json \
+  --eval-set config/eval-set-northwind-candidate.json \
   --eval-output runs/core-eval.md \
   --eval-json runs/core-eval.json
 
 rag-enterprise-agent \
-  --eval-set config/eval-set-operations-manual-v3.2.json \
+  --eval-set config/eval-set-operations-manual-v3.2-candidate.json \
   --eval-output runs/manual-eval.md \
   --eval-json runs/manual-eval.json
 ```

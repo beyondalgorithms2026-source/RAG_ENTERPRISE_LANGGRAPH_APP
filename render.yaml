@@ -18,8 +18,18 @@ services:
         value: https://rag-enterprise-starter-demo.onrender.com
       - key: RAG_BACKEND_TIMEOUT_SECONDS
         value: "300"
+      # Verified synthesis: recovered answers are rewritten from the evidence and shown only if
+      # every number and name is found in the source; otherwise the verbatim passage is shown.
       - key: RAG_AGENT_ENABLE_SYNTHESIS
-        value: "false"
+        value: "true"
+      - key: RAG_AGENT_MODEL_PROVIDER
+        value: openai
+      - key: RAG_AGENT_MODEL_NAME
+        value: gpt-4o-mini-2024-07-18
+      - key: RAG_AGENT_MODEL_TEMPERATURE
+        value: "0"
+      - key: OPENAI_API_KEY
+        sync: false
       - key: RAG_AGENT_PUBLIC_DEMO
         value: "true"
       - key: RAG_AGENT_PUBLIC_BACKEND_URL
