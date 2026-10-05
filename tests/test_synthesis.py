@@ -227,3 +227,40 @@ def test_run_with_unbuildable_model_still_returns_verbatim_answer(monkeypatch):
     result = asyncio.run(_rocket_orchestrator(enable_synthesis=True).run(ROCKET_Q))
     assert result.synthesis_verified is False
     assert "2%" in result.answer or "2 %" in result.answer
+
+
+def test_synthesis_reason_explains_each_outcome(monkeypatch):
+    import rag_enterprise_langgraph.graph as graph
+
+    off = asyncio.run(_rocket_orchestrator(enable_synthesis=False).run(ROCKET_Q))
+    assert off.synthesis_reason == "disabled"
+
+    faithful = "The hard materials of a rocket — aluminum, titanium, copper, and carbon fiber — cost about 2% of what a rocket costs."
+    verified = asyncio.run(
+        _rocket_orchestrator(enable_synthesis=True, model=_StubModel(faithful)).run(ROCKET_Q)
+    )
+    assert verified.synthesis_reason == "verified"
+    assert verified.to_dict()["synthesis_reason"] == "verified"
+
+    invented = asyncio.run(
+        _rocket_orchestrator(enable_synthesis=True, model=_StubModel("It is 5% of the cost.")).run(
+            ROCKET_Q
+        )
+    )
+    assert invented.synthesis_reason == "unsupported_number:5%"
+
+    monkeypatch.setattr(
+        graph, "build_chat_model", lambda settings: (_ for _ in ()).throw(ValueError("no key"))
+    )
+    unbuilt = asyncio.run(_rocket_orchestrator(enable_synthesis=True).run(ROCKET_Q))
+    assert unbuilt.synthesis_reason == "model_error:ValueError"
+
+
+def test_withheld_run_hides_the_synthesis_reason():
+    orchestrator = _rocket_orchestrator(
+        enable_synthesis=True, model=_StubModel("It is 5% of the cost.")
+    )
+    result = asyncio.run(orchestrator.run(ROCKET_Q, approval_mode="always"))
+    assert result.approval_status == "pending_approval"
+    assert result.synthesis_reason is None
+    assert "5%" not in str(result.to_dict())

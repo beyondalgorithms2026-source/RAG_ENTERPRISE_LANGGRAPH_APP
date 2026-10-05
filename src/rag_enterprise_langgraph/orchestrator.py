@@ -147,6 +147,9 @@ class OrchestratedRunResult:
     synthesized_answer: str | None = None
     verbatim_answer: str | None = None
     synthesis_verified: bool = False
+    # Why synthesis did or did not replace the verbatim answer, e.g. "verified",
+    # "disabled", "model_error:AuthenticationError", "unsupported_number:240".
+    synthesis_reason: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -187,6 +190,7 @@ class OrchestratedRunResult:
             "synthesized_answer": self.synthesized_answer,
             "verbatim_answer": self.verbatim_answer,
             "synthesis_verified": self.synthesis_verified,
+            "synthesis_reason": self.synthesis_reason,
         }
 
 
@@ -1247,6 +1251,9 @@ class EnterpriseRagOrchestrator:
         source_evidence = _source_evidence_spans(evidence)
         synthesized: str | None = None
         verified = False
+        reason = (
+            "disabled" if not getattr(self.settings, "enable_synthesis", False) else "no_evidence"
+        )
         if getattr(self.settings, "enable_synthesis", False) and evidence:
             result = await synthesize_and_verify(
                 question=question,
@@ -1255,6 +1262,7 @@ class EnterpriseRagOrchestrator:
                 model=self.synthesis_model,
                 settings=self.settings,
             )
+            reason = str(result.get("reason") or "unknown")
             if result.get("verified"):
                 synthesized = result.get("answer")
                 verified = True
@@ -1263,6 +1271,7 @@ class EnterpriseRagOrchestrator:
             "verbatim": verbatim,
             "synthesized": synthesized,
             "verified": verified,
+            "reason": reason,
             "source_evidence": source_evidence,
         }
 
@@ -1475,6 +1484,8 @@ class EnterpriseRagOrchestrator:
                 result.source_evidence = []
                 result.synthesized_answer = None
                 result.verbatim_answer = None
+                # A rejection reason can quote a value from the answer (unsupported_number:240).
+                result.synthesis_reason = None
                 result.evidence = []
                 result.evidence_count = 0
                 result.citations = []
@@ -2061,6 +2072,7 @@ class EnterpriseRagOrchestrator:
                         synthesized_answer=composed["synthesized"],
                         verbatim_answer=composed["verbatim"],
                         synthesis_verified=composed["verified"],
+                        synthesis_reason=composed["reason"],
                     )
                 )
             if evidence and final_verdict:
@@ -2110,6 +2122,7 @@ class EnterpriseRagOrchestrator:
                 "verbatim": None,
                 "synthesized": None,
                 "verified": False,
+                "reason": None,
                 "source_evidence": [],
             }
             if final_status == "needs_review":
@@ -2167,6 +2180,7 @@ class EnterpriseRagOrchestrator:
                     synthesized_answer=composed_review["synthesized"],
                     verbatim_answer=composed_review["verbatim"],
                     synthesis_verified=composed_review["verified"],
+                    synthesis_reason=composed_review["reason"],
                 )
             )
         finally:
@@ -2197,6 +2211,7 @@ class EnterpriseRagOrchestrator:
         synthesized_answer: str | None = None,
         verbatim_answer: str | None = None,
         synthesis_verified: bool = False,
+        synthesis_reason: str | None = None,
     ) -> OrchestratedRunResult:
         return OrchestratedRunResult(
             question=question,
@@ -2226,6 +2241,7 @@ class EnterpriseRagOrchestrator:
             synthesized_answer=synthesized_answer,
             verbatim_answer=verbatim_answer,
             synthesis_verified=synthesis_verified,
+            synthesis_reason=synthesis_reason,
         )
 
     def _failure_result(
