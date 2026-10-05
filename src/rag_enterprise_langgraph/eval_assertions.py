@@ -388,6 +388,7 @@ def apply_judgement(
     answer: str,
     references: list[dict],
     assertions: list[dict] | None = None,
+    question: str = "",
 ) -> dict:
     """Validate grounded judge spans; never permit overriding hard checks."""
     if not isinstance(judgement, dict) or not isinstance(judgement.get("assertions"), list):
@@ -412,6 +413,9 @@ def apply_judgement(
         source_ids = contracts.get(row["id"], {}).get("source_refs")
         scoped = [r for r in references if source_ids is None or r["id"] in source_ids]
         evidence_span = _literal_span(_factual_text(scoped), row.get("evidence_span"))
+        if evidence_span is None and contracts.get(row["id"], {}).get("question_sourced"):
+            # Facts supplied by the question (evidence_required=false) are quoted from it.
+            evidence_span = _literal_span(question, row.get("evidence_span"))
         if row["state"] in {"supported", "contradicted"} and (
             answer_span is None or evidence_span is None
         ):

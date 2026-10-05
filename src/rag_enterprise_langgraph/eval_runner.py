@@ -776,8 +776,13 @@ async def run_eval(
                     for a in typed["assertions"]
                     if a["type"] == "polarity" and a["state"] == "uncertain"
                 }
+                # A fact the eval set marks evidence_required=false comes from the
+                # question (e.g. "four minutes"), so its proof is the question text.
+                question_sourced = {
+                    fact.fact_id for fact in case.required_facts if not fact.evidence_required
+                }
                 concepts = [
-                    a
+                    {**a, "question_sourced": True} if a["id"] in question_sourced else a
                     for a in case.assertions
                     if a["type"] == "concept" or a["id"] in unresolved_polarity
                 ]
@@ -804,6 +809,7 @@ async def run_eval(
                             answer=answer,
                             references=list(case.reference_evidence),
                             assertions=concepts,
+                            question=case.question,
                         )
                         expected_eval["judge_metadata"] = {
                             "model": judged.get("model"),
@@ -815,6 +821,11 @@ async def run_eval(
                             # The judge answered but its quotes could not be verified:
                             # discard the verdict and route the case to human review.
                             expected_eval["judge_unverifiable"] = _judge_error_detail(exc)
+                            rejected = getattr(exc, "rejected_spans", None)
+                            if rejected:
+                                # Diagnostics only: shows whether span rejections are
+                                # formatting differences or paraphrase. Grading is unchanged.
+                                expected_eval["judge_rejected_spans"] = rejected
                             concept_ids = {a["id"] for a in concepts}
                             for row in typed["assertions"]:
                                 if row["id"] in concept_ids and row["state"] == "supported":

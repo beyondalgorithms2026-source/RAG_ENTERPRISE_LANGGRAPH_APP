@@ -47,6 +47,25 @@ ROW_SCHEMA = {
 class JudgeInfrastructureError(RuntimeError):
     # Safe, code-defined category of the last failed attempt; never provider text.
     last_reason: str | None = None
+    # For span rejections only: the judge's quotes that failed the literal checks, one
+    # entry per attempt. These are short model quotes of the eval answer/evidence (the
+    # report already holds the answer); never HTTP bodies, requests or credentials.
+    rejected_spans: list[dict[str, Any]] | None = None
+
+
+_SPAN_LIMIT = 300
+
+
+def _span_rejection(reason: str, assertion: dict[str, Any], row: dict[str, Any]) -> ValueError:
+    error = ValueError(reason)
+    error.rejected_span = {  # type: ignore[attr-defined]
+        "assertion_id": assertion.get("id"),
+        "state": row.get("state"),
+        "answer_span": str(row.get("answer_span") or "")[:_SPAN_LIMIT],
+        "evidence_span": str(row.get("evidence_span") or "")[:_SPAN_LIMIT],
+        "reason": reason,
+    }
+    return error
 
 
 class RetryableJudgeInfrastructureError(JudgeInfrastructureError):
@@ -113,6 +132,8 @@ def _request_once(payload: str) -> dict[str, Any]:
             for ref in supplied["reference_evidence"]
             if not assertion.get("source_refs") or ref["id"] in assertion["source_refs"]
         ]
+        # A question-sourced fact is proven by the question itself, not by a document.
+        + ([str(supplied.get("question") or "")] if assertion.get("question_sourced") else [])
         for schema_key, assertion in assertion_keys.items()
     }
     assertion_schema = {
@@ -184,12 +205,16 @@ def _request_once(payload: str) -> dict[str, Any]:
             if row.get("state") not in {"supported", "contradicted"}:
                 continue
             if _answer_span(answer, row.get("answer_span")) is None:
-                raise ValueError("invalid literal answer span")
+                raise _span_rejection(
+                    "invalid literal answer span", assertion_keys[schema_key], row
+                )
             if not any(
                 _literal_span(reference, row.get("evidence_span")) is not None
                 for reference in evidence_texts[schema_key]
             ):
-                raise ValueError("invalid scoped evidence span")
+                raise _span_rejection(
+                    "invalid scoped evidence span", assertion_keys[schema_key], row
+                )
         return {
             "judgement": {
                 "assertions": [
@@ -210,6 +235,8 @@ def _request_once(payload: str) -> dict[str, Any]:
         error.last_reason = (
             str(exc) if str(exc) in _SAFE_RESPONSE_REASONS else "unparseable response"
         )
+        rejected = getattr(exc, "rejected_span", None)
+        error.rejected_spans = [rejected] if rejected else None
         raise error from exc
 
 
@@ -219,13 +246,16 @@ _SAFE_RESPONSE_REASONS = {"invalid assertion set", "invalid assertion row", *UNV
 
 
 def _request(payload: str) -> dict[str, Any]:
+    rejected_spans: list[dict[str, Any]] = []
     for attempt in range(MAX_ATTEMPTS):
         try:
             return _request_once(payload)
         except RetryableJudgeInfrastructureError as exc:
+            rejected_spans.extend(exc.rejected_spans or [])
             if attempt + 1 >= MAX_ATTEMPTS:
                 exhausted = JudgeInfrastructureError("offline judge retry budget exhausted")
                 exhausted.last_reason = exc.last_reason or str(exc)
+                exhausted.rejected_spans = rejected_spans or None
                 raise exhausted from None
             time.sleep(RETRY_BACKOFF_SECONDS[attempt])
     raise AssertionError("unreachable")

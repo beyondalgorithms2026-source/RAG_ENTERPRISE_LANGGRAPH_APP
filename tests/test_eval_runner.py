@@ -235,3 +235,111 @@ def test_eval_rows_record_cited_documents_without_paths(tmp_path):
         "nl-fin-expense-2026",
         "nl-fin-expense-appendix-rates",
     ]
+
+
+OM_044_ANSWER = (
+    "No, a Temperature Excursion is defined as any temperature outside the required range for "
+    "more than 5 consecutive minutes, and the room only read +9°C for four minutes."
+)
+
+
+class _Om044Orchestrator:
+    async def run(self, question: str, **_kwargs):
+        # The answer the live demo gave on 5 Oct 2026 after the definition-lookup fix.
+        return OrchestratedRunResult(
+            question=question,
+            answer=OM_044_ANSWER,
+            grounding_status="recovered",
+            tools_used=["ask_grounded", "search_documents"],
+            execution_timeline=[],
+            citations=[{"file_name": "northwind-operations-manual-v3.2.md", "snippet": "x"}],
+            evidence=[
+                {
+                    "file_name": "northwind-operations-manual-v3.2.md",
+                    "snippet": "|Temperature Excursion|Any recorded, observed or suspected "
+                    "temperature outside the required range for a Cold Chain Product for more "
+                    "than 5 consecutive minutes.|",
+                }
+            ],
+            evidence_count=1,
+            portfolio_safe=True,
+            synthesis_verified=True,
+            synthesis_reason="verified",
+        )
+
+
+def _om_044_pack(tmp_path: Path) -> Path:
+    pack = json.loads(
+        Path("config/eval-set-operations-manual-v3.2-candidate.json").read_text(encoding="utf-8")
+    )
+    pack["questions"] = [q for q in pack["questions"] if q["case_id"] == "OM-044"]
+    path = tmp_path / "om044.json"
+    path.write_text(json.dumps(pack), encoding="utf-8")
+    return path
+
+
+def test_om_044_question_sourced_duration_can_be_judged_from_the_question(tmp_path):
+    seen: dict[str, bool] = {}
+
+    async def judge(*, question, answer, assertions, **_kwargs):
+        seen.update({a["id"]: bool(a.get("question_sourced")) for a in assertions})
+        spans = {
+            "threshold": (
+                "more than 5 consecutive minutes",
+                "for more than 5 consecutive minutes.",
+            ),
+            "duration": ("+9°C for four minutes", "+9°C for four minutes"),
+        }
+        return {
+            "judgement": {
+                "assertions": [
+                    {
+                        "id": a["id"],
+                        "state": "supported",
+                        "answer_span": spans[a["id"]][0],
+                        "evidence_span": spans[a["id"]][1],
+                        "explanation": "Literal support.",
+                    }
+                    for a in assertions
+                ]
+            }
+        }
+
+    report = asyncio.run(
+        run_eval(
+            eval_path=_om_044_pack(tmp_path),
+            orchestrator=_Om044Orchestrator(),
+            semantic_judge=judge,
+        )
+    )
+    row = report["rows"][0]
+    assert seen == {"threshold": False, "duration": True}
+    assert row["eval_status"] == "pass", row["expected_eval"]
+    assert row["synthesis_reason"] == "verified"
+
+
+def test_rejected_judge_spans_are_recorded_without_changing_the_verdict(tmp_path):
+    async def judge(**_kwargs):
+        error = JudgeInfrastructureError("offline judge retry budget exhausted")
+        error.last_reason = "invalid literal answer span"
+        error.rejected_spans = [
+            {
+                "assertion_id": "allowance",
+                "state": "supported",
+                "answer_span": "65 euros",
+                "evidence_span": "65 EUR",
+                "reason": "invalid literal answer span",
+            }
+        ]
+        raise error
+
+    report = asyncio.run(
+        run_eval(
+            eval_path=_meal_allowance_pack(tmp_path),
+            orchestrator=_MealAllowanceOrchestrator(),
+            semantic_judge=judge,
+        )
+    )
+    row = report["rows"][0]
+    assert row["eval_status"] == "manual_review"
+    assert row["expected_eval"]["judge_rejected_spans"][0]["answer_span"] == "65 euros"
