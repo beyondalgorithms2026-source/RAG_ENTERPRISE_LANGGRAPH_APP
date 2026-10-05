@@ -155,3 +155,11 @@ def test_quality_and_security_scripts_use_shared_cards_and_short_proof(tmp_path)
     assert script.count("${qualityCard({") == 3  # two Northwind cards, one Northline card
     assert "Proof: automated test" in script and "recorded CI run" in script
     assert "finding.verification_reference || finding.linked_test ||" not in script
+
+
+def test_document_preview_renders_every_section_for_its_outline(tmp_path):
+    script = _client(tmp_path).get("/app/static/app.js").text
+    assert "function documentSections(text)" in script
+    assert "function bindOutline(outline, select)" in script
+    assert 'class="reader-section" id="reader-section-${index}"' in script
+    assert "headings.slice(0, 12)" not in script and "paragraphs.slice(0, 8)" not in script
