@@ -7,9 +7,9 @@
       "sha256": "4d3c9705137d30a91df213e12e54d950c71a6175fd7f04f5a3e0c5303df8a8a7"
     },
     "app_synthesis": {
-      "version": "1.1.0",
-      "file": "synthesis-v1.1.0.txt",
-      "sha256": "6c7a9a85c3306c4d8e1c859511c106986b952bfc72a8d87bf8cded609018c6c8"
+      "version": "1.1.1",
+      "file": "synthesis-v1.1.1.txt",
+      "sha256": "222309edf33ee65c1f5eef9c72c06ac615bed89a376e69eae2c6261de85c3e41"
     }
   }
 }

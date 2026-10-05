@@ -7,7 +7,7 @@ import re
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
-GRADER_VERSION = "2.0.2"
+GRADER_VERSION = "2.0.3"
 TYPES = {"concept", "identifier", "numeric", "polarity", "classification", "citation"}
 
 
@@ -316,11 +316,25 @@ def evaluate(
 
 
 def _literal_span(text: str, quote: Any) -> str | None:
-    """Resolve copied evidence with whitespace variation only, never paraphrases."""
+    """Resolve copied evidence with formatting variation only, never paraphrases.
+
+    Allowed: whitespace differences, spacing around table pipes, and the case of the
+    quote's first letter (a clause quoted from mid-sentence, "the" vs "The"). Every word
+    and every other character must match.
+    """
     if not isinstance(quote, str) or not quote.strip():
         return None
-    words = re.split(r"\s+", quote.strip())
-    match = re.search(r"\s+".join(re.escape(word) for word in words), text)
+    parts = [part for part in re.split(r"(\|)|\s+", quote.strip()) if part]
+    pattern = ""
+    for index, part in enumerate(parts):
+        if index:
+            pattern += r"\s*" if "|" in (part, parts[index - 1]) else r"\s+"
+        piece = re.escape(part)
+        if index == 0 and part[:1].isalpha():
+            first = part[0]
+            piece = f"[{first.lower()}{first.upper()}]" + re.escape(part[1:])
+        pattern += piece
+    match = re.search(pattern, text)
     return match.group() if match else None
 
 

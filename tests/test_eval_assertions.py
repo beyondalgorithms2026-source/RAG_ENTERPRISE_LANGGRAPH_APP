@@ -155,13 +155,28 @@ def test_judge_cannot_override_hard_failure():
     assert result["hard_failure"]
 
 
-def test_literal_span_accepts_only_whitespace_variation():
+def test_literal_span_accepts_only_formatting_variation():
     assert grading._literal_span("Written\nQuality  release", "Written Quality release") == (
         "Written\nQuality  release"
     )
     assert grading._literal_span("Written Quality release", "Written approval") is None
     assert grading._literal_span("No release", "release is allowed") is None
-    assert grading._literal_span("Five minutes", "five minutes") is None
+    # Owner decision (5 Oct): a clause quoted from mid-sentence may change the case of its
+    # first letter only, and spacing around table pipes is formatting.
+    assert grading._literal_span("Five minutes", "five minutes") == "Five minutes"
+    assert (
+        grading._literal_span("so the Desk must assign", "The Desk must assign")
+        == "the Desk must assign"
+    )
+    assert grading._literal_span("Five minutes", "five Minutes") is None
+    assert grading._literal_span("Five minutes", "FIVE minutes") is None
+    assert grading._literal_span(
+        "| Approval authority | Band 6+ |", "Approval authority|Band 6+"
+    ) == ("Approval authority | Band 6+")
+    assert (
+        grading._literal_span("| Approval authority | Band 6+ |", "Approval authority|Band 7+")
+        is None
+    )
 
 
 def test_frozen_answers_reproduce_original_canonical_answer_match():
