@@ -159,5 +159,5 @@ a.rail-drawer-toggle { text-decoration:none; }a.rail-drawer-toggle:hover,a.rail-
 @media (min-width:1101px) { .document-browser { position:sticky; top:var(--bar-h); align-self:start; max-height:calc(100vh - var(--bar-h)); overflow:auto; } }
 .reader-outline { top:calc(var(--bar-h) + 12px); max-height:calc(100vh - var(--bar-h) - 24px); }
 .reader-section { scroll-margin-top:calc(var(--bar-h) + 16px); }
-@media (max-width:1280px) { .reader-outline { position:sticky; z-index:5; top:var(--bar-h); margin:0 -4px; padding:8px 4px; background:#fafaf9; }.reader-section { scroll-margin-top:calc(var(--bar-h) + 70px); } }
+@media (max-width:1280px) { .reader-outline { position:sticky; z-index:5; top:var(--bar-h); margin:0 -4px; padding:8px 4px; background:#fafaf9; }.reader-section { scroll-margin-top:calc(var(--bar-h) + 86px); } }
 @media (max-width:768px) { .rail-visitor { display:none; } }
