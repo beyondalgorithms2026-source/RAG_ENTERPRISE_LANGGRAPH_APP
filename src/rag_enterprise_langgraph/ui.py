@@ -151,10 +151,24 @@ COMPANIES: dict[str, dict] = {
         ),
     },
 }
+SECURITY_EVIDENCE_NOTE = (
+    "These checks test the governance layer, so they apply to both companies. The two live"
+    " access-control checks (RT-06, RT-16) were recorded on Northwind's restricted salary"
+    " document; Northline's equivalents are the WQ-12 access denial and the WQ-19"
+    " poison-document test in its {scorecard}. Running checks is disabled in this public demo."
+)
 NORTHLINE_SCORECARD_URL = (
     "https://github.com/beyondalgorithms2026-source/RAG_ENTERPRISE_STARTER/blob/main/"
     "docs/evaluation/western/scorecard.md"
 )
+
+
+def _security_evidence_banner() -> str:
+    link = (
+        f'<a href="{escape(NORTHLINE_SCORECARD_URL, quote=True)}" target="_blank"'
+        ' rel="noopener noreferrer">scorecard</a>'
+    )
+    return _recorded_evidence_banner(SECURITY_EVIDENCE_NOTE.format(scorecard=link))
 
 
 def _default_company(settings: Settings) -> str:
@@ -209,6 +223,16 @@ def _starter_cards(settings: Settings) -> str:
         f"<strong>{escape(title)}</strong><small>{escape(hint)}</small></button>"
         for key, company in COMPANIES.items()
         for chip, tag, question, title, hint, approval, recovery in company["starters"]
+    )
+
+
+def _recorded_evidence_banner(
+    detail: str, *, corpus: str | None = None, hidden: bool = False
+) -> str:
+    scope = f' data-corpus="{escape(corpus, quote=True)}"' if corpus else ""
+    return (
+        f'<div class="inspect-banner evidence-banner"{scope}{" hidden" if hidden else ""}>'
+        f"{ICONS['eye']}<span><strong>Recorded evidence.</strong> {detail}</span></div>"
     )
 
 
@@ -287,15 +311,15 @@ def build_ui_router(settings: Settings | None = None) -> APIRouter:
             page="approvals",
             active="/app/approvals",
             body=f"""
-<header class="page-header"><p class="eyebrow">Human oversight</p><h1>Approvals queue</h1><p class="page-summary">High-risk answers remain withheld until a named reviewer decides.</p></header><section class="page-content"><div class="inspect-banner">{ICONS["eye"]}<span><strong>Inspect-only grant.</strong> Approve and reject are disabled for the public-demo grant.</span></div><div class="table-card"><div id="approval-list"><div class="spinner">Loading approvals…</div></div></div><section class="approval-stats"><div><strong id="pending-count">—</strong><span>awaiting decision</span></div><div><strong>—</strong><span>median time to decision</span></div><div><strong>0</strong><span>unapproved writes</span></div></section><div id="decision-list" class="visually-secondary"></div></section>""",
+<header class="page-header"><p class="eyebrow">Human oversight</p><h1>Approvals queue</h1><p class="page-summary">High-risk answers remain withheld until a named reviewer decides. The queue shows the selected company's requests.</p>{_company_switch(settings=runtime_settings, label="Company")}</header><section class="page-content"><div class="inspect-banner">{ICONS["eye"]}<span><strong>Inspect-only grant.</strong> Approve and reject are disabled for the public-demo grant.</span></div><div class="table-card"><div id="approval-list"><div class="spinner">Loading approvals…</div></div></div><section class="approval-stats"><div><strong id="pending-count">—</strong><span>awaiting decision</span></div><div><strong>—</strong><span>median time to decision</span></div><div><strong>0</strong><span>unapproved writes</span></div></section><div id="decision-list" class="visually-secondary"></div></section>""",
         )
 
     @router.get("/app/audit", response_class=HTMLResponse)
     async def audit_page():
         banner = (
             _demo_only_banner(
-                "Recorded runs (Northwind, the original demo company) plus runs started by any"
-                " visitor to this shared demo, all on synthetic data."
+                "Recorded runs for both companies plus runs started by any visitor to this"
+                " shared demo, all on synthetic data."
             )
             if runtime_settings.public_demo
             else ""
@@ -306,7 +330,7 @@ def build_ui_router(settings: Settings | None = None) -> APIRouter:
             page="audit",
             active="/app/audit",
             body=f"""
-<header class="page-header"><p class="eyebrow">Tamper-evident record</p><h1>Audit trail</h1><p class="page-summary">Every orchestrated run has a sanitized, hash-chained event timeline.</p>{banner}</header><section class="page-content audit-page"><div id="audit-runs" class="audit-run-list"><div class="spinner">Loading audited runs…</div></div><section id="audit-detail" class="audit-detail"><div class="empty">Select a run to inspect its event chain.</div></section></section>""",
+<header class="page-header"><p class="eyebrow">Tamper-evident record</p><h1>Audit trail</h1><p class="page-summary">Every orchestrated run has a sanitized, hash-chained event timeline. The list shows the selected company's runs.</p>{banner}{_company_switch(settings=runtime_settings, label="Company")}</header><section class="page-content audit-page"><div id="audit-runs" class="audit-run-list"><div class="spinner">Loading audited runs…</div></div><section id="audit-detail" class="audit-detail"><div class="empty">Select a run to inspect its event chain.</div></section></section>""",
         )
 
     @router.get("/app/quality", response_class=HTMLResponse)
@@ -317,19 +341,20 @@ def build_ui_router(settings: Settings | None = None) -> APIRouter:
             page="quality",
             active="/app/quality",
             body=f"""
-<header class="page-header"><p class="eyebrow">Evidence quality</p><h1>Quality gates</h1><p class="page-summary">Two evaluation suites distinguish release-blocking evidence checks from calibration work. Both run on the Northwind corpus; the Northline demo scorecard is <a href="{NORTHLINE_SCORECARD_URL}" target="_blank" rel="noopener noreferrer">published separately</a>.</p></header><section class="page-content"><div id="quality-content"><div class="spinner">Loading quality results…</div></div><div id="eval-runs" class="visually-secondary"></div></section>""",
+<header class="page-header"><p class="eyebrow">Evidence quality</p><h1>Quality gates</h1><p class="page-summary">Recorded evaluation evidence for each company: what was measured, on which questions, and what passed. Pick a company to see its evidence; the full Northline scorecard is <a href="{NORTHLINE_SCORECARD_URL}" target="_blank" rel="noopener noreferrer">published in the data-layer repository</a>.</p>{_recorded_evidence_banner("These suites ran on the synthetic Northwind corpus (the original demo company). Baselines change only through a reviewed release.", corpus="northwind-public-demo", hidden=_default_company(runtime_settings) != "northwind-public-demo")}{_recorded_evidence_banner("A single run of the 20-question Northline demo set on the hosted stack. Demo evidence on synthetic data, not a benchmark.", corpus="western_northline", hidden=_default_company(runtime_settings) != "western_northline")}{_company_switch(settings=runtime_settings, label="Company")}</header><section class="page-content"><div id="quality-content"><div class="spinner">Loading quality results…</div></div><div id="eval-runs" class="visually-secondary"></div></section>""",
         )
 
     @router.get("/app/security", response_class=HTMLResponse)
     async def security_page():
         run_button_state = "disabled" if runtime_settings.public_demo else ""
+        security_banner = _security_evidence_banner()
         return _shell(
             settings=runtime_settings,
             title="Security",
             page="security",
             active="/app/security",
             body=f"""
-<header class="page-header security-header"><div><p class="eyebrow">Adversarial evaluation</p><h1>Red-team check map</h1><p class="page-summary">Known attack patterns are checked against the same governance controls that protect live runs.</p></div><button id="red-team-run" class="secondary-button" {run_button_state}>Run checks</button></header><section class="page-content"><div id="security-summary"></div><div id="security-content"><div class="spinner">Loading check map…</div></div></section>""",
+<header class="page-header security-header"><div><p class="eyebrow">Adversarial evaluation</p><h1>Red-team check map</h1><p class="page-summary">Known attack patterns are checked against the same governance controls that protect live runs.</p>{security_banner}</div><button id="red-team-run" class="secondary-button" {run_button_state}>Run checks</button></header><section class="page-content"><div id="security-summary"></div><div id="security-content"><div class="spinner">Loading check map…</div></div></section>""",
         )
 
     @router.get("/app/compare", response_class=HTMLResponse)

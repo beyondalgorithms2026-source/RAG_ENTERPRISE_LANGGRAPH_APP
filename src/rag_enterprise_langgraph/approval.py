@@ -11,6 +11,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from rag_enterprise_langgraph.audit import AuditLog, scrub_text
+from rag_enterprise_langgraph.corpus_tags import corpus_of
 
 DEFAULT_APPROVALS_PATH = "runs/approvals.jsonl"
 
@@ -144,6 +145,7 @@ PUBLIC_FIELDS = (
     "decided_at",
     "reviewer",
     "comment",
+    "corpus",
 )
 
 
@@ -155,6 +157,7 @@ def released_view(record: dict[str, Any]) -> dict[str, Any]:
     records from the store instead.
     """
     view = {key: record.get(key) for key in PUBLIC_FIELDS}
+    view["corpus"] = corpus_of(record.get("corpus"))
     if record.get("status") == APPROVED:
         view["answer_preview"] = record.get("answer_preview")
         view["released_answer"] = record.get("full_answer")
@@ -199,6 +202,7 @@ class ApprovalStore:
         evidence_status: str | None = None,
         grounding_status: str | None = None,
         risk_reasons: list[str] | None = None,
+        corpus: str | None = None,
     ) -> dict[str, Any]:
         record = {
             "approval_id": uuid.uuid4().hex,
@@ -214,6 +218,7 @@ class ApprovalStore:
             "decided_at": None,
             "reviewer": None,
             "comment": None,
+            "corpus": corpus,
         }
         self._append(record)
         return record

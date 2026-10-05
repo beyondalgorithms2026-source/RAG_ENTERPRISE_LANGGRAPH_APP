@@ -102,6 +102,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
         return payload
 
+    @app.get("/evidence/northline")
+    async def evidence_northline():
+        """Serve the committed Northline demo scorecard summary without executing an eval."""
+        try:
+            payload = json.loads(
+                Path(runtime_settings.northline_scorecard_path).read_text(encoding="utf-8")
+            )
+        except (OSError, ValueError):
+            payload = None
+        if not isinstance(payload, dict):
+            return JSONResponse(
+                status_code=503,
+                content={"detail": "Committed Northline scorecard is unavailable."},
+            )
+        return payload
+
     @app.post("/ask")
     async def ask(request: AskRequest):
         result = await agent.run(request.question)

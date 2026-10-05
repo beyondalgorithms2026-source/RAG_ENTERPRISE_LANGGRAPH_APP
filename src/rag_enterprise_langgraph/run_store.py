@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException
 
 from rag_enterprise_langgraph.approval import APPROVED, PENDING_APPROVAL, REJECTED
 from rag_enterprise_langgraph.audit import sanitize_for_audit
+from rag_enterprise_langgraph.corpus_tags import corpus_of
 
 DEFAULT_RUN_RESULTS_DIR = "runs/run-results"
 
@@ -54,7 +55,13 @@ class RunStore:
     def __init__(self, directory: str | Path = DEFAULT_RUN_RESULTS_DIR):
         self.directory = Path(directory)
 
-    def save(self, result: dict[str, Any], *, real_answer: str | None = None) -> Path | None:
+    def save(
+        self,
+        result: dict[str, Any],
+        *,
+        real_answer: str | None = None,
+        corpus: str | None = None,
+    ) -> Path | None:
         run_id = result.get("run_id")
         if not run_id:
             return None
@@ -62,6 +69,7 @@ class RunStore:
         if real_answer is not None:
             record["answer"] = real_answer
         record["created_at"] = datetime.now(timezone.utc).isoformat()
+        record["corpus"] = corpus
         record = sanitize_for_audit(record)
         self.directory.mkdir(parents=True, exist_ok=True)
         path = self.directory / f"{run_id}.json"
@@ -97,6 +105,7 @@ class RunStore:
                     "evidence_count": record.get("evidence_count"),
                     "recovery_attempted": record.get("recovery_attempted"),
                     "created_at": record.get("created_at"),
+                    "corpus": corpus_of(record.get("corpus")),
                 }
             )
         records.sort(key=lambda item: str(item.get("created_at") or ""), reverse=True)

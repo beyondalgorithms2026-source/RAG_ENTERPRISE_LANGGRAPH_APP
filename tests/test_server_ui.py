@@ -460,7 +460,10 @@ def test_committed_demo_evidence_is_consistent():
     assert chain["valid"] is True
     assert chain["checked"] > 0
     runs = audit.runs()
-    assert len(runs) == 7
+    # 7 recorded Northwind runs plus 3 recorded Northline runs (grounded, refusal, denied).
+    corpora = [run["corpus"] for run in runs]
+    assert corpora.count("northwind-public-demo") == 7
+    assert corpora.count("western_northline") == 3
 
     recorded = json.loads(
         (REPO_ROOT / "config" / "demo" / "before-after-recorded.json").read_text(encoding="utf-8")

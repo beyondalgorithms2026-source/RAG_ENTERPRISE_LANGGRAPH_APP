@@ -10,6 +10,7 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
+from rag_enterprise_langgraph.corpus_tags import LEGACY_CORPUS, corpus_of
 from rag_enterprise_langgraph.journal import sanitize_for_journal
 
 DEFAULT_AUDIT_LOG_PATH = "runs/audit-log.jsonl"
@@ -153,6 +154,7 @@ class AuditLog:
                     "final_status": None,
                     "approval_status": None,
                     "event_types": [],
+                    "corpus": LEGACY_CORPUS,
                 }
                 order.append(event_run_id)
             summary = grouped[event_run_id]
@@ -164,6 +166,8 @@ class AuditLog:
             payload = event.get("payload") if isinstance(event.get("payload"), dict) else {}
             if event_type == "run_started" and payload.get("question_preview"):
                 summary["question_preview"] = payload.get("question_preview")
+            if event_type == "run_started":
+                summary["corpus"] = corpus_of(payload.get("corpus"))
             if event_type == "run_completed":
                 summary["final_status"] = payload.get("grounding_status")
                 summary["approval_status"] = payload.get("approval_status")
