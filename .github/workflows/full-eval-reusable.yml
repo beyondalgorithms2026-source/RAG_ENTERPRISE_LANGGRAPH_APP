@@ -54,12 +54,12 @@ jobs:
       APP_ENV: local
       RAG_REQUIRE_DB: "1"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: beyondalgorithms2026-source/RAG_ENTERPRISE_STARTER
           ref: ${{ inputs.candidate == 'starter' && inputs.candidate_ref || inputs.starter_ref }}
           path: starter
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -143,25 +143,25 @@ jobs:
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         if: steps.secret.outputs.skip != 'true'
         with:
           repository: beyondalgorithms2026-source/RAG_ENTERPRISE_LANGGRAPH_APP
           ref: ${{ inputs.candidate == 'app' && inputs.candidate_ref || 'main' }}
           path: app
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         if: steps.secret.outputs.skip != 'true'
         with:
           repository: beyondalgorithms2026-source/RAG_Langgraph_MCP_server
           ref: ${{ inputs.candidate == 'mcp' && inputs.candidate_ref || 'main' }}
           path: mcp
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         if: steps.secret.outputs.skip != 'true'
         with:
           repository: beyondalgorithms2026-source/RAG_ENTERPRISE_STARTER
           ref: ${{ inputs.candidate == 'starter' && inputs.candidate_ref || inputs.starter_ref }}
           path: starter
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         if: steps.secret.outputs.skip != 'true'
         with:
           python-version: "3.12"
