@@ -20,6 +20,8 @@ _REFUSAL_MARKERS = (
 
 _STOP_ENTITIES = {
     "Yes",  # yes/no answers start with it; it is not a named entity
+    "SOURCE",  # the prompt's own labels; a model may echo them ("according to the SOURCE")
+    "QUESTION",
     "The",
     "This",
     "That",
@@ -157,6 +159,8 @@ async def synthesize_and_verify(
     content = getattr(response, "content", response)
     answer = content if isinstance(content, str) else str(content)
     answer = re.sub(r"\s+", " ", answer).strip().strip('"')
+    # Readers never see the prompt's labels: "according to the SOURCE" -> "according to the source".
+    answer = re.sub(r"\b(SOURCE|QUESTION)\b", lambda m: m.group(1).lower(), answer)
 
     verdict = verify_against_evidence(answer, evidence, question=question)
     if not verdict["verified"]:
