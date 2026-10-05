@@ -78,9 +78,19 @@ def _external_prompt_metadata(repo: Path) -> dict[str, dict[str, str]]:
     registry = json.loads((root / "registry.json").read_text(encoding="utf-8"))
     output: dict[str, dict[str, str]] = {}
     for prompt_id, entry in registry.get("prompts", {}).items():
-        if prompt_id == "starter_answer" and os.environ.get(
-            "ANSWER_PROMPT_CANDIDATE", ""
-        ).lower() in {"1", "true"}:
+        pinned = os.environ.get("ANSWER_PROMPT_VERSION", "").strip()
+        if prompt_id == "starter_answer" and pinned:
+            # Mirrors STARTER: an explicit version pin wins and must exist in the history.
+            entry = registry.get("history", {}).get(prompt_id, {}).get(pinned)
+            if not isinstance(entry, dict):
+                raise EvalSetError(
+                    f"STARTER prompt version {pinned} is not in the registry history"
+                )
+            entry = {"version": pinned, **entry}
+        # STARTER defaults ANSWER_PROMPT_CANDIDATE to true, so only an explicit false means 1.1.x.
+        elif prompt_id == "starter_answer" and os.environ.get(
+            "ANSWER_PROMPT_CANDIDATE", "true"
+        ).strip().lower() not in {"0", "false", "no", "off"}:
             entry = registry.get("candidates", {}).get(prompt_id)
             if not isinstance(entry, dict):
                 raise EvalSetError("STARTER candidate prompt metadata is missing")
