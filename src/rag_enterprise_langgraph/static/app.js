@@ -351,21 +351,52 @@ function initAudit() {
   loadAuditRuns();
 }
 
+// Every evaluation card uses one shape so results compare by trust level, not by format.
+const TRUST_STAGES = ["Demo run", "Candidate", "Approved baseline"];
+function trustLadder(reached) {
+  return `<p class="trust-ladder"><span class="muted">Trust ladder</span>${TRUST_STAGES.map((stage) => `<span class="trust-step${reached.includes(stage) ? " reached" : ""}">${esc(stage)}</span>`).join('<span aria-hidden="true">→</span>')}</p>`;
+}
+function qualityCard({ stage, tone, title, passed, total, statement, rows, misses, missesNote, footer }) {
+  const rowHtml = rows.map(([label, value]) => `<li><span>${esc(label)}</span><strong>${esc(value)}</strong></li>`).join("");
+  const missHtml = misses.length
+    ? misses.map((miss) => `<li><span>${esc(miss.id)}</span><strong>${esc(miss.outcome)}</strong></li>`).join("")
+    : "<li><span>None</span><strong>—</strong></li>";
+  return `<article class="quality-card ${tone}"><span class="quality-tag">${esc(stage)}</span><h2>${esc(title)}</h2><div class="quality-score">${esc(passed)}/${esc(total)}</div><p>${esc(statement)}</p><ul class="quality-list">${rowHtml}</ul><h3 class="quality-misses-title">Misses${missesNote ? ` · ${esc(missesNote)}` : ""}</h3><ul class="quality-list">${missHtml}</ul>${footer ? `<div class="quality-note">${footer}</div>` : ""}</article>`;
+}
+
 function renderQuality(status) {
   const approved = status.approved_baseline || {};
   const candidate = status.quality || {};
-  const limitations = status.limitations || {};
-  const v1Result = approved.result || `${approved.passed || approved.case_count || 25}/${approved.case_count || 25}`;
-  return `<div class="quality-grid"><article class="quality-card core"><span class="quality-tag">APPROVED BASELINE</span><h2>v1 core suite</h2><div class="quality-score">${esc(v1Result)}</div><p>${esc(approved.statement || "The approved 25-case baseline remains unchanged.")}</p><ul class="quality-list"><li><span>Baseline ID</span><strong>${esc(approved.id || "northwind-openai-v1")}</strong></li><li><span>Status</span><strong>approved</strong></li></ul></article><article class="quality-card calibration"><span class="quality-tag">CANDIDATE · NOT APPROVED</span><h2>v2 expanded snapshot</h2><div class="quality-score">${esc(candidate.passed || 0)}/${esc(candidate.total || 90)}</div><p>${esc(status.approval_statement || "Candidate evidence only; no baseline promotion.")}</p><ul class="quality-list"><li><span>Failed</span><strong>${esc(candidate.failed || 0)}</strong></li><li><span>Manual review</span><strong>${esc(candidate.manual_review || 0)}</strong></li><li><span>Required refusals</span><strong>${esc(candidate.refusal_passed || 0)}/${esc(candidate.refusal_total || 0)}</strong></li><li><span>Safe boundaries</span><strong>${esc(candidate.safe_boundary_passed || 0)}/${esc(candidate.safe_boundary_total || 0)}</strong></li></ul><div class="quality-note">Failed: ${esc((limitations.failed_case_ids || []).join(", ") || "none")}<br>Manual review: ${esc((limitations.manual_review_case_ids || []).join(", ") || "none")}</div></article></div>`;
+  const misses = (status.miss_details || []).map((miss) => ({ id: miss.case_id, outcome: miss.outcome }));
+  return `${trustLadder(["Candidate", "Approved baseline"])}<div class="quality-grid">${qualityCard({
+    stage: "Approved baseline", tone: "core", title: "Northwind v1 core suite",
+    passed: approved.passed ?? 25, total: approved.case_count ?? 25,
+    statement: approved.statement || "The approved 25-case baseline remains unchanged.",
+    rows: [["Refusals correct", `${approved.refusal_passed ?? 5}/${approved.refusal_total ?? 5}`], ["Baseline ID", approved.id || "northwind-openai-v1"], ["Changes only by", "reviewed release"]],
+    misses: [],
+  })}${qualityCard({
+    stage: "Candidate · not approved", tone: "calibration", title: "Northwind v2 expanded suite",
+    passed: candidate.passed ?? 0, total: candidate.total ?? 90,
+    statement: status.approval_statement || "Candidate evidence only; no baseline promotion.",
+    rows: [["Refusals correct", `${candidate.refusal_passed ?? 0}/${candidate.refusal_total ?? 0}`], ["Safe boundaries", `${candidate.safe_boundary_passed ?? 0}/${candidate.safe_boundary_total ?? 0}`], ["Failed · manual review", `${candidate.failed ?? 0} · ${candidate.manual_review ?? 0}`]],
+    misses, missesNote: "by outcome",
+  })}</div>`;
 }
 
 function renderNorthlineQuality(card) {
   const splits = card.by_split || {};
-  const rows = ["exact_fact", "open", "refuse", "adversarial"].map((name) => `<li><span>${esc(name)}</span><strong>${esc(splits[name]?.passed ?? 0)}/${esc(splits[name]?.total ?? 0)}</strong></li>`).join("");
-  const misses = (card.misses || []).map((miss) => `<li><span>${esc(miss.qid)} · ${esc(miss.split)}</span><strong>${esc(miss.note || "miss")}</strong></li>`).join("");
   const links = card.links || {};
-  const gate = card.gate_passed ? "met" : "not met";
-  return `<div class="quality-grid"><article class="quality-card core"><span class="quality-tag">DEMO SCORECARD · SINGLE RUN</span><h2>${esc(card.title || "Northline demo scorecard")}</h2><div class="quality-score">${esc(Math.round((card.exact_fact_hit_rate || 0) * 100))}%</div><p>exact_fact hit-rate; gate ${esc(card.gate)} ${esc(gate)}. ${esc(card.statement || "")}</p><ul class="quality-list">${rows}</ul><div class="quality-note">Model ${esc(card.model || "n/a")}, ${esc(card.max_recovery_steps || "n/a")} recovery step. A refusal on a refuse item counts as success.</div></article><article class="quality-card calibration"><span class="quality-tag">MISSES · NONE INVENTED</span><h2>Declined or partial answers</h2><ul class="quality-list">${misses || "<li><span>None</span></li>"}</ul><div class="quality-note"><a href="${esc(links.scorecard || "#")}" target="_blank" rel="noopener noreferrer">Full scorecard</a> · <a href="${esc(links.traces || "#")}" target="_blank" rel="noopener noreferrer">Loom traces</a> · <a href="${esc(links.questions || "#")}" target="_blank" rel="noopener noreferrer">Questions</a></div></article></div>`;
+  const split = (name) => `${splits[name]?.passed ?? 0}/${splits[name]?.total ?? 0}`;
+  const footer = `Next stage: repeat runs and owner approval before this becomes a baseline. <a href="${esc(links.scorecard || "#")}" target="_blank" rel="noopener noreferrer">Full scorecard</a> · <a href="${esc(links.traces || "#")}" target="_blank" rel="noopener noreferrer">Traces</a> · <a href="${esc(links.questions || "#")}" target="_blank" rel="noopener noreferrer">Questions</a>`;
+  return `${trustLadder(["Demo run"])}<div class="quality-grid">${qualityCard({
+    stage: "Demo run · single run", tone: "calibration", title: card.title || "Northline demo scorecard",
+    passed: card.passed ?? 0, total: card.total ?? 0,
+    statement: card.statement || "",
+    rows: [["Refusals correct", `${card.refusal_passed ?? 0}/${card.refusal_total ?? 0}`], ["Exact facts", `${split("exact_fact")} · gate ${card.gate} ${card.gate_passed ? "met" : "not met"}`], ["Open questions", split("open")], ["Adversarial", split("adversarial")], ["Model", `${card.model || "n/a"} · ${card.max_recovery_steps || "n/a"} recovery step`]],
+    misses: (card.misses || []).map((miss) => ({ id: `${miss.qid} · ${miss.split}`, outcome: miss.outcome || miss.note })),
+    missesNote: card.invented_answers === 0 ? "none invented" : "by outcome",
+    footer,
+  })}</div>`;
 }
 
 async function loadQuality() {
@@ -389,6 +420,20 @@ function evidenceMode(finding) {
   return finding.evidence_mode || finding.check_type || "deterministic defense";
 }
 
+// A short, readable proof link instead of a raw test id; the full id stays in the release JSON.
+const APP_REPO_URL = "https://github.com/beyondalgorithms2026-source/RAG_ENTERPRISE_LANGGRAPH_APP";
+function proofLine(finding) {
+  const reference = String(finding.verification_reference || "");
+  if (/^https:\/\/github\.com\//.test(reference)) {
+    return `<span>Proof: live backend check ·</span> <a href="${esc(reference)}" target="_blank" rel="noopener noreferrer">recorded CI run</a>`;
+  }
+  const test = String(finding.linked_test || reference);
+  const [file, name = ""] = test.split("::");
+  const label = (name.match(/\[([^\]]+)\]/)?.[1] || name.replace(/^test_/, "")).replaceAll("_", " ");
+  if (!file.startsWith("tests/") || !label) return "<span>Proof: committed release artifact</span>";
+  return `<span>Proof: automated test · ${esc(label)} ·</span> <a href="${esc(`${APP_REPO_URL}/blob/main/${file}`)}" target="_blank" rel="noopener noreferrer">view test</a>`;
+}
+
 function groupFindings(findings) {
   const categories = new Map();
   findings.forEach((finding) => {
@@ -407,7 +452,7 @@ async function loadRedTeam() {
     if (!report) throw new Error("Committed red-team release artifact is unavailable");
     const findings = report.findings || [];
     summary.innerHTML = `<div class="security-summary-bar"><span>${pill(report.overall_status)}</span><strong>${esc(findings.length)} scenarios</strong><span>${esc(report.defended || 0)} deterministic defenses · ${esc(report.live_verified || 2)} live controls</span></div>`;
-    const detail = (finding) => `<aside class="security-detail"><span class="chip chip-defended">${esc(evidenceMode(finding))}</span><h2>${esc(finding.finding_id || "RT")}</h2><h3>${esc(finding.scenario || "Governance check")}</h3><pre class="attack-block">${esc(finding.actual_result || "The attack path was evaluated without exposing protected corpus content.")}</pre><div class="acl-card"><strong>Verified defense</strong><p>${esc(finding.expected_defense || "The governed route enforces access and evidence controls before release.")}</p></div><p class="small muted">${pill(finding.status)} · ${esc(finding.verification_reference || finding.linked_test || "committed release artifact")}</p></aside>`;
+    const detail = (finding) => `<aside class="security-detail"><span class="chip chip-defended">${esc(evidenceMode(finding))}</span><h2>${esc(finding.finding_id || "RT")}</h2><h3>${esc(finding.scenario || "Governance check")}</h3><pre class="attack-block">${esc(finding.actual_result || "The attack path was evaluated without exposing protected corpus content.")}</pre><div class="acl-card"><strong>Verified defense</strong><p>${esc(finding.expected_defense || "The governed route enforces access and evidence controls before release.")}</p></div><p class="proof-line">${pill(finding.status)} ${proofLine(finding)}</p></aside>`;
     const render = (selected) => {
       target.innerHTML = `<div class="security-layout"><div class="security-groups">${groupFindings(findings).map((group) => `<section class="security-group"><h2>${esc(group.label)}</h2><div class="check-grid">${group.items.map((finding) => `<button class="check-tile ${finding === selected ? "active" : ""}" data-finding="${esc(finding.finding_id)}"><code>${esc(finding.finding_id)}</code><span>${esc(finding.scenario)}</span><small>${esc(evidenceMode(finding))}</small></button>`).join("")}</div></section>`).join("")}</div>${detail(selected)}</div>`;
       target.querySelectorAll("[data-finding]").forEach((button) => button.addEventListener("click", () => render(findings.find((finding) => finding.finding_id === button.dataset.finding))));

@@ -119,3 +119,39 @@ def test_evidence_pages_offer_the_company_switch_and_banners(tmp_path):
     script = client.get("/app/static/app.js").text
     assert ".filter(inSelectedCompany)" in script
     assert 'fetchJSON("/evidence/northline"' in script
+
+
+def test_every_page_carries_the_brand_and_favicon(tmp_path):
+    client = _client(tmp_path)
+    for path in ("/app", "/app/documents", "/app/audit", "/app/quality", "/app/security"):
+        page = client.get(path).text
+        assert 'class="topbar-brand"' in page, path
+        assert page.count('class="brand-mark"') == 2, path  # sidebar and mobile top bar
+        assert '<link rel="icon" href="data:image/svg+xml,' in page, path
+        assert "Cited answers or an honest refusal" in page, path
+
+
+def test_northwind_misses_are_typed_from_the_committed_report(tmp_path):
+    settings = Settings(mcp_server_repo=tmp_path, public_demo=True)
+    status = TestClient(create_app(settings)).get("/evidence/status").json()
+    outcomes = {item["case_id"]: item["outcome"] for item in status["miss_details"]}
+    assert set(outcomes) == set(status["limitations"]["failed_case_ids"]) | set(
+        status["limitations"]["manual_review_case_ids"]
+    )
+    assert outcomes["OM-041"] == "held for human review"
+    assert "none invented" not in json.dumps(status)
+
+
+def test_northline_card_reports_overall_and_typed_misses():
+    card = json.loads(Path("docs/evaluation/northline-scorecard.json").read_text(encoding="utf-8"))
+    assert (card["passed"], card["total"]) == (15, 20)
+    assert (card["refusal_passed"], card["refusal_total"]) == (5, 5)
+    assert {miss["qid"]: miss["outcome"] for miss in card["misses"]}["WQ-20"] == "partial answer"
+
+
+def test_quality_and_security_scripts_use_shared_cards_and_short_proof(tmp_path):
+    script = _client(tmp_path).get("/app/static/app.js").text
+    assert 'const TRUST_STAGES = ["Demo run", "Candidate", "Approved baseline"]' in script
+    assert script.count("${qualityCard({") == 3  # two Northwind cards, one Northline card
+    assert "Proof: automated test" in script and "recorded CI run" in script
+    assert "finding.verification_reference || finding.linked_test ||" not in script

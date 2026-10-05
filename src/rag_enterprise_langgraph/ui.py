@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from html import escape
 from pathlib import Path
+from urllib.parse import quote
 
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
@@ -26,6 +27,20 @@ ICONS = {
     "arrow": _icon("arrow_forward"),
     "eye": _icon("visibility"),
 }
+
+# Brand mark: a document with a check inside a shield ("verified source"); inline, no assets.
+BRAND_NAME = "Governed RAG"
+BRAND_TAGLINE = "Cited answers or an honest refusal"
+BRAND_MARK = (
+    '<svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false">'
+    '<path d="M12 2.5 4.5 5.4v5.8c0 4.6 3.1 8.8 7.5 10.3 4.4-1.5 7.5-5.7 7.5-10.3V5.4Z" fill="#0d9488"/>'
+    '<path d="M9 7.2h4.4L15.2 9v7.6H9Z" fill="#fff"/>'
+    '<path d="m10.5 12.4 1.3 1.3 2.3-2.5" fill="none" stroke="#0d9488" stroke-width="1.5"'
+    ' stroke-linecap="round" stroke-linejoin="round"/></svg>'
+)
+BRAND_FAVICON = "data:image/svg+xml," + quote(
+    BRAND_MARK.replace(' class="brand-mark"', ' xmlns="http://www.w3.org/2000/svg"')
+)
 
 NAV_ITEMS = (
     ("/app", "Ask", "search_spark"),
@@ -247,12 +262,12 @@ def _shell(*, title: str, page: str, active: str, body: str, settings: Settings)
 <html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="rag-backend-url" content="{escape(settings.public_backend_url, quote=True)}" /><title>{title} — Governed RAG</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/app/static/app.css" /></head>
+<link rel="icon" href="{BRAND_FAVICON}" /><link rel="stylesheet" href="/app/static/app.css" /></head>
 <body data-page="{page}" data-public-demo="{str(settings.public_demo).lower()}"><!-- LangGraph/MCP RAG Orchestration --><div class="app-layout">
-<nav class="app-rail" aria-label="Application navigation"><div class="rail-brand"><div class="rail-brand-name">Governed RAG</div><div class="rail-brand-sub">Public demo</div></div>
+<nav class="app-rail" aria-label="Application navigation"><a class="rail-brand" href="/app"><div class="rail-brand-name">{BRAND_MARK}<span>{BRAND_NAME}</span></div><div class="rail-brand-sub">Public demo · {BRAND_TAGLINE}</div></a>
 <div class="rail-nav">{nav}</div><div class="rail-run" id="rail-run" hidden></div>
 <div class="rail-footer"><div class="rail-role-pill"><span class="rail-dot"></span>Public visitor</div><p class="rail-disclaimer">Inspect-only. You can run questions. You cannot approve, edit, or export.</p><button class="rail-drawer-toggle" type="button" aria-expanded="false">How it's built <span>›</span></button></div></nav>
-<main class="app-main"><div id="backend-readiness" class="readiness readiness-waking" role="status" aria-live="polite"><strong>Waking</strong><span>Checking the free-tier data service…</span></div>{body}</main></div><script src="/app/static/app.js"></script></body></html>"""
+<main class="app-main"><div class="app-topbar"><a class="topbar-brand" href="/app">{BRAND_MARK}<span>{BRAND_NAME}</span><em>Public demo</em></a><div id="backend-readiness" class="readiness readiness-waking" role="status" aria-live="polite"><strong>Waking</strong><span>Checking the free-tier data service…</span></div></div>{body}</main></div><script src="/app/static/app.js"></script></body></html>"""
 
 
 def build_ui_router(settings: Settings | None = None) -> APIRouter:
