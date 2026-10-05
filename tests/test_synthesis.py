@@ -288,3 +288,26 @@ def test_verify_ignores_a_comma_after_a_number():
     evidence = [{"snippet": "The cap is £240 a night and the limit is 5,000 kilometres."}]
     answer = "The cap is £240, and the limit is 5,000, per the policy."
     assert verify_against_evidence(answer, evidence)["verified"] is True
+
+
+def test_echoed_prompt_labels_are_neither_entities_nor_shown():
+    evidence = [{"snippet": "Critical Incident: financial exposure above €250,000."}]
+    question = "Expected exposure is €260,000. Is this a Critical Incident?"
+    verdict = verify_against_evidence(
+        "Yes, according to the SOURCE a Critical Incident includes exposure above €250,000.",
+        evidence,
+        question=question,
+    )
+    assert verdict["verified"] is True
+    result = asyncio.run(
+        synthesize_and_verify(
+            question=question,
+            evidence=evidence,
+            model=_StubModel(
+                "Yes, according to the SOURCE a Critical Incident includes exposure above "
+                "€250,000, and €260,000 is above it."
+            ),
+        )
+    )
+    assert result["verified"] is True
+    assert "SOURCE" not in result["answer"] and "according to the source" in result["answer"]
