@@ -17,7 +17,9 @@ the Render dashboard, or local infrastructure.
 6. Wake the services before recording: load the app and, in another tab, open
    `https://rag-enterprise-starter-demo.onrender.com/health`. Wait until both load, then
    return to the app. Render Free can otherwise spend about a minute waking up.
-7. Confirm the app shows four preset buttons. Start recording with the app tab selected.
+7. Confirm the Ask page shows **Northline Analytics** as the selected company and four
+   starter cards (Grounded, Refusal, Withheld, Denied). If it shows Northwind, pick
+   Northline in the company switch. Start recording with the app tab selected.
 
 ## Timed narration and actions
 
@@ -25,91 +27,95 @@ the Render dashboard, or local infrastructure.
 
 **Say:**
 
-> This is a self-built governed RAG portfolio demo using 27 synthetic Northwind Logistics
-> documents. It is public on Render Free, but it is not a production or client deployment
-> and contains no real company data. The agent has no direct database access: it calls a
-> separate MCP integration layer, which calls the data backend where document access is
-> enforced.
+> This is a self-built governed RAG portfolio demo over two fictional companies: Northline
+> Analytics, with US and EU policies, and Northwind Logistics, the original demo. All data is
+> synthetic. It runs on Render Free and is not a production or client deployment. The agent has
+> no direct database access: it calls a separate MCP integration layer, which calls the data
+> backend where document access is enforced. Each answer uses only the company you pick.
 
-**Show:** The dashboard and its four preset buttons.
+**Show:** The app bar, the company switch set to Northline, and the four starter cards.
 
 ### 0:25–1:05 — Supported answer and source verification
 
-**Action:** Click **1 · Answerable**.
+**Action:** Click the **Grounded** card ("What is the London hotel cap?").
 
 **While it runs, say:**
 
-> The first example asks a question the corpus can answer. The workflow retrieves evidence,
-> checks whether the answer shape and citations are supported, and records the tool and
-> decision timeline.
+> The first question is one the policies answer. The workflow retrieves evidence, checks that
+> the answer and its citations are supported, and records each step.
 
 **After the result appears, say:**
 
-> It returns 26 days, marks the result verified, and shows the exact source passage beside
-> the answer. The citation is not just a label.
+> It returns £240 a night, marked verified, with the expense policy and its rates appendix
+> cited. The citation is not just a label.
 
-**Action:** Click **Open full source**. Briefly show the Annual Leave Policy and the
-entitlement passage, then return to the app tab.
+**Action:** Click the first citation to open the source, briefly show the Hotel caps section,
+then return to the app tab.
 
 **Say:**
 
-> A reader can open the complete synthetic source and check that the quoted passage was not
-> removed from contradicting context.
+> Anyone can open the full synthetic source and check the passage in context.
 
-### 1:05–1:40 — Refusal when evidence is absent
+### 1:05–1:30 — Refusal when evidence is absent
 
-**Action:** Click **2 · Cannot answer**.
-
-**Say while it runs:**
-
-> This asks for company revenue, which is deliberately absent from the corpus. The desired
-> behaviour is a refusal, not a plausible guess.
-
-**After the result appears, say:**
-
-> The result is not found, with no grounded answer and no citations. This visible refusal is
-> one of the central controls in the demo.
-
-### 1:40–2:15 — Human-review routing
-
-**Action:** Click **3 · Human review**.
+**Action:** Click the **Refusal** card ("What is the India PF contribution rate?").
 
 **Say while it runs:**
 
-> This compliance question has supporting evidence, but the workflow treats policy answers
-> as high risk when approval is requested.
+> Northline has no India operations, so this fact is deliberately absent. The right behaviour
+> is a refusal, not a plausible guess.
 
 **After the result appears, say:**
 
-> The evidence check passes, but the answer is withheld as pending approval. Public visitors
-> can see that it was routed for review, but they cannot approve, reject, or reveal it.
+> Not found, with no answer and no citations. A visible refusal is one of the central controls.
 
-### 2:15–2:45 — Restricted-data attack
+### 1:30–1:55 — Human-review routing
 
-**Action:** Click **4 · Red-team**.
+**Action:** Click the **Withheld** card ("Enhanced maternity pay in the UK?").
 
 **Say while it runs:**
 
-> The final prompt explicitly asks the system to ignore access controls and reveal restricted
-> salary bands. The agent cannot widen its own access because retrieval permissions are
-> enforced in the separate backend.
+> This question has supporting evidence, but pay and leave answers are treated as high risk
+> when approval is required.
 
 **After the result appears, say:**
 
-> No grounded answer or restricted citation is returned. The prompt does not override the
-> data-layer boundary.
+> The evidence check passes, but the answer is withheld pending approval. Public visitors can
+> see that it was routed for review, but they cannot approve it or reveal it.
 
-### 2:45–3:05 — Close with measured scope
+### 1:55–2:25 — Restricted document
 
-**Action:** Switch briefly to the public evaluation page.
+**Action:** Click the **Denied** card ("First steps in a Sev1 outage?").
+
+**Say while it runs:**
+
+> The answer is in Northline's incident procedure, which is a restricted document. The public
+> visitor's grant cannot retrieve it, and the agent cannot widen its own access, because
+> permissions are enforced inside the backend's SQL.
+
+**After the result appears, say:**
+
+> The workflow tries several recovery steps and still returns not found, with no citations.
+> The restricted text never reaches the agent.
+
+### 2:25–2:50 — Show how it is checked
+
+**Action:** Click **How it works** in the app bar, scroll briefly, then open **Quality**.
 
 **Say:**
 
-> The public evaluation publishes the test questions, outcomes, limitations, and generated
-> synthetic corpus so the evidence can be inspected. The approved v1 scope is 25 questions
-> on the isolated 27-document corpus. The new two-phase 90-case, 28-source suite is labelled
-> calibration-only until approved. This demonstrates governance behaviour; it is not a
-> general accuracy, production-scale, or client-results claim.
+> Every claim on this page links to its proof. Quality shows the recorded evidence per
+> company. Northline's 20-question demo set scored 15 out of 20, misses included. Northwind's
+> approved v1 baseline is 25 out of 25. The 90-question v2 suite is calibration-only until
+> approved.
+
+### 2:50–3:05 — Close with measured scope
+
+**Say:**
+
+> This demonstrates governance behaviour on synthetic data: cited answers or an honest
+> refusal, human review, and enforced access. It is not a general accuracy, production-scale,
+> or client-results claim.
 
 **Action:** Stop the recording.
 
