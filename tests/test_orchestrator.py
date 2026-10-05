@@ -397,7 +397,12 @@ def test_supporting_search_result_does_not_fetch_broader_excerpt():
     assert "GOV-POL-006" in result.answer
     assert "standard operating requirements" not in result.answer
     assert result.evidence[0]["chunk_id"] == 81
-    assert calls == ["ask_grounded", "ask_grounded", "search_documents"]
+    # A supporting search result is not replaced by a broader document excerpt. (The
+    # trailing search is the defined-term lookup for "Operations Manual's Whistleblowing",
+    # which finds no definition row and leaves the evidence unchanged.)
+    assert "get_document_excerpt" not in calls
+    assert calls[:3] == ["ask_grounded", "ask_grounded", "search_documents"]
+    assert len(calls) <= 4
 
 
 def test_recovery_answer_prioritizes_final_identify_clause_over_document_intro():

@@ -1,0 +1,177 @@
+{
+ "note": "Keyword search results captured from the live STARTER demo (Northwind, anonymous grant) on 2026-10-05. Synthetic corpus.",
+ "OM-044": {
+  "question": "A chilled room briefly reads +9°C for four minutes then returns to +6°C. Is that a Temperature Excursion?",
+  "search": [
+   {
+    "source_id": 139,
+    "source_part_id": null,
+    "chunk_id": 537,
+    "file_name": "northwind-operations-manual-v3.2.md",
+    "heading": "4.3.1 Temperature thresholds",
+    "locator": "{\"section\": \"4.3.1 Temperature thresholds\", \"heading_level\": 3}",
+    "snippet": "Cold Chain Product categories must be stored, handled and transported within Table 4.1. These thresholds apply unless the customer contract, product licence or Quality-approved lane validation requires stricter limits. Table 4.1 — Cold Chain Temperature Thresholds |Product category|Required temperature range|Maximum excursion time|Escalation action| |---|---|---|---| |Category A — frozen biologics|-25°C to -15°C|15 minutes|Immediate Quarantine; Quality call within 1 hour| |Category B — chilled pharmaceuticals|+2°C to +8°C|30 minutes|Quarantine; deviation opened within 2 hours| |Category C — clinical trial kits|+2°C to +8°C|20 minutes|Quarantine; sponsor notified within 4 hours| |Category D — fresh premium food|0°C to +4°C|45 minutes|Site review; customer notice within 8 hours if released stock affected| |Category E — controlled ambient medicines|+15°C to +25°C|120 minutes|Quality review within 24 hours| |Category F — chocolate and confectionery|+12°C to +18°C|180 minutes|Operations review; hold if visible bloom or melt risk| |Category G — temperature-sensitive electronics|+5°C to +30°C|240 minutes|Engineering review if condensation observed| |Category H — cosmetics with stability limits|+10°C to +25°C|180 minutes|Customer approval before dispatch if excursion repeated| For temperature excursion procedures, see Section 4.3.2. For incident classification, see Section 3.1 and Appendix B."
+   },
+   {
+    "source_id": 139,
+    "source_part_id": null,
+    "chunk_id": 540,
+    "file_name": "northwind-operations-manual-v3.2.md",
+    "heading": "4.3.4 Temperature monitoring",
+    "locator": "{\"section\": \"4.3.4 Temperature monitoring\", \"heading_level\": 3}",
+    "snippet": "All cold rooms must have continuous calibrated monitoring. Alarm set points must be tighter than product limits by at least 1°C for chilled and ambient categories and 2°C for frozen categories. Manual checks must be performed at least twice per shift where automated monitoring is active and hourly where automated monitoring is unavailable. If automated monitoring fails, then manual checks must begin within 30 minutes — except when a validated backup logger is active, visible and configured to alert Quality."
+   },
+   {
+    "source_id": 139,
+    "source_part_id": null,
+    "chunk_id": 539,
+    "file_name": "northwind-operations-manual-v3.2.md",
+    "heading": "4.3.3 Cold chain loading",
+    "locator": "{\"section\": \"4.3.3 Cold chain loading\", \"heading_level\": 3}",
+    "snippet": "Cold chain vehicles must be pre-cooled before loading. Required pre-cooling duration is: 1. Frozen vehicles: minimum 45 minutes. 2. Chilled vehicles: minimum 30 minutes. 3. Controlled ambient vehicles: minimum 20 minutes. 4. Dual-temperature vehicles: each compartment must reach set point before first pallet enters. Dock doors may remain open for a maximum of 7 minutes during cold chain loading unless protected by active air curtain or sealed dock shelter. If loading exceeds 20 minutes, temperature must be checked every 10 minutes."
+   },
+   {
+    "source_id": 139,
+    "source_part_id": null,
+    "chunk_id": 538,
+    "file_name": "northwind-operations-manual-v3.2.md",
+    "heading": "4.3.2 Temperature excursion procedure",
+    "locator": "{\"section\": \"4.3.2 Temperature excursion procedure\", \"heading_level\": 3}",
+    "snippet": "When a Temperature Excursion is detected or suspected: 1. Stop picking, loading or dispatch of affected stock. 2. Place affected stock in Quarantine within 15 minutes. 3. Capture temperature graph, alarm log, location, product batch and time range. 4. Notify Quality within the response time in Table 4.1. 5. Check whether stock was Released Stock at the time of excursion. 6. Determine whether customer notification is required. 7. Record deviation in the quality system. 8. Await written Quality release before stock movement. If the excursion affects Category B chilled pharmaceuticals, then maximum excursion time is 30 minutes — except when lane validation documentation approved by Quality permits a named product-specific exposure limit and the product has not exceeded that validated limit. Stock must not be released based only on visual inspection. A normal-looking pharmaceutical product may still be non-compliant. This rule applies even when the customer requests urgent shipment."
+   },
+   {
+    "source_id": 139,
+    "source_part_id": null,
+    "chunk_id": 569,
+    "file_name": "northwind-operations-manual-v3.2.md",
+    "heading": "Appendix A: Amendment Log — Version 3.1 to Version 3.2",
+    "locator": "{\"section\": \"Appendix A: Amendment Log — Version 3.1 to Version 3.2\", \"heading_level\": 1}",
+    "snippet": "|Amendment ID|Section or table changed|Version 3.1 position|Version 3.2 change|Reason and reference| |---|---|---|---|---| |AM-3.2-001|Section 4.3.2|Category B excursion permitted 45 minutes|Revised to 30 minutes|Following incident INV-2025-0847 involving chilled pharmaceutical deviation| |AM-3.2-002|Table 2.1|IT procurement Band 4–5 limit €12,000|Increased to €15,000|Board decision BD-2026-012| |AM-3.2-003|Section 1.2|“Immediately” undefined|Defined as within 4 hours of discovery|Audit finding QA-2026-031| |AM-3.2-004|Section 3.4.2|Senior site person normally led incident response|Incident Commander must hold current IC certification|Post-incident review PIR-2026-006| |AM-3.2-005|Section 6.1|Weekend overtime followed standard 1.5× rate|Saturday and Sunday warehouse overtime rates separated|Payroll harmonisation decision HR-2026-019| |AM-3.2-006|Table 7.1|Cold chain records retained 7 years|Increased to 10 years|GDP customer audit CAPA GDP-2026-044| |AM-3.2-007|Section 5.1|Electric vans covered under standard van checks|Added electric urban van inspection requirements|Fleet electrification programme FE-2026-002| |AM-3.2-008|Section 2.3|Variance escalation started at 5%|Added 2.5% to 4.9% recovery note tier|Finance control review FIN-2026-027| |AM-3.2-009|Section 7.4.5|Free software pilots not expressly controlled|Security review required unless synthetic data only|Security incident SEC-2026-011| |AM-3.2-010|Section 6.2|Zero tolerance wording ambiguous|Clarified that zero tolerance means mandatory investigation, not automatic dismissal|HR/legal review LEG-2026-015|"
+   },
+   {
+    "source_id": 139,
+    "source_part_id": null,
+    "chunk_id": 547,
+    "file_name": "northwind-operations-manual-v3.2.md",
+    "heading": "5.3 Route Planning and Load Optimisation",
+    "locator": "{\"section\": \"5.3 Route Planning and Load Optimisation\", \"heading_level\": 2}",
+    "snippet": "Route planners must use the transport management system for all planned routes exceeding 50 kilometres or involving more than 4 delivery points. Manual route planning is permitted for emergency local moves below 50 kilometres but must be entered retrospectively by end of shift. Routes must consider: 1. Delivery window. 2. Driver hours. 3. Vehicle capacity. 4. Vehicle temperature capability. 5. Low-emission zone restrictions. 6. Toll and ferry costs. 7. Customer unloading constraints. 8. Hazardous materials restrictions. 9. Vehicle height, weight and access limits. If route optimisation reduces cost but increases estimated delay beyond 45 minutes, then customer service approval is required — except when the delay avoids a driver-hours breach, bridge restriction, regulatory road closure or safety risk."
+   },
+   {
+    "source_id": 139,
+    "source_part_id": null,
+    "chunk_id": 554,
+    "file_name": "northwind-operations-manual-v3.2.md",
+    "heading": "6.2 Personal Protective Equipment",
+    "locator": "{\"section\": \"6.2 Personal Protective Equipment\", \"heading_level\": 2}",
+    "snippet": "Minimum PPE in operational warehouse zones is high-visibility vest, safety footwear and site ID. Additional PPE applies by zone: |Zone or task|Mandatory PPE| |---|---| |Loading bay|High-visibility vest, safety footwear, gloves where handling pallets| |Forklift operating area|High-visibility vest, safety footwear, pedestrian exclusion compliance| |Cold room below 5°C|Thermal jacket, thermal gloves for exposure above 15 minutes| |Zone or task|Mandatory PPE| |---|---| |Freezer below -15°C|Freezer suit, freezer gloves, face protection for exposure above 10 minutes| |Battery charging|Eye protection, chemical gloves, apron where lead-acid batteries are present| |Hazardous materials handling|PPE stated in safety data sheet and site risk assessment| Failure to wear mandatory PPE is a safety violation. “Zero tolerance” for safety violations does not mean automatic dismissal. It means mandatory investigation within 24 hours, documented corrective action, and disciplinary review where intent, repetition or serious risk is established."
+   },
+   {
+    "source_id": 139,
+    "source_part_id": null,
+    "chunk_id": 571,
+    "file_name": "northwind-operations-manual-v3.2.md",
+    "heading": "Appendix C: Quick Reference — Emergency Contacts and Escalation",
+    "locator": "{\"section\": \"Appendix C: Quick Reference — Emergency Contacts and Escalation\", \"heading_level\": 1}",
+    "snippet": "All contacts below are fictional role-based contacts. Employees must use the current internal directory for live numbers. |Situation|First contact|Second contact|Maximum first notification time| |---|---|---|---| |Life-threatening injury|Emergency services, then Site Duty Manager|Incident Commander|Immediate emergency call; internal within 30 minutes| |Critical Incident|Site Duty Manager|Regional Operations Control Desk|1 hour| |Major Incident|Site Duty Manager|Regional Operations Director|2 hours| |Cold chain excursion|Quality Duty Manager|Incident Commander|1 hour| |Situation|First contact|Second contact|Maximum first notification time| |---|---|---|---| |Category A|||| |Cold chain excursion Category B|Quality Duty Manager|Site Duty Manager|2 hours| |Hazardous material spill|Site Duty Manager|HSE Manager|1 hour if Major/Critical| |Vehicle accident with injury|Emergency services, then Fleet Control|Incident Commander|Internal within 30 minutes if safe| |Vehicle breakdown with cold chain stock|Fleet Control|Quality Duty Manager|30 minutes| |Suspected data breach|Information Security Duty Lead|Privacy Team|Immediately| |DSAR received|Privacy Team|Legal|Immediately| |Media enquiry|Communications Duty Lead|COO Office|Immediately| |Regulator visit|Site Duty Manager|Legal and Compliance|Immediately|"
+   }
+  ],
+  "definition_lookup": [
+   {
+    "source_id": 139,
+    "source_part_id": null,
+    "chunk_id": 489,
+    "file_name": "northwind-operations-manual-v3.2.md",
+    "heading": "1.2 Definitions",
+    "locator": "{\"section\": \"1.2 Definitions\", \"chunk_window\": 2, \"heading_level\": 2, \"chunk_window_total\": 3}",
+    "snippet": "vehicles used for more than 5,000 business kilometres per year.| |Term|Defined meaning| |---|---| |Cold Chain Product|Any product requiring controlled temperature storage or transport within a specified range in Section 4.3.1.| |Temperature Excursion|Any recorded, observed or suspected temperature outside the required range for a Cold Chain Product for more than 5 consecutive minutes.| |Quarantine|Physical or system-based restriction preventing stock from being picked, moved, dispatched, returned to saleable stock, or destroyed without documented release.| |Controlled Document|A document listed in the document register and subject to version control, approval, retention and withdrawal requirements under Section 1.3.| |Restricted Information|Information whose unauthorised disclosure may cause contractual, regulatory, commercial or personal data harm, as classified in Section 7.1.| |Confidential Information|The highest internal classification covering personal data, pricing strategy, Board papers, disciplinary material, regulated product data, security incidents and customer-specific contract terms.| |Two-Person Verification|Independent verification by two authorised individuals, where the second verifier must not be the person who performed the original action.| |Framework Agreement|A Board-approved or Band 6+ approved master agreement under which individual orders may be placed without renegotiating core terms.| |Emergency Purchase|A purchase necessary to prevent immediate safety risk, Critical or Major Incident escalation, regulatory breach, vehicle immobilisation, cold chain failure or customer contract default.| |Local Legal Addendum|A country-specific annex approved by Legal and Compliance to address mandatory local law that differs from this manual.| |Term|Defined meaning| |---|---| |DSAR|Data Subject Access Request under applicable data protection law, including requests for access, correction, deletion, restriction or portability.| |GDP|Good Distribution Practice requirements applicable to pharmaceutical logistics, including temperature control, traceability, qualification, deviation handling and record retention.| |Northwind Site|Any warehouse, transport yard, administrative office, cross-dock, temporary logistics location, customer-embedded operation or controlled vehicle parking location operated by Northwind.| |Released Stock|Stock available in the warehouse management system for picking, loading, dispatch, customer collection or transfer.| |Stop-Work Authority|The right and duty of any worker to halt an unsafe task without retaliation where there is a reasonable belief of imminent"
+   },
+   {
+    "source_id": 139,
+    "source_part_id": null,
+    "chunk_id": 488,
+    "file_name": "northwind-operations-manual-v3.2.md",
+    "heading": "1.2 Definitions",
+    "locator": "{\"section\": \"1.2 Definitions\", \"chunk_window\": 1, \"heading_level\": 2, \"chunk_window_total\": 3}",
+    "snippet": "For this manual, the following terms have the specific meanings below. These definitions apply even where local usage differs. |Term|Defined meaning| |---|---| |Board|The fictional Board of Directors of Northwind Logistics NV or a formally constituted Board committee with delegated authority.| |Band 1–3|Employees in operational, administrative, junior supervisory or specialist roles below middle management grade.| |Band 4–5|Employees in middle management, site management, functional management or senior specialist roles below Senior Manager level.| |Band 6+|Senior Manager level and above, regardless of job title.| |Senior Manager|Any employee at Band 6 or above, regardless of whether their title includes “Senior”, “Head”, “Director” or “Manager”.| |Working Day|Monday to Friday, excluding Belgian public holidays, not the employee’s local public holidays.| |Immediately|Within 4 hours of discovery, including outside normal office hours, and not within 4 hours of the start of the next shift.| |Critical Incident|An incident meeting the Critical criteria in Section 3.1 or Appendix B, including life-threatening injury, actual regulatory enforcement action, financial exposure above €250,000, or confirmed cold chain failure affecting released stock.| |Major Incident|An incident meeting the Major criteria in Section 3.1 or Appendix B, including reportable injury, financial exposure from €50,001 to €250,000, or customer service disruption exceeding 12 hours.| |Minor Incident|An incident requiring local corrective action but not meeting Major or Critical thresholds, including damage below €50,000 and delay below 12 hours.| |Observation|A weakness, unsafe condition or compliance gap that has not yet caused harm, loss, regulatory breach or customer impact.| |Incident Commander|The person currently certified under the Northwind Incident Command programme and assigned to lead the incident response, not necessarily the most senior person present.| |Fleet Vehicle|Any owned, leased, hired, substituted or employee-provided vehicle used for Northwind business, including leased personal vehicles used for more than 5,000 business kilometres per year.| |Term|Defined meaning| |---|---| |Cold Chain Product|Any product requiring controlled temperature storage or transport within a specified range in Section 4.3.1.| |Temperature Excursion|Any recorded, observed or suspected temperature outside the required"
+   }
+  ]
+ },
+ "OM-046": {
+  "question": "Expected financial exposure is €260,000 with no injuries. Does this meet the definition of a Critical Incident?",
+  "search": [
+   {
+    "source_id": 139,
+    "source_part_id": null,
+    "chunk_id": 488,
+    "file_name": "northwind-operations-manual-v3.2.md",
+    "heading": "1.2 Definitions",
+    "locator": "{\"section\": \"1.2 Definitions\", \"chunk_window\": 1, \"heading_level\": 2, \"chunk_window_total\": 3}",
+    "snippet": "For this manual, the following terms have the specific meanings below. These definitions apply even where local usage differs. |Term|Defined meaning| |---|---| |Board|The fictional Board of Directors of Northwind Logistics NV or a formally constituted Board committee with delegated authority.| |Band 1–3|Employees in operational, administrative, junior supervisory or specialist roles below middle management grade.| |Band 4–5|Employees in middle management, site management, functional management or senior specialist roles below Senior Manager level.| |Band 6+|Senior Manager level and above, regardless of job title.| |Senior Manager|Any employee at Band 6 or above, regardless of whether their title includes “Senior”, “Head”, “Director” or “Manager”.| |Working Day|Monday to Friday, excluding Belgian public holidays, not the employee’s local public holidays.| |Immediately|Within 4 hours of discovery, including outside normal office hours, and not within 4 hours of the start of the next shift.| |Critical Incident|An incident meeting the Critical criteria in Section 3.1 or Appendix B, including life-threatening injury, actual regulatory enforcement action, financial exposure above €250,000, or confirmed cold chain failure affecting released stock.| |Major Incident|An incident meeting the Major criteria in Section 3.1 or Appendix B, including reportable injury, financial exposure from €50,001 to €250,000, or customer service disruption exceeding 12 hours.| |Minor Incident|An incident requiring local corrective action but not meeting Major or Critical thresholds, including damage below €50,000 and delay below 12 hours.| |Observation|A weakness, unsafe condition or compliance gap that has not yet caused harm, loss, regulatory breach or customer impact.| |Incident Commander|The person currently certified under the Northwind Incident Command programme and assigned to lead the incident response, not necessarily the most senior person present.| |Fleet Vehicle|Any owned, leased, hired, substituted or employee-provided vehicle used for Northwind business, including leased personal vehicles used for more than 5,000 business kilometres per year.| |Term|Defined meaning| |---|---| |Cold Chain Product|Any product requiring controlled temperature storage or transport within a specified range in Section 4.3.1.| |Temperature Excursion|Any recorded, observed or suspected temperature outside the required"
+   },
+   {
+    "source_id": 139,
+    "source_part_id": null,
+    "chunk_id": 570,
+    "file_name": "northwind-operations-manual-v3.2.md",
+    "heading": "Appendix B: Incident Classification Matrix — Full Version",
+    "locator": "{\"section\": \"Appendix B: Incident Classification Matrix — Full Version\", \"heading_level\": 1}",
+    "snippet": "Use this appendix with Section 3.1. Where more than one criterion applies, use the highest severity. |Impact area|Critical|Major|Minor|Observation| |---|---|---|---|---| |Safety|Fatality, life-threatening injury, multiple hospitalisations, uncontrolled fire, structural collapse, chemical exposure requiring emergency services|Reportable injury, single hospitalisation, forklift-pedestrian contact without fatality, controlled fire, evacuation under 2 hours|First-aid injury, minor vehicle contact, slip without lost time, PPE breach with no harm|Unsafe condition, blocked walkway, missing sign, worn PPE identified before use| |Financial|Expected loss above €250,000|Expected loss €50,001 to €250,000|Expected loss €1,001 to €50,000|Potential loss below €1,000 or control weakness| |Regulatory|Regulator enforcement action, licence suspension risk, confirmed GDP failure affecting released stock, notifiable data breach|Likely regulator notification, serious audit finding, repeated tachograph breach, controlled substance documentation gap|Local compliance deviation, late record, isolated procedural breach|Potential gap found before breach| |Reputational|National media, major customer executive complaint, public authority statement, viral social media above 50,000 views|Regional media, customer escalation to procurement director, social media above 5,000 views|Customer complaint resolved locally, social media below 5,000 views|Internal concern, no external awareness| |Operational continuity|Site closure above 24 hours, network outage above 12 hours, loss of cold chain room with released stock|Site disruption 4 to 24 hours, transport lane failure, WMS outage below 12 hours|Local delay below 4 hours, single route failure|Weakness with no current disruption| |Product integrity|Confirmed release of compromised product, unknown status for pharma batch, hazardous contamination|Quarantine of customer-critical stock, suspected contamination, cold chain excursion pending assessment|Damaged non-regulated stock, labelling defect caught before dispatch|Storage risk identified before product affected| |Data protection|Confirmed unauthorised disclosure of sensitive personal data to external party|Mis-sent restricted file, lost device with possible data, unauthorised access to HR or payroll|Internal misrouting corrected within 24 hours|Access permission weakness found in review|"
+   },
+   {
+    "source_id": 139,
+    "source_part_id": null,
+    "chunk_id": 499,
+    "file_name": "northwind-operations-manual-v3.2.md",
+    "heading": "2.1 Delegation of Authority",
+    "locator": "{\"section\": \"2.1 Delegation of Authority\", \"heading_level\": 2}",
+    "snippet": "All spending, commitments, hiring, contracts and asset disposals must comply with Table 2.1. Values are stated in EUR excluding VAT, unless the contract or invoice is legally VAT-inclusive and cannot be separated. Table 2.1 — Delegation of Authority Matrix |Decision Type|Band 1–3 max EUR amount|Band 4–5 max EUR amount|Band 6+ max EUR amount|Board| |---|---|---|---|---| |Capital expenditure|€0|€18,750|€247,500|Above €247,500| |Operating expenditure|€2,950|€28,600|€186,400|Above €186,400| |Contract signing|€0|€24,999|€312,750|Above €312,750| |Headcount approval|€0|1 role up to €54,500 annual cost|6 roles up to €486,000 annual cost|Above 6 roles or €486,000| |IT procurement|€1,200|€15,000|€124,800|Above €124,800| |Fleet acquisition|€0|€41,250|€598,000|Above €598,000| |Lease commitment|€0|€36,800 total term value|€428,500 total term value|Above €428,500| |Marketing spend|€750|€11,400|€76,250|Above €76,250| |Emergency purchase|€6,500|€39,750|€155,000|Above €155,000 or retrospective ratification| |Asset disposal|€500 book value|€12,250 book value|€95,500 book value|Above €95,500| All approvals must be obtained before commitment — except when the purchase is an Emergency Purchase as defined in Section 1.2 and documented within 24 hours under Section 2.2.5. The financial delegation limits in Table 2.1 apply to the total commitment value, not the monthly invoice amount. A 36-month lease at €9,000 per month is a €324,000 lease commitment, subject to Band 6+ approval and possibly Board approval. For contract signing controls, see Section 2.5."
+   },
+   {
+    "source_id": 139,
+    "source_part_id": null,
+    "chunk_id": 489,
+    "file_name": "northwind-operations-manual-v3.2.md",
+    "heading": "1.2 Definitions",
+    "locator": "{\"section\": \"1.2 Definitions\", \"chunk_window\": 2, \"heading_level\": 2, \"chunk_window_total\": 3}",
+    "snippet": "vehicles used for more than 5,000 business kilometres per year.| |Term|Defined meaning| |---|---| |Cold Chain Product|Any product requiring controlled temperature storage or transport within a specified range in Section 4.3.1.| |Temperature Excursion|Any recorded, observed or suspected temperature outside the required range for a Cold Chain Product for more than 5 consecutive minutes.| |Quarantine|Physical or system-based restriction preventing stock from being picked, moved, dispatched, returned to saleable stock, or destroyed without documented release.| |Controlled Document|A document listed in the document register and subject to version control, approval, retention and withdrawal requirements under Section 1.3.| |Restricted Information|Information whose unauthorised disclosure may cause contractual, regulatory, commercial or personal data harm, as classified in Section 7.1.| |Confidential Information|The highest internal classification covering personal data, pricing strategy, Board papers, disciplinary material, regulated product data, security incidents and customer-specific contract terms.| |Two-Person Verification|Independent verification by two authorised individuals, where the second verifier must not be the person who performed the original action.| |Framework Agreement|A Board-approved or Band 6+ approved master agreement under which individual orders may be placed without renegotiating core terms.| |Emergency Purchase|A purchase necessary to prevent immediate safety risk, Critical or Major Incident escalation, regulatory breach, vehicle immobilisation, cold chain failure or customer contract default.| |Local Legal Addendum|A country-specific annex approved by Legal and Compliance to address mandatory local law that differs from this manual.| |Term|Defined meaning| |---|---| |DSAR|Data Subject Access Request under applicable data protection law, including requests for access, correction, deletion, restriction or portability.| |GDP|Good Distribution Practice requirements applicable to pharmaceutical logistics, including temperature control, traceability, qualification, deviation handling and record retention.| |Northwind Site|Any warehouse, transport yard, administrative office, cross-dock, temporary logistics location, customer-embedded operation or controlled vehicle parking location operated by Northwind.| |Released Stock|Stock available in the warehouse management system for picking, loading, dispatch, customer collection or transfer.| |Stop-Work Authority|The right and duty of any worker to halt an unsafe task without retaliation where there is a reasonable belief of imminent"
+   },
+   {
+    "source_id": 139,
+    "source_part_id": null,
+    "chunk_id": 526,
+    "file_name": "northwind-operations-manual-v3.2.md",
+    "heading": "3.5.1 Review timing",
+    "locator": "{\"section\": \"3.5.1 Review timing\", \"heading_level\": 3}",
+    "snippet": "A post-incident review must occur within: 1. 5 Working Days for Critical Incidents. 2. 10 Working Days for Major Incidents. 3. 20 Working Days for selected Minor Incidents. 4. 30 Working Days for recurring Observations. The review must include timeline, root cause, failed controls, working controls, customer impact, regulatory exposure, financial exposure, corrective actions, owner, due date and effectiveness check."
+   },
+   {
+    "source_id": 449,
+    "source_part_id": null,
+    "chunk_id": 711,
+    "file_name": "remote-working-policy.md",
+    "heading": "Expected office attendance",
+    "locator": "{\"section\": \"Expected office attendance\"}",
+    "snippet": "Expected office attendance\n\nHybrid employees attend the office a minimum of two days per week. Teams may agree a\nfixed anchor day; where they do, attendance on that day takes precedence over the\nindividual minimum."
+   },
+   {
+    "source_id": 139,
+    "source_part_id": null,
+    "chunk_id": 490,
+    "file_name": "northwind-operations-manual-v3.2.md",
+    "heading": "1.2 Definitions",
+    "locator": "{\"section\": \"1.2 Definitions\", \"chunk_window\": 3, \"heading_level\": 2, \"chunk_window_total\": 3}",
+    "snippet": "Northwind.| |Released Stock|Stock available in the warehouse management system for picking, loading, dispatch, customer collection or transfer.| |Stop-Work Authority|The right and duty of any worker to halt an unsafe task without retaliation where there is a reasonable belief of imminent harm or material compliance breach.| The definitions of Immediately, Working Day, Senior Manager, Fleet Vehicle, and Incident Commander are deliberately narrower or broader than ordinary usage. These terms must not be interpreted informally. For example, an employee in Spain cannot delay a Section 3.2 incident report because the following day is a Spanish public holiday if it is not a Belgian public holiday."
+   },
+   {
+    "source_id": 139,
+    "source_part_id": null,
+    "chunk_id": 498,
+    "file_name": "northwind-operations-manual-v3.2.md",
+    "heading": "2. Financial Controls and Delegation",
+    "locator": "{\"section\": \"2. Financial Controls and Delegation\", \"heading_level\": 1}",
+    "snippet": "2. Financial Controls and Delegation"
+   }
+  ]
+ }
+}

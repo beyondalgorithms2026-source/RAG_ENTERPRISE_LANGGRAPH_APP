@@ -264,3 +264,27 @@ def test_withheld_run_hides_the_synthesis_reason():
     assert result.approval_status == "pending_approval"
     assert result.synthesis_reason is None
     assert "5%" not in str(result.to_dict())
+
+
+def test_verify_allows_values_given_in_the_question_but_not_new_ones():
+    evidence = [{"snippet": "Critical Incident: financial exposure above €250,000."}]
+    question = "Expected financial exposure is €260,000. Does this meet the definition of a Critical Incident?"
+    ok = verify_against_evidence(
+        "Yes. A Critical Incident includes financial exposure above €250,000, and €260,000 is above it.",
+        evidence,
+        question=question,
+    )
+    assert ok == {"verified": True, "reason": "all_facts_supported"}
+    invented = verify_against_evidence(
+        "Yes. A Critical Incident includes financial exposure above €300,000.",
+        evidence,
+        question=question,
+    )
+    assert invented["verified"] is False
+    assert invented["reason"] == "unsupported_number:300,000"
+
+
+def test_verify_ignores_a_comma_after_a_number():
+    evidence = [{"snippet": "The cap is £240 a night and the limit is 5,000 kilometres."}]
+    answer = "The cap is £240, and the limit is 5,000, per the policy."
+    assert verify_against_evidence(answer, evidence)["verified"] is True
