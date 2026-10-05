@@ -158,7 +158,11 @@ async def synthesize_and_verify(
 
     content = getattr(response, "content", response)
     answer = content if isinstance(content, str) else str(content)
-    answer = re.sub(r"\s+", " ", answer).strip().strip('"')
+    answer = re.sub(r"\s+", " ", answer).strip()
+    # Remove quotes only when they wrap the whole answer; stripping one side left a stray
+    # opening quote ('as it is "financial exposure above ...') that no longer matched quotes of it.
+    if len(answer) >= 2 and answer[0] == answer[-1] == '"':
+        answer = answer[1:-1].strip()
     # Readers never see the prompt's labels: "according to the SOURCE" -> "according to the source".
     answer = re.sub(r"\b(SOURCE|QUESTION)\b", lambda m: m.group(1).lower(), answer)
 

@@ -311,3 +311,19 @@ def test_echoed_prompt_labels_are_neither_entities_nor_shown():
     )
     assert result["verified"] is True
     assert "SOURCE" not in result["answer"] and "according to the source" in result["answer"]
+
+
+def test_inner_quotes_survive_answer_cleanup():
+    evidence = [{"snippet": "Critical Incident: financial exposure above €250,000."}]
+    question = "Expected exposure is €260,000. Is this a Critical Incident?"
+    inner = 'Yes, as it is "financial exposure above €250,000."'
+    result = asyncio.run(
+        synthesize_and_verify(question=question, evidence=evidence, model=_StubModel(inner))
+    )
+    assert result["answer"] == inner
+    wrapped = asyncio.run(
+        synthesize_and_verify(
+            question=question, evidence=evidence, model=_StubModel('"Yes, above €250,000."')
+        )
+    )
+    assert wrapped["answer"] == "Yes, above €250,000."
