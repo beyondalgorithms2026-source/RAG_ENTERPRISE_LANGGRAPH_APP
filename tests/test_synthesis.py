@@ -198,3 +198,32 @@ def test_gated_run_live_response_withholds_all_answer_content():
     assert all(a.get("answer_preview") == "[withheld pending approval]" for a in result.attempts)
     # Process metadata stays visible.
     assert result.decision_trail and result.execution_timeline
+
+
+def test_synthesize_falls_back_when_model_cannot_be_built(monkeypatch):
+    import rag_enterprise_langgraph.graph as graph
+
+    def broken_builder(settings):
+        raise ValueError("OPENAI_API_KEY is not set")
+
+    monkeypatch.setattr(graph, "build_chat_model", broken_builder)
+    result = asyncio.run(
+        synthesize_and_verify(
+            question=ROCKET_Q,
+            evidence=ROCKET_EVIDENCE,
+            question_profile=classify_question(ROCKET_Q),
+            settings=Settings(enable_synthesis=True),
+        )
+    )
+    assert result == {"answer": None, "verified": False, "reason": "model_error:ValueError"}
+
+
+def test_run_with_unbuildable_model_still_returns_verbatim_answer(monkeypatch):
+    import rag_enterprise_langgraph.graph as graph
+
+    monkeypatch.setattr(
+        graph, "build_chat_model", lambda settings: (_ for _ in ()).throw(ValueError("no key"))
+    )
+    result = asyncio.run(_rocket_orchestrator(enable_synthesis=True).run(ROCKET_Q))
+    assert result.synthesis_verified is False
+    assert "2%" in result.answer or "2 %" in result.answer

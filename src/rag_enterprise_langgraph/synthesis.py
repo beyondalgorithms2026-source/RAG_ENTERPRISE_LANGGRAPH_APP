@@ -120,7 +120,15 @@ async def synthesize_and_verify(
             return {"answer": None, "verified": False, "reason": "no_model"}
         from rag_enterprise_langgraph.graph import build_chat_model
 
-        model = build_chat_model(settings)
+        # A missing key or unknown provider must fall back to the verbatim answer, not fail the run.
+        try:
+            model = build_chat_model(settings)
+        except Exception as exc:
+            return {
+                "answer": None,
+                "verified": False,
+                "reason": f"model_error:{exc.__class__.__name__}",
+            }
 
     prompt = (
         f"QUESTION: {question}\n\n"
