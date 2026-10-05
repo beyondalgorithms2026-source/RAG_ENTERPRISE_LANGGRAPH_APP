@@ -46,6 +46,172 @@ def _demo_only_banner(detail: str) -> str:
     )
 
 
+# Two fictional companies share one governed system. Each request is scoped to one of them
+# (STARTER `filters.corpus`), so an answer never mixes their policies. Counts are static
+# and come from the corpus manifests; anonymous visitors cannot list non-public sources.
+COMPANIES: dict[str, dict] = {
+    "western_northline": {
+        "label": "Northline Analytics",
+        "region": "US / EU",
+        "about": "UK-registered SaaS company with offices in Manchester, Austin and Amsterdam.",
+        "facts": (
+            ("Public sources", "13"),
+            ("Restricted", "1"),
+            ("Offices", "UK · US · NL"),
+            ("Data", "synthetic"),
+        ),
+        "hidden_note": "+1 restricted Northline document (incident SOP) exists; the public grant cannot list or retrieve it.",
+        "starters": (
+            (
+                "chip-grounded",
+                "Grounded",
+                "What is the nightly hotel room-rate cap for London?",
+                "What is the London hotel cap?",
+                "Cited policy answer",
+                "false",
+                "3",
+            ),
+            (
+                "chip-refused",
+                "Refusal",
+                "What is Northline's India Provident Fund (PF/EPF) employer contribution rate?",
+                "What is the India PF contribution rate?",
+                "Unsupported fact is not invented",
+                "false",
+                "0",
+            ),
+            (
+                "chip-withheld",
+                "Withheld",
+                "How much enhanced maternity pay does a UK employee receive, and for how many weeks?",
+                "Enhanced maternity pay in the UK?",
+                "High-risk answer requires approval",
+                "true",
+                "3",
+            ),
+            (
+                "chip-refused",
+                "Denied",
+                "What should the team do first when a Sev1 production outage is declared?",
+                "First steps in a Sev1 outage?",
+                "Restricted data remains unavailable",
+                "false",
+                "3",
+            ),
+        ),
+    },
+    "northwind-public-demo": {
+        "label": "Northwind Logistics",
+        "region": "Original demo",
+        "about": "European logistics company used by the original demo and its recorded evidence.",
+        "facts": (
+            ("Canonical sources", "28"),
+            ("Anonymous-visible", "14"),
+            ("Data", "synthetic"),
+            ("Database", "pgvector"),
+        ),
+        "hidden_note": "+14 internal and restricted Northwind documents exist; the public grant cannot list or retrieve them.",
+        "starters": (
+            (
+                "chip-grounded",
+                "Grounded",
+                "What is the maximum value of a gift that may be accepted under company policy?",
+                "What is the cap on gifts I may accept?",
+                "Cited policy answer",
+                "false",
+                "3",
+            ),
+            (
+                "chip-refused",
+                "Refusal",
+                "What is the company's pension contribution rate?",
+                "What is the pension contribution rate?",
+                "Unsupported fact is not invented",
+                "false",
+                "0",
+            ),
+            (
+                "chip-withheld",
+                "Withheld",
+                "What is the termination policy for employees on medical leave?",
+                "Termination during medical leave?",
+                "High-risk answer requires approval",
+                "true",
+                "3",
+            ),
+            (
+                "chip-refused",
+                "Denied",
+                "What is the Band 6 salary range for 2026?",
+                "What is the Band 6 salary range?",
+                "Restricted data remains unavailable",
+                "false",
+                "3",
+            ),
+        ),
+    },
+}
+NORTHLINE_SCORECARD_URL = (
+    "https://github.com/beyondalgorithms2026-source/RAG_ENTERPRISE_STARTER/blob/main/"
+    "docs/evaluation/western/scorecard.md"
+)
+
+
+def _default_company(settings: Settings) -> str:
+    configured = (settings.default_corpus or "").strip()
+    return configured if configured in COMPANIES else "northwind-public-demo"
+
+
+def _company_switch(*, settings: Settings, label: str) -> str:
+    selected = _default_company(settings)
+    options = "".join(
+        '<label class="company-option{active}"><input type="radio" name="company" value="{key}"'
+        ' data-hidden-note="{note}"{checked} /><strong>{name}</strong><small>{region}</small></label>'.format(
+            key=escape(key, quote=True),
+            note=escape(company["hidden_note"], quote=True),
+            checked=" checked" if key == selected else "",
+            active=" active" if key == selected else "",
+            name=escape(company["label"]),
+            region=escape(company["region"]),
+        )
+        for key, company in COMPANIES.items()
+    )
+    return (
+        f'<fieldset class="company-switch" data-default-company="{escape(selected, quote=True)}">'
+        f"<legend>{escape(label)}</legend>{options}</fieldset>"
+    )
+
+
+def _corpus_cards(settings: Settings) -> str:
+    selected = _default_company(settings)
+    cards = []
+    for key, company in COMPANIES.items():
+        facts = "".join(
+            f"<div><dt>{escape(name)}</dt><dd>{escape(value)}</dd></div>"
+            for name, value in company["facts"]
+        )
+        cards.append(
+            f'<aside class="corpus-card" data-corpus="{escape(key, quote=True)}"'
+            f'{"" if key == selected else " hidden"}><div class="card-title"><strong>'
+            f"{escape(company['label'])}</strong><span>{escape(company['region'])}</span></div>"
+            f"<dl>{facts}</dl><p>{escape(company['about'])} Internal and restricted sources are"
+            " excluded by the backend grant before retrieval.</p></aside>"
+        )
+    return "".join(cards)
+
+
+def _starter_cards(settings: Settings) -> str:
+    selected = _default_company(settings)
+    return "".join(
+        f'<button type="button" class="starter-card" data-corpus="{escape(key, quote=True)}"'
+        f'{"" if key == selected else " hidden"} data-needs-backend data-question="{escape(question, quote=True)}"'
+        f' data-approval="{approval}" data-recovery="{recovery}"><span class="chip {chip}">{escape(tag)}</span>'
+        f"<strong>{escape(title)}</strong><small>{escape(hint)}</small></button>"
+        for key, company in COMPANIES.items()
+        for chip, tag, question, title, hint, approval, recovery in company["starters"]
+    )
+
+
 def _shell(*, title: str, page: str, active: str, body: str, settings: Settings) -> str:
     nav = "".join(
         '<a class="rail-item{active}" href="{href}" title="{label}">{icon}<span>{label}</span></a>'.format(
@@ -94,13 +260,10 @@ def build_ui_router(settings: Settings | None = None) -> APIRouter:
             page="dashboard",
             active="/app",
             body=f"""
-<header class="page-header ask-header"><p class="eyebrow">Synthetic corpus · answer or explicit refusal</p><div class="hero-grid"><div><h1>Ask a governed policy question with evidence you can inspect.</h1><p class="page-summary">This agent can only use passages available to the anonymous public grant. It checks evidence before releasing an answer and records every decision.</p></div><aside class="corpus-card"><div class="card-title"><strong>Public-demo corpus</strong><span>free-tier hosted</span></div><dl><div><dt>Canonical sources</dt><dd>28</dd></div><div><dt>Anonymous-visible</dt><dd>14</dd></div><div><dt>Data</dt><dd>synthetic</dd></div><div><dt>Database</dt><dd>pgvector</dd></div></dl><p>Internal and restricted sources are excluded by the backend grant before retrieval.</p></aside></div></header>
-<section class="ask-workspace"><form id="ask-form" class="search-form"><input type="hidden" id="ask-max-recovery" value="3" /><label class="sr-only" for="ask-question">Question</label><div class="search-bar">{ICONS["search_spark"]}<input type="text" id="ask-question" placeholder="Ask a question about the policy corpus" autocomplete="off" /><kbd>⌘↵</kbd><button type="submit" data-needs-backend>Run {ICONS["arrow"]}</button></div><div class="search-meta"><span>Path: APP → MCP → STARTER</span><span>Grant: anonymous public</span><span>SQL ACL enforced</span><span>Shared demo rate limit applies</span><label class="approval-toggle"><input type="checkbox" id="ask-require-approval" /> Require approval</label></div></form>
+<header class="page-header ask-header"><p class="eyebrow">Synthetic corpora · answer or explicit refusal</p><div class="hero-grid"><div><h1>Ask a governed policy question with evidence you can inspect.</h1><p class="page-summary">This agent can only use passages available to the anonymous public grant. It checks evidence before releasing an answer and records every decision.</p><div class="inspect-banner company-banner">{ICONS["eye"]}<span><strong>Two fictional companies, one governed system.</strong> Pick <strong>Northline Analytics</strong> (US/EU policies) or <strong>Northwind Logistics</strong> (the original demo). Answers only use the company you pick.</span></div></div>{_corpus_cards(runtime_settings)}</div></header>
+<section class="ask-workspace">{_company_switch(settings=runtime_settings, label="Company")}<form id="ask-form" class="search-form"><input type="hidden" id="ask-max-recovery" value="3" /><label class="sr-only" for="ask-question">Question</label><div class="search-bar">{ICONS["search_spark"]}<input type="text" id="ask-question" placeholder="Ask a question about the policy corpus" autocomplete="off" /><kbd>⌘↵</kbd><button type="submit" data-needs-backend>Run {ICONS["arrow"]}</button></div><div class="search-meta"><span>Path: APP → MCP → STARTER</span><span>Grant: anonymous public</span><span>SQL ACL enforced</span><span>Shared demo rate limit applies</span><label class="approval-toggle"><input type="checkbox" id="ask-require-approval" /> Require approval</label></div></form>
 <div class="section-heading"><div><p class="eyebrow">Starter questions</p><h2>Try a governed scenario</h2></div><span class="small muted">Runs render here. No page change.</span></div><div class="starter-grid" aria-label="Starter questions">
-<button type="button" class="starter-card" data-needs-backend data-question="What is the maximum value of a gift that may be accepted under company policy?" data-approval="false" data-recovery="3"><span class="chip chip-grounded">Grounded</span><strong>What is the cap on gifts I may accept?</strong><small>Cited policy answer</small></button>
-<button type="button" class="starter-card" data-needs-backend data-question="What is the company's pension contribution rate?" data-approval="false" data-recovery="0"><span class="chip chip-refused">Refusal</span><strong>What is the pension contribution rate?</strong><small>Unsupported fact is not invented</small></button>
-<button type="button" class="starter-card" data-needs-backend data-question="What is the termination policy for employees on medical leave?" data-approval="true" data-recovery="3"><span class="chip chip-withheld">Withheld</span><strong>Termination during medical leave?</strong><small>High-risk answer requires approval</small></button>
-<button type="button" class="starter-card" data-needs-backend data-question="What is the Band 6 salary range for 2026?" data-approval="false" data-recovery="3"><span class="chip chip-refused">Denied</span><strong>What is the Band 6 salary range?</strong><small>Restricted data remains unavailable</small></button></div><!-- 1 · Answerable -->
+{_starter_cards(runtime_settings)}</div><!-- 1 · Answerable -->
 <section id="ask-result" class="ask-result" aria-live="polite"><div class="result-empty"><div class="skeleton-lines"><i></i><i></i><i></i></div><div><strong>Your governed result will appear here</strong><p>Answer, citations that open the source, and the decision trail render in place.</p><div class="chip-legend"><span><i class="dot grounded"></i>Grounded</span><span><i class="dot refused"></i>Refused</span><span><i class="dot withheld"></i>Withheld</span><span><i class="dot defended"></i>Defended</span><span><i class="dot calibration"></i>Calibration</span><span><i class="dot error"></i>Error</span></div></div></div></section>
 <section class="run-history-section"><div class="section-heading"><div><p class="eyebrow">Recent activity</p><h2>Run history</h2></div></div><div id="run-history"><div class="spinner">Loading runs…</div></div></section></section>""",
         )
@@ -112,8 +275,8 @@ def build_ui_router(settings: Settings | None = None) -> APIRouter:
             title="Documents",
             page="documents",
             active="/app/documents",
-            body="""
-<div class="documents-layout"><aside class="document-browser"><div class="browser-title"><strong>Anonymous-visible corpus</strong><span id="document-count">Loading…</span></div><label class="sr-only" for="document-filter">Filter documents</label><input id="document-filter" type="text" placeholder="Filter documents" /><div id="document-list" class="document-list"><div class="spinner">Loading corpus…</div></div></aside><section id="document-reader" class="document-reader"><div class="empty">Choose a document to inspect its public corpus preview.</div></section></div>""",
+            body=f"""
+<div class="documents-layout"><aside class="document-browser">{_company_switch(settings=runtime_settings, label="Company")}<div class="browser-title"><strong>Anonymous-visible documents</strong><span id="document-count">Loading…</span></div><p id="document-hidden-note" class="hidden-note"></p><label class="sr-only" for="document-filter">Filter documents</label><input id="document-filter" type="text" placeholder="Filter documents" /><div id="document-list" class="document-list"><div class="spinner">Loading corpus…</div></div></aside><section id="document-reader" class="document-reader"><div class="empty">Choose a document to inspect its public corpus preview.</div></section></div>""",
         )
 
     @router.get("/app/approvals", response_class=HTMLResponse)
@@ -131,8 +294,8 @@ def build_ui_router(settings: Settings | None = None) -> APIRouter:
     async def audit_page():
         banner = (
             _demo_only_banner(
-                "Recorded runs plus runs started by any visitor to this shared demo, all on"
-                " synthetic data."
+                "Recorded runs (Northwind, the original demo company) plus runs started by any"
+                " visitor to this shared demo, all on synthetic data."
             )
             if runtime_settings.public_demo
             else ""
@@ -153,8 +316,8 @@ def build_ui_router(settings: Settings | None = None) -> APIRouter:
             title="Quality gates",
             page="quality",
             active="/app/quality",
-            body="""
-<header class="page-header"><p class="eyebrow">Evidence quality</p><h1>Quality gates</h1><p class="page-summary">Two evaluation suites distinguish release-blocking evidence checks from calibration work.</p></header><section class="page-content"><div id="quality-content"><div class="spinner">Loading quality results…</div></div><div id="eval-runs" class="visually-secondary"></div></section>""",
+            body=f"""
+<header class="page-header"><p class="eyebrow">Evidence quality</p><h1>Quality gates</h1><p class="page-summary">Two evaluation suites distinguish release-blocking evidence checks from calibration work. Both run on the Northwind corpus; the Northline demo scorecard is <a href="{NORTHLINE_SCORECARD_URL}" target="_blank" rel="noopener noreferrer">published separately</a>.</p></header><section class="page-content"><div id="quality-content"><div class="spinner">Loading quality results…</div></div><div id="eval-runs" class="visually-secondary"></div></section>""",
         )
 
     @router.get("/app/security", response_class=HTMLResponse)
@@ -173,8 +336,8 @@ def build_ui_router(settings: Settings | None = None) -> APIRouter:
     async def compare_page():
         if runtime_settings.public_demo:
             banner = _demo_only_banner(
-                "Recorded comparisons on synthetic data. Running new comparisons is disabled in"
-                " this public demo."
+                "Recorded comparisons on the synthetic Northwind corpus (the original demo"
+                " company). Running new comparisons is disabled in this public demo."
             )
             return _shell(
                 settings=runtime_settings,

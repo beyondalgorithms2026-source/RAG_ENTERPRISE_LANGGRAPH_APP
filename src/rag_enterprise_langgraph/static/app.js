@@ -144,10 +144,40 @@ async function openHistoryRun(runId) {
   } catch (error) { output.innerHTML = `<div class="error-box">${esc(error.message)}</div>`; }
 }
 
+// Company switch: each question and document listing is scoped to one fictional company.
+const COMPANY_STORAGE_KEY = "rag-demo-company";
+function companyInputs() { return [...document.querySelectorAll('input[name="company"]')]; }
+function selectedCompany() { return companyInputs().find((input) => input.checked)?.value || ""; }
+function initialCompany() {
+  const keys = companyInputs().map((input) => input.value);
+  const fromUrl = new URLSearchParams(location.search).get("company");
+  if (keys.includes(fromUrl)) return fromUrl;
+  try { const stored = localStorage.getItem(COMPANY_STORAGE_KEY); if (keys.includes(stored)) return stored; } catch (_) { /* storage unavailable */ }
+  return selectedCompany();
+}
+function applyCompany(value) {
+  companyInputs().forEach((input) => {
+    input.checked = input.value === value;
+    input.closest(".company-option")?.classList.toggle("active", input.checked);
+  });
+  document.querySelectorAll("[data-corpus]").forEach((node) => { node.hidden = node.dataset.corpus !== value; });
+}
+function initCompanySwitch(onChange) {
+  if (!companyInputs().length) return;
+  applyCompany(initialCompany());
+  companyInputs().forEach((input) => input.addEventListener("change", () => {
+    if (!input.checked) return;
+    applyCompany(input.value);
+    try { localStorage.setItem(COMPANY_STORAGE_KEY, input.value); } catch (_) { /* storage unavailable */ }
+    onChange?.(input.value);
+  }));
+}
+
 function initDashboard() {
   const form = document.getElementById("ask-form");
   const output = document.getElementById("ask-result");
   if (!form || !output) return;
+  initCompanySwitch();
   loadRunHistory();
   document.querySelectorAll(".starter-card").forEach((button) => button.addEventListener("click", () => {
     document.getElementById("ask-question").value = button.dataset.question || "";
@@ -168,7 +198,7 @@ function initDashboard() {
     try {
       const result = await fetchJSON("/ask-orchestrated", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question, require_approval: document.getElementById("ask-require-approval").checked, max_recovery_steps: Number(document.getElementById("ask-max-recovery").value || 3) }),
+        body: JSON.stringify({ question, corpus: selectedCompany() || undefined, require_approval: document.getElementById("ask-require-approval").checked, max_recovery_steps: Number(document.getElementById("ask-max-recovery").value || 3) }),
       });
       renderRunResult(result, output);
       loadRunHistory();
@@ -205,7 +235,7 @@ async function initDocuments() {
     if (!item) return;
     list.querySelectorAll(".document-item").forEach((node) => node.classList.toggle("active", node.dataset.id === String(item.id)));
     const askQuestion = `Summarize ${documentTitle(item)} and cite the governing passage.`;
-    reader.innerHTML = `<header class="reader-header"><div><p class="eyebrow">Access-filtered corpus document</p><h1>${esc(documentTitle(item))}</h1><div class="reader-meta"><span>${esc(item.source_type || "document")}</span><span>${esc(item.ingestion_status || "available")}</span><span>grant: anonymous public ✓</span></div></div><a class="reader-ask" href="/app?question=${encodeURIComponent(askQuestion)}">Ask about this document <span class="ms">arrow_forward</span></a></header><div class="reader-body"><aside id="reader-outline" class="reader-outline"></aside><article class="document-content" id="document-content"><div class="spinner">Loading readable source preview…</div></article></div>`;
+    reader.innerHTML = `<header class="reader-header"><div><p class="eyebrow">Access-filtered corpus document</p><h1>${esc(documentTitle(item))}</h1><div class="reader-meta"><span>${esc(item.source_type || "document")}</span><span>${esc(item.ingestion_status || "available")}</span><span>grant: anonymous public ✓</span></div></div><a class="reader-ask" href="/app?company=${encodeURIComponent(selectedCompany())}&question=${encodeURIComponent(askQuestion)}">Ask about this document <span class="ms">arrow_forward</span></a></header><div class="reader-body"><aside id="reader-outline" class="reader-outline"></aside><article class="document-content" id="document-content"><div class="spinner">Loading readable source preview…</div></article></div>`;
     try {
       const response = await fetch(sourceHref(item.id), { cache: "no-store" });
       if (!response.ok) throw new HTTPError(response.status, `Preview HTTP ${response.status}`);
@@ -227,9 +257,13 @@ async function initDocuments() {
   const load = async () => {
     try {
       if (!backendUrl) throw new Error("Backend URL is not configured");
-      const payload = await fetchJSON(`${backendUrl}/corpus`, { cache: "no-store" });
+      const company = selectedCompany();
+      const scope = company ? `?corpus=${encodeURIComponent(company)}` : "";
+      const note = document.getElementById("document-hidden-note");
+      if (note) note.textContent = companyInputs().find((input) => input.checked)?.dataset.hiddenNote || "";
+      const payload = await fetchJSON(`${backendUrl}/corpus${scope}`, { cache: "no-store" });
       documents = canonicalDocuments(Array.isArray(payload) ? payload : []);
-      if (counter) counter.textContent = `${documents.length} canonical public documents`;
+      if (counter) counter.textContent = `${documents.length} public documents`;
       renderList(documents);
       const requested = new URLSearchParams(location.search).get("doc");
       await renderReader(documents.find((item) => String(item.id) === requested) || documents[0]);
@@ -238,6 +272,7 @@ async function initDocuments() {
       reader.innerHTML = '<div class="empty">Architecture and evaluation evidence remain available while the corpus service recovers.</div>';
     }
   };
+  initCompanySwitch(() => { list.innerHTML = '<div class="spinner">Loading corpus…</div>'; load(); });
   await load();
   if (backendState === "waking") {
     const readiness = setInterval(() => {
