@@ -304,17 +304,19 @@ function bindOutline(outline, select) {
     links.forEach((link) => link.classList.toggle("active", link.dataset.section === id));
     if (select) select.value = id;
   };
-  const jump = (id) => {
+  const jump = (id, smooth = true) => {
     const target = document.getElementById(id);
     if (!target) return;
-    target.scrollIntoView({ behavior: "smooth", block: "start" });
+    // The dropdown (phones, narrow windows) jumps instantly: smooth scrolling started from a
+    // select change does not move the page on some mobile browsers.
+    target.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "start" });
     target.classList.remove("flash");
     void target.offsetWidth;
     target.classList.add("flash");
     activate(id);
   };
   links.forEach((link) => link.addEventListener("click", (event) => { event.preventDefault(); jump(link.dataset.section); }));
-  select?.addEventListener("change", () => jump(select.value));
+  select?.addEventListener("change", () => jump(select.value, false));
   if ("IntersectionObserver" in window) {
     const observer = new IntersectionObserver((entries) => {
       const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
