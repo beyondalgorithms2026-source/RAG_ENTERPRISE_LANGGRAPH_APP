@@ -118,7 +118,7 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.EVAL_OPENAI_API_KEY }}
       RAG_AGENT_MODEL_PROVIDER: openai
       RAG_AGENT_MODEL_NAME: gpt-4o-mini-2024-07-18
-      RAG_AGENT_ENABLE_SYNTHESIS: "false"
+      RAG_AGENT_ENABLE_SYNTHESIS: "true"
       RERANK_ENABLED: "false"
       RETRIEVAL_MODE: hybrid
       ENABLE_GRAPH: "false"

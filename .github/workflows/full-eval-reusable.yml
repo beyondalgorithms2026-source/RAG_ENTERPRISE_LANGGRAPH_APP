@@ -111,7 +111,7 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.EVAL_OPENAI_API_KEY }}
       RAG_AGENT_MODEL_PROVIDER: openai
       RAG_AGENT_MODEL_NAME: gpt-4o-mini-2024-07-18
-      RAG_AGENT_ENABLE_SYNTHESIS: "false"
+      RAG_AGENT_ENABLE_SYNTHESIS: "true"
       RERANK_ENABLED: "false"
       RETRIEVAL_MODE: hybrid
       ENABLE_GRAPH: "false"
@@ -234,7 +234,7 @@ jobs:
         run: |
           export RAG_AGENT_MCP_SERVER_PYTHON="$(command -v python)"
           python -m rag_enterprise_langgraph.cli \
-            --eval-set config/eval-set-northwind.json \
+            --eval-set config/eval-set-northwind-candidate.json \
             --eval-output "$RUNNER_TEMP/core-eval-report.md" \
             --eval-json "$RUNNER_TEMP/core-eval-report.json" \
             --max-recovery-steps 3 \
@@ -282,7 +282,7 @@ jobs:
         run: |
           export RAG_AGENT_MCP_SERVER_PYTHON="$(command -v python)"
           python -m rag_enterprise_langgraph.cli \
-            --eval-set config/eval-set-operations-manual-v3.2.json \
+            --eval-set config/eval-set-operations-manual-v3.2-candidate.json \
             --eval-output "$RUNNER_TEMP/manual-eval-report.md" \
             --eval-json "$RUNNER_TEMP/manual-eval-report.json" \
             --max-recovery-steps 3 \
