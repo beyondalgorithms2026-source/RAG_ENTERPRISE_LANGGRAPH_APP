@@ -93,10 +93,10 @@ policies. The governed UI has seven pages a visitor can inspect:
 |:--|:--|
 | **Ask** | Submit a policy question. The answer appears beside a governance panel showing evidence status, cited passages, source links, and the full audit timeline with latencies per tool call. Four preset scenarios per company demonstrate a grounded answer, an explicit refusal, approval withholding, and restricted-data denial. |
 | **Documents** | Browse the anonymous-visible synthetic policy documents of the selected company (14 Northwind, 13 Northline). Each shows metadata, a preview, and a link to the full source. Internal and restricted documents are excluded by SQL before retrieval — their names do not appear. |
-| **Quality** | Side-by-side comparison: the approved v1 baseline (25/25) and the v2 candidate snapshot (82/90), with failed and manual-review case IDs disclosed. |
-| **Security** | All 20 red-team scenarios grouped by attack category (prompt injection, grounding, faithfulness, access control). Each card shows the defense mechanism and whether it was proved deterministically or against the live backend. |
-| **Audit** | Hash-chained event timeline for each orchestrated run — every tool call, decision, and latency is recorded. Demo only: recorded Northwind runs plus runs from any visitor, shared by everyone and reset on redeploy. |
-| **Approvals** | The human-oversight queue. High-risk answers sit here as `pending_approval` until a named reviewer decides. Public visitors can inspect but not approve — the greyed-out buttons are the proof. |
+| **Quality** | Per company. Northwind: the approved v1 baseline (25/25) beside the v2 candidate snapshot (82/90), with failed and manual-review case IDs disclosed. Northline: the 20-question demo scorecard (single run) with its misses and links to the full scorecard and traces. |
+| **Security** | All 20 red-team scenarios grouped by attack category (prompt injection, grounding, faithfulness, access control). Each card shows the defense mechanism and whether it was proved deterministically or against the live backend. The checks test the governance layer, so they apply to both companies; the two live access-control checks were recorded on Northwind. |
+| **Audit** | Hash-chained event timeline for each orchestrated run — every tool call, decision, and latency is recorded. Filtered by company. Demo only: recorded runs for both companies plus runs from any visitor, shared by everyone and reset on redeploy. |
+| **Approvals** | The human-oversight queue, filtered by company. High-risk answers sit here as `pending_approval` until a named reviewer decides. Public visitors can inspect but not approve — the greyed-out buttons are the proof. |
 | **Compare** | Recorded side-by-side runs on the Northwind corpus: a raw first pass next to the governed workflow, same model. Demo only; running new comparisons is disabled on the public demo. |
 
 ## Architecture — three repositories, on purpose

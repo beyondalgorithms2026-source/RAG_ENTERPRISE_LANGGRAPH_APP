@@ -127,8 +127,8 @@ async function loadRunHistory() {
   const target = document.getElementById("run-history");
   if (!target) return;
   try {
-    const runs = (await fetchJSON("/runs")).runs || [];
-    target.innerHTML = runs.length ? `<div class="table-card"><table><thead><tr><th>Question</th><th>Status</th><th>Approval</th><th>When</th></tr></thead><tbody>${runs.slice(0, 30).map((run) => `<tr class="clickable" data-run="${esc(run.run_id)}"><td>${esc(run.question || "—")}</td><td>${pill(run.grounding_status)}</td><td>${pill(run.approval_status || "not required")}</td><td class="small muted">${esc((run.created_at || "").slice(0, 19))}</td></tr>`).join("")}</tbody></table></div>` : '<div class="empty">No runs yet.</div>';
+    const runs = ((await fetchJSON("/runs")).runs || []).filter(inSelectedCompany);
+    target.innerHTML = runs.length ? `<div class="table-card"><table><thead><tr><th>Question</th><th>Status</th><th>Approval</th><th>When</th></tr></thead><tbody>${runs.slice(0, 30).map((run) => `<tr class="clickable" data-run="${esc(run.run_id)}"><td>${esc(run.question || "—")}</td><td>${pill(run.grounding_status)}</td><td>${pill(run.approval_status || "not required")}</td><td class="small muted">${esc((run.created_at || "").slice(0, 19))}</td></tr>`).join("")}</tbody></table></div>` : `<div class="empty">No ${esc(companyLabel())} runs yet.</div>`;
     target.querySelectorAll("[data-run]").forEach((row) => row.addEventListener("click", () => openHistoryRun(row.dataset.run)));
   } catch (error) { target.innerHTML = `<div class="error-box">${esc(error.message)}</div>`; }
 }
@@ -173,11 +173,17 @@ function initCompanySwitch(onChange) {
   }));
 }
 
+// Records written before corpus scoping existed belong to the original demo company.
+const LEGACY_COMPANY = "northwind-public-demo";
+function companyOf(item) { return item?.corpus || LEGACY_COMPANY; }
+function inSelectedCompany(item) { const company = selectedCompany(); return !company || companyOf(item) === company; }
+function companyLabel() { return companyInputs().find((input) => input.checked)?.closest(".company-option")?.querySelector("strong")?.textContent || "this company"; }
+
 function initDashboard() {
   const form = document.getElementById("ask-form");
   const output = document.getElementById("ask-result");
   if (!form || !output) return;
-  initCompanySwitch();
+  initCompanySwitch(() => loadRunHistory());
   loadRunHistory();
   document.querySelectorAll(".starter-card").forEach((button) => button.addEventListener("click", () => {
     document.getElementById("ask-question").value = button.dataset.question || "";
@@ -291,9 +297,9 @@ async function loadApprovals() {
   const target = document.getElementById("approval-list");
   if (!target) return;
   try {
-    const pending = (await fetchJSON("/approval/pending")).pending || [];
+    const pending = ((await fetchJSON("/approval/pending")).pending || []).filter(inSelectedCompany);
     document.getElementById("pending-count").textContent = pending.length;
-    target.innerHTML = pending.length ? `<table><thead><tr><th>Requested action</th><th>Class</th><th>Status</th><th>Approver</th><th>Actions</th></tr></thead><tbody>${pending.map((item) => `<tr><td><strong>${esc(item.question)}</strong><br><span class="small muted">${esc((item.risk_reasons || []).join(", ") || "Governed answer")}</span></td><td>${pill(item.grounding_status || "unknown")}</td><td>${pill(item.status)}</td><td>${esc(item.reviewer || "Unassigned")}</td><td><button disabled>Approve</button> <button disabled>Reject</button></td></tr>`).join("")}</tbody></table>` : '<div class="empty">No pending approvals.</div>';
+    target.innerHTML = pending.length ? `<table><thead><tr><th>Requested action</th><th>Class</th><th>Status</th><th>Approver</th><th>Actions</th></tr></thead><tbody>${pending.map((item) => `<tr><td><strong>${esc(item.question)}</strong><br><span class="small muted">${esc((item.risk_reasons || []).join(", ") || "Governed answer")}</span></td><td>${pill(item.grounding_status || "unknown")}</td><td>${pill(item.status)}</td><td>${esc(item.reviewer || "Unassigned")}</td><td><button disabled>Approve</button> <button disabled>Reject</button></td></tr>`).join("")}</tbody></table>` : `<div class="empty">No pending ${esc(companyLabel())} approvals.</div>`;
   } catch (error) { target.innerHTML = `<div class="error-box">${esc(error.message)}</div>`; }
 }
 
@@ -301,18 +307,24 @@ async function loadDecisions() {
   const target = document.getElementById("decision-list");
   if (!target) return;
   try {
-    const decided = ((await fetchJSON("/approval")).approvals || []).filter((item) => ["approved", "rejected"].includes(item.status));
+    const decided = ((await fetchJSON("/approval")).approvals || []).filter((item) => ["approved", "rejected"].includes(item.status) && inSelectedCompany(item));
     target.innerHTML = decided.length ? `<h2>Recent decisions</h2><div class="table-card"><table><tbody>${decided.slice(0, 10).map((item) => `<tr><td>${esc(item.question)}</td><td>${pill(item.status)}</td><td>${esc((item.decided_at || "").slice(0, 19))}</td></tr>`).join("")}</tbody></table></div>` : "";
   } catch (_) { /* secondary history only */ }
 }
 
-function initApprovals() { loadApprovals(); loadDecisions(); }
+function initApprovals() {
+  initCompanySwitch(() => { loadApprovals(); loadDecisions(); });
+  loadApprovals();
+  loadDecisions();
+}
 
 async function loadAuditRuns() {
   const target = document.getElementById("audit-runs");
   if (!target) return;
   try {
-    const runs = (await fetchJSON("/audit/runs")).runs || [];
+    const runs = ((await fetchJSON("/audit/runs")).runs || []).filter(inSelectedCompany);
+    const detail = document.getElementById("audit-detail");
+    if (!runs.length && detail) detail.innerHTML = `<div class="empty">No ${esc(companyLabel())} runs recorded yet. Ask a ${esc(companyLabel())} question on the Ask page and its audit trail appears here.</div>`;
     target.innerHTML = runs.length ? runs.map((run) => `<button class="audit-run-button" type="button" data-run="${esc(run.run_id)}"><strong>${esc(run.question_preview || "Audited run")}</strong><span>${pill(run.final_status || "in progress")} · ${esc(run.event_count || 0)} events</span></button>`).join("") : '<div class="empty">No audited runs yet.</div>';
     const buttons = target.querySelectorAll("[data-run]");
     const select = (node) => { buttons.forEach((item) => item.classList.toggle("active", item === node)); loadAuditEvents(node.dataset.run); };
@@ -334,7 +346,10 @@ async function loadAuditEvents(runId) {
   } catch (error) { detail.innerHTML = `<div class="error-box">${esc(error.message)}</div>`; }
 }
 
-function initAudit() { loadAuditRuns(); }
+function initAudit() {
+  initCompanySwitch(() => loadAuditRuns());
+  loadAuditRuns();
+}
 
 function renderQuality(status) {
   const approved = status.approved_baseline || {};
@@ -344,13 +359,30 @@ function renderQuality(status) {
   return `<div class="quality-grid"><article class="quality-card core"><span class="quality-tag">APPROVED BASELINE</span><h2>v1 core suite</h2><div class="quality-score">${esc(v1Result)}</div><p>${esc(approved.statement || "The approved 25-case baseline remains unchanged.")}</p><ul class="quality-list"><li><span>Baseline ID</span><strong>${esc(approved.id || "northwind-openai-v1")}</strong></li><li><span>Status</span><strong>approved</strong></li></ul></article><article class="quality-card calibration"><span class="quality-tag">CANDIDATE · NOT APPROVED</span><h2>v2 expanded snapshot</h2><div class="quality-score">${esc(candidate.passed || 0)}/${esc(candidate.total || 90)}</div><p>${esc(status.approval_statement || "Candidate evidence only; no baseline promotion.")}</p><ul class="quality-list"><li><span>Failed</span><strong>${esc(candidate.failed || 0)}</strong></li><li><span>Manual review</span><strong>${esc(candidate.manual_review || 0)}</strong></li><li><span>Required refusals</span><strong>${esc(candidate.refusal_passed || 0)}/${esc(candidate.refusal_total || 0)}</strong></li><li><span>Safe boundaries</span><strong>${esc(candidate.safe_boundary_passed || 0)}/${esc(candidate.safe_boundary_total || 0)}</strong></li></ul><div class="quality-note">Failed: ${esc((limitations.failed_case_ids || []).join(", ") || "none")}<br>Manual review: ${esc((limitations.manual_review_case_ids || []).join(", ") || "none")}</div></article></div>`;
 }
 
+function renderNorthlineQuality(card) {
+  const splits = card.by_split || {};
+  const rows = ["exact_fact", "open", "refuse", "adversarial"].map((name) => `<li><span>${esc(name)}</span><strong>${esc(splits[name]?.passed ?? 0)}/${esc(splits[name]?.total ?? 0)}</strong></li>`).join("");
+  const misses = (card.misses || []).map((miss) => `<li><span>${esc(miss.qid)} · ${esc(miss.split)}</span><strong>${esc(miss.note || "miss")}</strong></li>`).join("");
+  const links = card.links || {};
+  const gate = card.gate_passed ? "met" : "not met";
+  return `<div class="quality-grid"><article class="quality-card core"><span class="quality-tag">DEMO SCORECARD · SINGLE RUN</span><h2>${esc(card.title || "Northline demo scorecard")}</h2><div class="quality-score">${esc(Math.round((card.exact_fact_hit_rate || 0) * 100))}%</div><p>exact_fact hit-rate; gate ${esc(card.gate)} ${esc(gate)}. ${esc(card.statement || "")}</p><ul class="quality-list">${rows}</ul><div class="quality-note">Model ${esc(card.model || "n/a")}, ${esc(card.max_recovery_steps || "n/a")} recovery step. A refusal on a refuse item counts as success.</div></article><article class="quality-card calibration"><span class="quality-tag">MISSES · NONE INVENTED</span><h2>Declined or partial answers</h2><ul class="quality-list">${misses || "<li><span>None</span></li>"}</ul><div class="quality-note"><a href="${esc(links.scorecard || "#")}" target="_blank" rel="noopener noreferrer">Full scorecard</a> · <a href="${esc(links.traces || "#")}" target="_blank" rel="noopener noreferrer">Loom traces</a> · <a href="${esc(links.questions || "#")}" target="_blank" rel="noopener noreferrer">Questions</a></div></article></div>`;
+}
+
 async function loadQuality() {
   const target = document.getElementById("quality-content");
+  if (selectedCompany() === "western_northline") {
+    try { target.innerHTML = renderNorthlineQuality(await fetchJSON("/evidence/northline", { cache: "no-store" })); }
+    catch (error) { target.innerHTML = `<div class="error-box">The committed Northline scorecard is unavailable: ${esc(error.message)}</div>`; }
+    return;
+  }
   try { target.innerHTML = renderQuality(await fetchJSON("/evidence/status", { cache: "no-store" })); }
   catch (error) { target.innerHTML = `<div class="error-box">Committed evaluation evidence is unavailable: ${esc(error.message)}</div>`; }
 }
 
-function initQuality() { loadQuality(); }
+function initQuality() {
+  initCompanySwitch(() => loadQuality());
+  loadQuality();
+}
 
 function evidenceMode(finding) {
   if (["RT-06", "RT-16"].includes(finding.finding_id)) return finding.evidence_mode || "live SQL + full-stack";

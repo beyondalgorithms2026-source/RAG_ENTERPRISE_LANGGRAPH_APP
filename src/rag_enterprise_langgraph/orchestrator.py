@@ -1325,6 +1325,7 @@ class EnterpriseRagOrchestrator:
                 "validation_mode": validation_mode,
                 "approval_mode": effective_approval_mode,
                 "max_recovery_steps": max_recovery_steps,
+                "corpus": corpus_scope,
             },
         )
         emit(
@@ -1420,6 +1421,7 @@ class EnterpriseRagOrchestrator:
                     evidence_status=(result.validation_summary or {}).get("evidence_support"),
                     grounding_status=result.grounding_status,
                     risk_reasons=reasons,
+                    corpus=corpus_scope,
                 )
                 result.approval_status = PENDING_APPROVAL
                 result.approval_id = record["approval_id"]
@@ -1458,7 +1460,7 @@ class EnterpriseRagOrchestrator:
             if results_store is not None:
                 # Persist the real answer and source evidence so an approver can
                 # release them later; this happens before withholding below.
-                results_store.save(result.to_dict(), real_answer=real_answer)
+                results_store.save(result.to_dict(), real_answer=real_answer, corpus=corpus_scope)
             self._record_journal(
                 result=result,
                 anchors=anchors,
