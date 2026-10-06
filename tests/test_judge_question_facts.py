@@ -186,3 +186,25 @@ def test_elided_evidence_quotes_must_be_literal_ordered_and_in_one_row(quote, ac
 def test_answer_quotes_are_never_elided():
     answer = "No, a Temperature Excursion lasts more than 5 consecutive minutes."
     assert grading._answer_span(answer, "Temperature Excursion...5 consecutive minutes.") is None
+
+
+def test_judge_is_told_where_question_sourced_quotes_come_from():
+    assert "question_sourced" in eval_judge.SYSTEM
+    assert "from the question text, never from the answer" in eval_judge.SYSTEM
+
+
+def test_answer_text_is_not_evidence_for_a_question_sourced_fact(monkeypatch):
+    # Run 37394242863: the judge quoted the answer as the duration's evidence.
+    monkeypatch.setenv("EVAL_OPENAI_API_KEY", "unit-test-only")
+    monkeypatch.setattr(eval_judge.time, "sleep", lambda seconds: None)
+    circular = {**DURATION_ROW, "evidence_span": "the room only read +9°C for four minutes."}
+    monkeypatch.setattr(
+        eval_judge.urllib.request,
+        "urlopen",
+        lambda request, timeout: _response({"assertion_0": circular}),
+    )
+    with pytest.raises(eval_judge.JudgeInfrastructureError) as raised:
+        eval_judge._request(
+            _payload([_assertion("duration", "four minutes", question_sourced=True)])
+        )
+    assert raised.value.last_reason == "invalid scoped evidence span"
