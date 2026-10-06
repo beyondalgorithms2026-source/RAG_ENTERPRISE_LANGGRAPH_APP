@@ -1,7 +1,7 @@
 # v2 calibration — 5–6 October 2026
 
-Status: **1 of 10 counted runs (37396288591), under the OM-044 human-review exception. v2
-remains unapproved.** The approved v1 baseline (25/25) is unchanged.
+Status: **paused at 2 of 10 counted runs (37396288591, 37398198971). The remaining runs are
+not worthwhile until run-to-run variance is reduced (see below). v2 remains unapproved.** The approved v1 baseline (25/25) is unchanged.
 
 A run counts towards the ten-run calibration only if `validate_correction_report`
 (`src/rag_enterprise_langgraph/eval_calibration.py`) accepts it:
@@ -115,3 +115,37 @@ The outlier run (one 26.5 s request) still breaches, as intended. Counted run 1
 (37396288591) had its performance summary recomputed with `scripts/attach_eval_performance.py`
 from its unchanged measurements and usage. It is now `warn`; only the `performance` block
 changed. The nine remaining counted runs use the new limits from the start.
+
+## Counted-run batch 1 (6 October 2026)
+
+Three runs with the new limits ($0.113):
+
+| Run | Pass / fail / review | Result |
+|---|---|---|
+| 37398198971 | 76 / 5 / 9 | **counted** (performance within limits) |
+| 37398207991 | 73 / 5 / 12 | not counted: OM-046 |
+| 37398216341 | 73 / 5 / 12 | not counted: OM-046 |
+
+In both rejected runs, OM-046 was a **real answer miss**, not a judge problem. The synthesized
+answer left out the question's €260,000 ("…because the financial exposure is above
+€250,000"), so the required exposure fact is missing.
+
+**Why calibration paused here.** `scripts/build_eval_baseline.py` requires each case to have
+the same outcome in at least 90% of the counted runs. Across the four runs with the same
+configuration (37396288591 and batch 1), **8 cases already disagree**:
+
+| Case | Outcomes |
+|---|---|
+| OM-015 | 2 pass, 2 review |
+| OM-031 | 2 pass, 2 review |
+| OM-033 | 2 fail, 2 review |
+| OM-046 | 2 pass, 2 fail |
+| OM-008 | 3 review, 1 pass |
+| OM-040 | 3 pass, 1 review |
+| OM-068 | 3 fail, 1 pass |
+| OM-085 | 3 review, 1 fail |
+
+About one run in three is valid. Reaching ten would take roughly 24 more runs (about
+$0.90), and the baseline would still very likely fail the stability check. Reducing
+run-to-run variance comes first: answer wording, judge quoting on OM-015 and OM-031, and
+recovery on OM-033 and OM-068.
