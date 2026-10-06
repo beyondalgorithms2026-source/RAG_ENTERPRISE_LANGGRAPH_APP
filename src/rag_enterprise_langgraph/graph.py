@@ -10,10 +10,12 @@ SYSTEM_PROMPT = load_prompt("app_agent")
 
 
 def build_chat_model(settings: Settings):
+    seed = settings.model_seed if settings.model_provider == "openai" else None
     return init_chat_model(
         settings.model_name,
         model_provider=settings.model_provider,
         temperature=settings.model_temperature,
+        **({"seed": seed} if seed is not None else {}),
     )
 
 

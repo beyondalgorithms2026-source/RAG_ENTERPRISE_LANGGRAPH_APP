@@ -208,3 +208,16 @@ def test_answer_text_is_not_evidence_for_a_question_sourced_fact(monkeypatch):
             _payload([_assertion("duration", "four minutes", question_sourced=True)])
         )
     assert raised.value.last_reason == "invalid scoped evidence span"
+
+
+def test_judge_requests_are_seeded(monkeypatch):
+    monkeypatch.setenv("EVAL_OPENAI_API_KEY", "unit-test-only")
+    bodies = []
+
+    def transport(request, timeout):
+        bodies.append(json.loads(request.data))
+        return _response({"assertion_0": DURATION_ROW})
+
+    monkeypatch.setattr(eval_judge.urllib.request, "urlopen", transport)
+    eval_judge._request(_payload([_assertion("duration", "four minutes", question_sourced=True)]))
+    assert bodies[0]["seed"] == eval_judge.SEED and bodies[0]["temperature"] == 0

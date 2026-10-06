@@ -327,3 +327,26 @@ def test_inner_quotes_survive_answer_cleanup():
         )
     )
     assert wrapped["answer"] == "Yes, above €250,000."
+
+
+def test_ordered_procedure_keeps_the_verbatim_answer():
+    faithful = "The hard materials of a rocket cost about 2% of what a rocket costs."
+    result = asyncio.run(
+        _rocket_orchestrator(enable_synthesis=True, model=_StubModel(faithful)).run(
+            "What are the steps that make up the cost of rocket materials?"
+        )
+    )
+    assert result.synthesis_reason == "kept_verbatim_sequence"
+    assert result.synthesis_verified is False
+    assert result.answer != faithful
+
+
+def test_openai_chat_model_gets_the_seed_and_other_providers_do_not(monkeypatch):
+    import rag_enterprise_langgraph.graph as graph
+
+    calls = []
+    monkeypatch.setattr(graph, "init_chat_model", lambda name, **kwargs: calls.append(kwargs))
+    graph.build_chat_model(Settings(model_provider="openai", model_name="gpt-4o-mini-2024-07-18"))
+    graph.build_chat_model(Settings(model_provider="ollama", model_name="llama3.2:3b"))
+    assert calls[0]["seed"] == 20261006 and calls[0]["temperature"] == 0.0
+    assert "seed" not in calls[1]
