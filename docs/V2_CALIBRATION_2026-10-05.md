@@ -23,8 +23,9 @@ question sets. All of them had: 8/8 refusals, RT-06 pass, 0 infrastructure failu
 | 37348730282 | 5 Oct 17:28 | echoed `SOURCE` label (#45); question-sourced facts; rejected spans recorded (#46) | 72 / 6 / 12 | review | fail | $0.0377 |
 | 37350896514 | 5 Oct 17:46 | synthesis 1.1.1; judge feedback retry; formatting normalisation (#47) | 74 / 5 / 11 | review | review | $0.0376 |
 | 37394242863 | 6 Oct 00:29 | quote cleanup (#48); elided evidence quotes (#49) | 71 / 6 / 13 | review | review | $0.0377 |
+| 37396288591 | 6 Oct | judge told to quote question-sourced facts from the question (#50) | 73 / 5 / 12 | review | **pass** | $0.0377 |
 
-Six runs cost $0.227 in total. Prompt 1.2.3 was not promoted: the cases it targets (OM-060,
+Seven runs cost $0.265 in total. Prompt 1.2.3 was not promoted: the cases it targets (OM-060,
 OM-084) did not change, and the other differences are within run-to-run variation.
 
 ## What was wrong, and what changed
@@ -49,20 +50,26 @@ Live, after the fixes, both mandatory questions return correct, verified answers
 
 ## Remaining blocker
 
-The answers to OM-044 and OM-046 are correct, but the judge (`gpt-4o-mini-2024-07-18`, at
-temperature 0) does not reliably quote them literally:
+**OM-046 passes** as of run 37396288591. **OM-044 still blocks every run.** Its answer has been
+correct since #44: "No, a Temperature Excursion is defined as … more than 5 consecutive
+minutes, and the room only read +9°C for four minutes."
 
-- **OM-044.** In run 37394242863 the judge quoted the question-sourced duration from the
-  answer instead of the question. #50 now states that rule in the judge prompt; this has
-  not yet been measured.
-- **OM-046.** The judge paraphrases the answer ("exposure is €260,000" where the answer says
-  "exposure of €260,000") on every attempt, despite the retry feedback.
+The judge (`gpt-4o-mini-2024-07-18`, at temperature 0) does not quote it reliably, and each
+fix moved the error somewhere else:
+
+| Run | How the judge failed on OM-044 |
+|---|---|
+| 37348730282 | Joined a table term and its meaning with "..." (now accepted by #49). |
+| 37394242863 | Quoted the question-sourced duration from the answer. |
+| 37396288591 | Quoted the document threshold from the answer. Answer text is not evidence, so this was correctly rejected. |
 
 ## Next
 
-1. Run one confirmation run with #50 (about $0.04) once the OpenAI budget allows.
-2. If OM-046 is still blocked only by the judge's paraphrase, decide between:
-   - a stronger judge model, which changes the grading setup and costs more per run; or
-   - accepting human review for that case in the counted runs, which requires changing the
-     mandatory rule.
-3. Then run the ten counted runs (about $0.38).
+The remaining options are both owner decisions:
+
+1. **A stronger judge model** for concept grading. This changes the grading setup and costs
+   more per run; it needs one confirmation run before the ten counted runs.
+2. **Accept human review for OM-044** in counted runs. This changes the mandatory rule in
+   `validate_correction_report`.
+
+Either way, the ten counted runs cost about $0.38 at current per-run cost.
