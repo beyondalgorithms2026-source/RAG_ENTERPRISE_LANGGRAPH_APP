@@ -350,3 +350,59 @@ def test_openai_chat_model_gets_the_seed_and_other_providers_do_not(monkeypatch)
     graph.build_chat_model(Settings(model_provider="ollama", model_name="llama3.2:3b"))
     assert calls[0]["seed"] == 20261006 and calls[0]["temperature"] == 0.0
     assert "seed" not in calls[1]
+
+
+class _SequenceModel:
+    def __init__(self, *replies):
+        self.replies = list(replies)
+        self.calls = []
+
+    async def ainvoke(self, messages):
+        self.calls.append(messages)
+        return type("Reply", (), {"content": self.replies[len(self.calls) - 1]})()
+
+
+CRITICAL_EVIDENCE = [{"snippet": "Critical Incident: financial exposure above €250,000."}]
+CRITICAL_Q = "Expected exposure is €260,000. Does this meet the definition of a Critical Incident?"
+
+
+def test_comparison_answer_is_retried_once_to_state_the_given_value():
+    model = _SequenceModel(
+        "Yes, this is a Critical Incident because the exposure is above €250,000.",
+        "Yes, the €260,000 exposure is a Critical Incident because it is above €250,000.",
+    )
+    result = asyncio.run(
+        synthesize_and_verify(question=CRITICAL_Q, evidence=CRITICAL_EVIDENCE, model=model)
+    )
+    assert result == {
+        "answer": "Yes, the €260,000 exposure is a Critical Incident because it is above €250,000.",
+        "verified": True,
+        "reason": "verified",
+    }
+    assert len(model.calls) == 2 and "260,000" in model.calls[1][-1]["content"]
+
+
+def test_retry_that_still_omits_the_value_keeps_the_first_verified_answer():
+    first = "Yes, this is a Critical Incident because the exposure is above €250,000."
+    model = _SequenceModel(first, "Yes, it is above €250,000.")
+    result = asyncio.run(
+        synthesize_and_verify(question=CRITICAL_Q, evidence=CRITICAL_EVIDENCE, model=model)
+    )
+    assert result["answer"] == first and result["verified"] is True
+
+
+def test_no_retry_when_the_value_is_stated_or_the_question_is_not_a_comparison():
+    stated = _SequenceModel("Yes, €260,000 is above €250,000, so it is a Critical Incident.")
+    asyncio.run(
+        synthesize_and_verify(question=CRITICAL_Q, evidence=CRITICAL_EVIDENCE, model=stated)
+    )
+    assert len(stated.calls) == 1
+    open_question = _SequenceModel("A Critical Incident includes exposure above €250,000.")
+    asyncio.run(
+        synthesize_and_verify(
+            question="What exposure makes a Critical Incident for a €260,000 claim?",
+            evidence=CRITICAL_EVIDENCE,
+            model=open_question,
+        )
+    )
+    assert len(open_question.calls) == 1
