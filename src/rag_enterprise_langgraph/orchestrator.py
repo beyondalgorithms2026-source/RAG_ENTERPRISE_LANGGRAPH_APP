@@ -417,7 +417,6 @@ def _question_requires_exact_value(question: str) -> bool:
         "how much",
         "how many",
         "which",
-        "what seminar",
         "where",
     )
     return any(marker in lowered for marker in markers)
@@ -431,13 +430,6 @@ def _answer_misses_requested_field(question: str, answer: str) -> bool:
     if "when" in lowered_question and not re.search(
         r"\b(?:\d{4}|\d{1,2}[/-]\d{1,2}|january|february|march|april|may|june|july|august|september|october|november|december)\b",
         lowered_answer,
-    ):
-        return True
-    if (
-        "what seminar" in lowered_question
-        and "seminar" not in lowered_answer
-        and "training" not in lowered_answer
-        and "conference" not in lowered_answer
     ):
         return True
     return False
@@ -901,7 +893,6 @@ def _focused_evidence_text(
     anchor_terms = [anchor for anchor in anchors if len(anchor) >= 4]
     anchor_keys = {anchor.casefold() for anchor in anchor_terms}
     focus_terms = [term for term in _answer_focus_terms(question) if term not in anchor_keys]
-    lowered_question = question.lower()
     wants_percentage = _wants_percentage(question, shape)
     wants_numeric = _wants_numeric(question, shape)
     wants_date = _wants_date(question, shape)
@@ -919,16 +910,6 @@ def _focused_evidence_text(
             + _term_hits(sentence, focus_terms) * 2
         )
         score = relevance
-        # Question-specific relevance signals (these define on-topic-ness themselves).
-        if "what seminar" in lowered_question and "seminar" in lowered_sentence:
-            score += 5
-            relevance += 5
-        if "where" in lowered_question and any(
-            place in lowered_sentence
-            for place in ("texas", "van horn", "west texas", "poughkeepsie")
-        ):
-            score += 4
-            relevance += 4
         # Answer-shape boosts apply ONLY to on-topic sentences.
         if relevance > 0:
             if wants_percentage and re.search(r"\b\d+(?:\.\d+)?\s*%|\b0\.\d+\b", sentence):
@@ -970,13 +951,6 @@ def _focused_evidence_text(
 
 
 def _short_answer_from_focus(question: str, focused: str, shape=None) -> str | None:
-    lowered_question = question.lower()
-    if "what seminar" in lowered_question:
-        match = re.search(
-            r"\b(?:in|to)\s+(a\s+seminar\s+at\s+IBM[^.?!]*)(?:[.?!]|$)", focused, re.IGNORECASE
-        )
-        if match:
-            return match.group(1).strip()
     if _wants_percentage(question, shape):
         # Prefer an explicit percent token, then a written-out "N percent".
         match = re.search(r"\b\d+(?:\.\d+)?\s*%|\b0\.\d+\b", focused)
