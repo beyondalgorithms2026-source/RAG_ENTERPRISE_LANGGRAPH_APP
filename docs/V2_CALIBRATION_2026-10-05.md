@@ -1,7 +1,10 @@
 # v2 calibration — 5–6 October 2026
 
-Status: **paused at 2 of 10 counted runs (37396288591, 37398198971). The remaining runs are
-not worthwhile until run-to-run variance is reduced (see below). v2 remains unapproved.** The approved v1 baseline (25/25) is unchanged.
+Status (6 October): **v2 remains unapproved. The count was reset to 0 after the #56
+comparison-answer retry changed the answer logic.** Runs 37396288591 and 37398198971
+counted under the earlier configuration and cannot be combined with current runs. The
+approved v1 baseline (25/25) is unchanged. The sections below preserve the earlier
+decisions and run history; the current configuration is recorded at the end.
 
 A run counts towards the ten-run calibration only if `validate_correction_report`
 (`src/rag_enterprise_langgraph/eval_calibration.py`) accepts it:
@@ -82,6 +85,9 @@ Every report that relies on the exception carries this remark, printed by
 
 **Remark: a better judge model is needed and was deliberately not adopted for now.**
 
+This section records the original OM-044 decision. The OM-046 decision below extends
+the same narrow rule.
+
 Under this rule, run 37396288591 is the first valid calibration run.
 
 ## Next blocker: performance thresholds
@@ -149,3 +155,26 @@ About one run in three is valid. Reaching ten would take roughly 24 more runs (a
 $0.90), and the baseline would still very likely fail the stability check. Reducing
 run-to-run variance comes first: answer wording, judge quoting on OM-015 and OM-031, and
 recovery on OM-033 and OM-068.
+
+## Current configuration and OM-046 decision (6 October 2026)
+
+Pinned versions: STARTER answer 1.2.2, APP synthesis 1.1.2, APP agent 1.0.0,
+grader 2.0.6, and `config/eval-suite-correction-candidate.json`. The fixed seed is
+20261006. The three runs 37400360256, 37400351957, and 37400343216 used the same
+metadata but pre-#56 answer code, so they do not count.
+
+Run 37412426407 used the #56 answer code and returned 76 pass, 5 fail, and 9 manual
+review, with all 8 refusals and RT-06 passing and no infrastructure failures. Its
+OM-046 answer included the €260,000 exposure above the €250,000 threshold, but the
+judge quoted the question as an answer span. That left the verdict unverifiable. The
+run was invalid under the original OM-046 rule. Its report and APP commit must be
+checked again after the validator change before it can count.
+
+The owner chose to extend `HUMAN_REVIEW_EXCEPTIONS` to OM-046. It may count as
+`manual_review` only when judge quotes are unverifiable and no assertion is missing
+or contradicted, no forbidden fact or hard failure is present, and the judge did not
+fail. A missing €260,000 exposure still blocks. Each use records an OM-046-specific
+remark that a better judge model is needed and was deferred by the owner.
+
+The current counted-run total remains **0** until 37412426407 is revalidated under
+this rule. No further paid runs are authorized by this decision alone.
