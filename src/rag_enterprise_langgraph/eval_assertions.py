@@ -7,7 +7,7 @@ import re
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
-GRADER_VERSION = "2.0.4"
+GRADER_VERSION = "2.0.5"
 TYPES = {"concept", "identifier", "numeric", "polarity", "classification", "citation"}
 
 
