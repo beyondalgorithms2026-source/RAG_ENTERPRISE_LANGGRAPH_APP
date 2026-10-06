@@ -138,7 +138,8 @@ def test_retry_after_a_rejected_quote_tells_the_judge_why(monkeypatch):
     stitched = {
         "state": "supported",
         "answer_span": "more than 5 consecutive minutes",
-        "evidence_span": "Temperature Excursion...for more than 5 consecutive minutes.",
+        # One-word pieces: still rejected under the elided-quote rule.
+        "evidence_span": "Excursion...minutes.",
         "explanation": "Definition threshold.",
     }
     contiguous = {**stitched, "evidence_span": "for more than 5 consecutive minutes."}
@@ -156,3 +157,32 @@ def test_retry_after_a_rejected_quote_tells_the_judge_why(monkeypatch):
     assert len(requests[0]["messages"]) == 2
     feedback = requests[1]["messages"][-1]["content"]
     assert "invalid scoped evidence span" in feedback and "no ellipses" in feedback
+
+
+ROW = (
+    "### 1.2 Definitions\n\n|Term|Defined meaning|\n|---|---|\n"
+    "|Temperature Excursion|Any recorded, observed or suspected temperature outside the "
+    "required range for a Cold Chain Product for more than 5 consecutive minutes.|\n"
+    "|Quarantine|Physical and system hold preventing release.|"
+)
+
+
+@pytest.mark.parametrize(
+    ("quote", "accepted"),
+    [
+        ("Temperature Excursion...for more than 5 consecutive minutes.", True),  # within one row
+        ("Temperature Excursion … for more than 5 consecutive minutes.", True),  # unicode ellipsis
+        ("Temperature Excursion...Physical and system hold", False),  # joins two rows
+        ("for more than 5 consecutive minutes...Temperature Excursion", False),  # out of order
+        ("Temperature Excursion...for over 5 consecutive minutes.", False),  # paraphrased piece
+        ("Excursion...minutes.", False),  # one-word pieces
+        ("Temperature Excursion...Any recorded...outside the required...more than 5", False),
+    ],
+)
+def test_elided_evidence_quotes_must_be_literal_ordered_and_in_one_row(quote, accepted):
+    assert (grading._elided_span(ROW, quote) is not None) is accepted
+
+
+def test_answer_quotes_are_never_elided():
+    answer = "No, a Temperature Excursion lasts more than 5 consecutive minutes."
+    assert grading._answer_span(answer, "Temperature Excursion...5 consecutive minutes.") is None
