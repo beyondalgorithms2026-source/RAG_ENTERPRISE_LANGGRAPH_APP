@@ -275,15 +275,15 @@ cleanliness issue and are not described as purged until GitHub removes them.
 
 **Done**
 
-- `config.py:11-12` no longer hardcodes `/Users/Work` paths. `mcp_server_repo` has no
+- `config.py:11-12` no longer hardcodes machine-specific paths. `mcp_server_repo` has no
   default and raises `ConfigError` naming the variable and what to set it to;
   `validate_paths()` checks the checkout before spawning the MCP child.
   `mcp_server_python` defaults to the running interpreter.
 - Rewrote the tests that passed for the wrong reason. `test_config.py:23` asserted
   `PYTHONPATH` started with the same hardcoded path the code defaulted to. Tests now
   assert against values they set themselves.
-- **All 23 `/Users/Work` references removed from the app repo.** Path-redaction fixtures
-  use a neutral `/Users/example` so `scrub_text()` is still exercised without publishing
+- **All 23 machine-specific references removed from the app repo.** Path-redaction fixtures
+  use a neutral placeholder so `scrub_text()` is still exercised without publishing
   a directory layout.
 - Declared `langchain-ollama`. Rewrote `.env.example`: every variable named, no real
   values, and the three contradictory model defaults reconciled to one (`ollama` /
@@ -334,10 +334,10 @@ That is D3, not a D2 failure.
 
 **Not done / carried forward**
 
-- The starter still has `/Users/Work` in `STATUS.md`, 8 docs, and
+- The starter still has machine-specific in `STATUS.md`, 8 docs, and
   `backend/tests/test_deployment_portability_ar8.py`. The docs are rewritten on D6
   anyway; the test goes with the other starter test work on D4.
-- `CLAUDE.md` documents the dev logins as `password123`, which D1 invalidated. Fix when
+- `CLAUDE.md` documents the dev logins as [retired development password redacted], which D1 invalidated. Fix when
   CLAUDE.md is trimmed to public form on D6.
 
 **Broke**
@@ -477,7 +477,7 @@ That is D3, not a D2 failure.
   the same boundary, changeable by a backend admin, not reachable by the agent layer.
 - Pre-publication safety scan of all three checked-out trees and ordinary branches:
   **0 secrets, 0 API keys, 0 JWTs, no tracked .env**. Removed the last 25 files containing machine paths and replaced
-  `password123` in 7 docs and the login UI with a pointer to the env var. Remaining hits
+  [retired development password redacted] in 7 docs and the login UI with a pointer to the env var. Remaining hits
   are test fixtures that assert on the value, plus this log describing the rotation.
 - `main` set as the default branch in all three, pointing at the B004 line. Deleted 8
   redundant remote branches, each verified to hold 0 commits not already in `main`.
@@ -959,5 +959,5 @@ That is D3, not a D2 failure.
 - Changed paid evaluation entry workflows to manual dispatch with an explicit
   `confirm_paid_run` gate. Ordinary pushes, pull requests and schedules no longer launch
   model-backed evaluation.
-- Added `docs/CLAUDE_B004_CLOSEOUT_HANDOFF.md`. Upwork publication remains Claude/user
-  work; B005 owns calibration, model comparison and further quality tuning.
+- Completed the B004 internal handoff. The original handoff is retained in private assets;
+  B005 owns calibration, model comparison and further quality tuning.

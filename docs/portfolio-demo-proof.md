@@ -1,9 +1,6 @@
-# Portfolio Demo Proof Pack
+# Technical proof and verification
 
-This guide packages the LangGraph + MCP integration into screenshots and proof
-artifacts suitable for an Upwork portfolio. It covers only this LangGraph app.
-The RAG backend remains the owner of retrieval, ACL trimming, citations, audit,
-cache, and governance.
+This guide describes the APP → MCP → STARTER proof path, its checks, and how to run it. Retrieval, ACL trimming, citations, audit, cache, and backend governance remain in STARTER.
 
 ## What The Demo Proves
 
@@ -27,8 +24,7 @@ cache, and governance.
 
 ## Methodology
 
-The orchestrator follows the same practical pattern that works well in Claude
-Desktop:
+The orchestrator follows this tool-client sequence:
 
 1. `ask_grounded` is the first pass. It asks the backend to retrieve, rerank,
    synthesize, and cite.
@@ -296,37 +292,6 @@ runner uses deterministic offline checks against the real validation code
 paths and labels backend-dependent scenarios `requires_backend` instead of
 fabricating passes.
 
-## Screenshot Checklist
-
-1. Terminal showing `rag-enterprise-agent --check-config` with MCP tool names.
-2. Verified first-pass answer: `Status: verified`, validation summary, decision trail, and review note.
-3. Recovered answer: execution timeline showing `ask_grounded -> search_documents -> get_document_excerpt`.
-4. Recovered SpaceX material-cost answer: initial answer misses the percentage; recovery finds `2%`.
-5. Recovered or needs-review Renaissance list answer: validation detects missing list items instead of trusting citations blindly.
-6. Needs-review/refusal example: irrelevant evidence rejected with safe guidance.
-7. `acquired-eval-report.md` showing eval questions, expected answers, generated answers, statuses, decision trails, and tools.
-8. `demo-proof.md` showing runtime summary, MCP inventory, execution timeline, validation summary, decision trail, and review note.
-9. Code screenshot of `src/rag_enterprise_langgraph/orchestrator.py` around conditional routing and attempt comparison.
-10. Code screenshot of `src/rag_enterprise_langgraph/answer_quality.py` showing question classification and citation-support review.
-11. API proof screenshot of `curl http://127.0.0.1:8080/demo-proof`.
-12. Optional proof of strict refusal: a run marked `backend_auth_failed`, `backend_timeout`, `needs_review`, or `not_grounded` instead of a misleading success.
-13. `/app/approvals` showing a high-risk run held at `pending_approval` with reviewer/comment controls.
-14. `/app/audit` showing the run list and hash-chained event timeline for one `run_id`.
-15. `/app/evals` showing accuracy, faithfulness/grounding, latency, and estimated cost/query tiles.
-16. `/app/red-team` showing the findings table with honest `requires_backend` labels.
-17. `/app/demo` showing the before/after comparison used for the 90-second screen recording.
-
-See `docs/upwork-proof-artifacts.md` for the exact portfolio screenshot names.
-
-## Upwork Caption Ideas
-
-- "Built a LangGraph agent that accesses enterprise knowledge only through MCP tools, keeping retrieval and ACL enforcement inside the governed backend."
-- "Implemented a screenshot-ready proof pack showing MCP discovery, multi-step tool recovery, grounded answers, citations/evidence, and backend-governance boundaries."
-- "Designed the integration so the agent has no direct database access; MCP exposes only read-only RAG tools."
-- "Built a LangGraph enterprise RAG orchestrator that validates grounding, refuses unsupported answers, and recovers through keyword search and raw excerpt lookup when first-pass generation fails."
-- "Added an evaluation harness that reruns an Excel QA set against the same MCP tool path and writes safe decision journals for manual governance review."
-- "Built a LangGraph-based answer validation control plane for enterprise RAG/MCP tools. The system classifies question intent, validates cited answers, performs targeted follow-up retrieval, compares attempts, exposes a decision trail, and routes weak answers to human review instead of presenting unsupported claims as fact."
-
 ## Architecture
 
 ```mermaid
@@ -383,7 +348,7 @@ quality loop reusable across clients.
 
 Custom code contributes the domain policy: deterministic question
 classification, answer-shape validation, citation/evidence support checks,
-attempt comparison, safe decision trails, journals, eval reports, and portfolio
+attempt comparison, safe decision trails, journals, eval reports, and safe report
 formatting.
 
 The same architecture can be generalized beyond RAG. Replace MCP RAG tools
