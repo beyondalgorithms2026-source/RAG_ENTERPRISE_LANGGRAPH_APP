@@ -1,7 +1,7 @@
 # v2 calibration — 5–6 October 2026
 
-Status: **paused; no counted run yet. v2 remains unapproved.** The approved v1 baseline
-(25/25) is unchanged.
+Status: **1 of 10 counted runs (37396288591), under the OM-044 human-review exception. v2
+remains unapproved.** The approved v1 baseline (25/25) is unchanged.
 
 A run counts towards the ten-run calibration only if `validate_correction_report`
 (`src/rag_enterprise_langgraph/eval_calibration.py`) accepts it:
@@ -63,13 +63,40 @@ fix moved the error somewhere else:
 | 37394242863 | Quoted the question-sourced duration from the answer. |
 | 37396288591 | Quoted the document threshold from the answer. Answer text is not evidence, so this was correctly rejected. |
 
-## Next
+## Owner decision (6 October 2026): OM-044 may count as human review
 
-The remaining options are both owner decisions:
+`validate_correction_report` accepts OM-044 as `manual_review` only when **both** hold:
+- the judge's quotes were unverifiable;
+- nothing in the answer is shown wrong: no missing or contradicted assertion, no forbidden
+  fact, no hard failure, and no judge outage.
 
-1. **A stronger judge model** for concept grading. This changes the grading setup and costs
-   more per run; it needs one confirmation run before the ten counted runs.
-2. **Accept human review for OM-044** in counted runs. This changes the mandatory rule in
-   `validate_correction_report`.
+Any other OM-044 miss still blocks the run. **OM-046 has no exception.**
 
-Either way, the ten counted runs cost about $0.38 at current per-run cost.
+Every report that relies on the exception carries this remark, printed by
+`scripts/check_correction_candidate.py` and stored in the baseline candidate's
+`baseline_approval.remarks` by `scripts/build_eval_baseline.py`:
+
+> OM-044 counted as human review: the answer was not shown wrong, but the gpt-4o-mini
+> judge's quotes could not be verified. A better judge model is needed to grade this case
+> automatically; adopting one was deferred by the owner (6 October 2026).
+
+**Remark: a better judge model is needed and was deliberately not adopted for now.**
+
+Under this rule, run 37396288591 is the first valid calibration run.
+
+## Next blocker: performance thresholds
+
+`scripts/build_eval_baseline.py` also requires every counted run to have non-breaching
+performance. Every valid run so far breaches. The thresholds are candidates pending
+approval, so this is an owner decision.
+
+| Metric | Threshold | Run 37315388125 (core fix only) | Run 37396288591 |
+|---|---|---|---|
+| Recovery rate | 0.25 | 0.289 (breach) | 0.289 (breach) |
+| p95 latency | 5,000 ms | 4,830 ms (warn) | 5,040 ms (breach) |
+| Mean latency | 3,000 ms | 2,828 ms (warn) | 2,787 ms (warn) |
+| Cost per query | $0.02 | $0.00042 | $0.00042 |
+
+The recovery-rate breach predates this work: 26 of 90 questions need recovery. Running the
+nine remaining counted runs (about $0.34) makes sense only after the thresholds are set
+or the recovery rate is reduced.

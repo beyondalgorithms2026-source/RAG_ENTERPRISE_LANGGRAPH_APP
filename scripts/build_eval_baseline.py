@@ -9,7 +9,10 @@ from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
 
-from rag_enterprise_langgraph.eval_calibration import validate_correction_report
+from rag_enterprise_langgraph.eval_calibration import (
+    calibration_remarks,
+    validate_correction_report,
+)
 from rag_enterprise_langgraph.eval_runner import read_eval_json
 
 
@@ -90,6 +93,10 @@ def main() -> int:
         "status": "candidate",
         "justification": args.justification,
         "calibration_run_count": len(reports),
+        # Human-review exceptions any counted run relied on, e.g. OM-044 judge quoting.
+        "remarks": sorted(
+            {remark for report in reports for remark in calibration_remarks(report)}
+        ),
         "generated_at": datetime.now(UTC).isoformat(),
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)

@@ -6,7 +6,10 @@ import argparse
 import json
 from pathlib import Path
 
-from rag_enterprise_langgraph.eval_calibration import validate_correction_report
+from rag_enterprise_langgraph.eval_calibration import (
+    calibration_remarks,
+    validate_correction_report,
+)
 from rag_enterprise_langgraph.eval_runner import read_eval_json
 
 
@@ -24,7 +27,8 @@ def main() -> int:
         for case in read_eval_json(root / "config" / filename)
     }
     try:
-        validate_correction_report(json.loads(args.report.read_text()), ids)
+        report = json.loads(args.report.read_text())
+        validate_correction_report(report, ids)
     except (ValueError, OSError):
         print(
             "Revised candidate safety/metadata checks failed; baseline promotion remains blocked."
@@ -33,6 +37,8 @@ def main() -> int:
     print(
         "Revised critical/refusal/RT-06 checks pass; calibration and owner approval are still required."
     )
+    for remark in calibration_remarks(report):
+        print(f"Remark: {remark}")
     return 0
 
 
