@@ -39,7 +39,7 @@ def test_normal_not_found_debug_timeout_is_not_transport_failure():
     }
 
     quality = classify_answer_quality(
-        payload, question="What seminar did Sam Walton attend?", anchors=["Walton", "seminar"]
+        payload, question="Which training did the manager attend?", anchors=["manager", "training"]
     )
 
     assert classify_transport_failure(payload) is None
@@ -595,9 +595,7 @@ def test_orchestrator_refuses_irrelevant_excerpt():
 
     orchestrator._call_tool = fake_tool_call  # type: ignore[method-assign]
 
-    result = asyncio.run(
-        orchestrator.run("What seminar did Sam Walton enroll himself in in Poughkeepsie New York?")
-    )
+    result = asyncio.run(orchestrator.run("Which training did the director attend in Albany?"))
 
     assert result.grounding_status == "not_found"
     assert result.error is None
@@ -609,20 +607,20 @@ def test_orchestrator_refuses_irrelevant_excerpt():
     assert "get_document_excerpt" in calls
 
 
-def test_numeric_expected_answer_equivalence_for_eval_terms():
+def test_numeric_expected_answer_equivalence_for_generic_percentages():
     rules = EnterpriseRagOrchestrator(quiet_mcp=False).rules
 
     rent_eval = evaluate_expected_answer(
-        question="What Percentage of Rent to Sales did Sam Waltons first Ben Franklin cost",
+        question="What percentage of revenue went to facility rent?",
         expected_answer="0.05",
-        answer="The rent cost 5% of sales.",
+        answer="Facility rent cost 5% of revenue.",
         evidence=[],
         rules=rules,
     )
     revenue_eval = evaluate_expected_answer(
-        question="How much top line revenue % did walmart see a year after their IPO 1972",
+        question="How much did annual revenue grow after launch?",
         expected_answer="0.77",
-        answer="Walmart grew top-line revenue 77%.",
+        answer="Annual revenue grew 77%.",
         evidence=[],
         rules=rules,
     )
@@ -683,12 +681,12 @@ def test_irrelevant_recovery_evidence_ends_in_safe_refusal():
 
 def test_cutoff_relevant_snippet_requests_neighbor_expansion():
     verdict = validate_evidence(
-        question="What seminar did Sam Walton enroll himself in in Poughkeepsie New York?",
-        anchors=["Walton", "seminar", "Poughkeepsie"],
+        question="Which training did the director attend in Albany?",
+        anchors=["director", "training", "Albany"],
         rules=EnterpriseRagOrchestrator(quiet_mcp=False).rules,
         evidence=[
             {
-                "snippet": "Sam Walton went to Poughkeepsie for an IBM seminar on computing technolo",
+                "snippet": "The director went to Albany for training on computing technolo",
             }
         ],
     )
@@ -711,27 +709,27 @@ def test_date_evidence_accepts_day_and_month_without_a_year():
     assert verdict.status == "supports"
 
 
-def test_recovered_answer_focuses_relevant_span_in_long_transcript_excerpt():
+def test_recovered_answer_focuses_relevant_span_without_question_specific_rules():
     rules = EnterpriseRagOrchestrator(quiet_mcp=False).rules
     answer = _answer_from_evidence(
-        "What seminar did Sam Walton enroll himself in in Poughkeepsie New York?",
+        "Which training did the director attend in Albany?",
         [
             {
-                "file_name": "walmart.txt",
+                "file_name": "interview.txt",
                 "snippet": (
-                    "from a $25 million revenue base. Ben: Those two decades propelled them. "
-                    "David: He goes up to Poughkeepsie, New York and enrolls himself as "
-                    "Chairman/CEO of Walmart in a seminar at IBM on how to use computing "
-                    "technology in business. There's a great quote from Abe Marks."
+                    "The team grew from a small regional office. "
+                    "The director traveled to Albany for training in computing systems "
+                    "and learned how to manage the new equipment. "
+                    "The interview then turned to the quarterly budget."
                 ),
             }
         ],
-        anchors=["seminar", "Walton", "enroll", "himself", "Poughkeepsie", "York"],
+        anchors=["director", "training", "Albany"],
         rules=rules,
     )
 
-    assert "seminar at IBM on how to use computing technology in business" in answer
-    assert not answer.startswith("Recovered answer from walmart.txt: from a $25 million")
+    assert "training in computing systems" in answer
+    assert not answer.startswith("Recovered supporting evidence from interview.txt: The team grew")
 
 
 def test_focused_evidence_window_completes_fragment_sentences():
