@@ -1,16 +1,20 @@
 # v2 calibration — 5–6 October 2026
 
-Status (6 October): **v2 remains unapproved. The count was reset to 0 after the #56
-comparison-answer retry changed the answer logic.** Runs 37396288591 and 37398198971
-counted under the earlier configuration and cannot be combined with current runs. The
-approved v1 baseline (25/25) is unchanged. The sections below preserve the earlier
-decisions and run history; the current configuration is recorded at the end.
+Status (6 October): **v2 remains unapproved; calibration is paused at 1 of 10 counted
+runs under the current configuration.** The next authorized run was invalid, so the
+one-run batch had no valid runs and paid runs stopped. The count was reset after the
+#56 comparison-answer retry changed the answer logic. Runs 37396288591 and
+37398198971 counted under the earlier
+configuration and cannot be combined with current runs. The approved v1 baseline
+(25/25) is unchanged. The sections below preserve the earlier decisions and run
+history; the current configuration is recorded at the end.
 
 A run counts towards the ten-run calibration only if `validate_correction_report`
 (`src/rag_enterprise_langgraph/eval_calibration.py`) accepts it:
 - all 90 cases are present, with no infrastructure failures;
 - all 8 refusals pass, and RT-06 passes;
-- the mandatory cases **OM-044** and **OM-046** pass;
+- the mandatory cases **OM-044** and **OM-046** pass or meet their strict
+  judge-quoting-only human-review exceptions;
 - the grader and suite versions are recorded.
 
 ## Runs
@@ -164,11 +168,10 @@ grader 2.0.6, and `config/eval-suite-correction-candidate.json`. The fixed seed 
 metadata but pre-#56 answer code, so they do not count.
 
 Run 37412426407 used the #56 answer code and returned 76 pass, 5 fail, and 9 manual
-review, with all 8 refusals and RT-06 passing and no infrastructure failures. Its
-OM-046 answer included the €260,000 exposure above the €250,000 threshold, but the
-judge quoted the question as an answer span. That left the verdict unverifiable. The
-run was invalid under the original OM-046 rule. Its report and APP commit must be
-checked again after the validator change before it can count.
+review, with all 8 refusals, both safe-boundary cases, and RT-06 passing and no
+infrastructure failures. Its OM-046 answer included the €260,000 exposure above the
+€250,000 threshold, but the judge quoted the question as an answer span. That left the
+verdict unverifiable. The run was invalid under the original OM-046 rule.
 
 The owner chose to extend `HUMAN_REVIEW_EXCEPTIONS` to OM-046. It may count as
 `manual_review` only when judge quotes are unverifiable and no assertion is missing
@@ -176,5 +179,24 @@ or contradicted, no forbidden fact or hard failure is present, and the judge did
 fail. A missing €260,000 exposure still blocks. Each use records an OM-046-specific
 remark that a better judge model is needed and was deferred by the owner.
 
-The current counted-run total remains **0** until 37412426407 is revalidated under
-this rule. No further paid runs are authorized by this decision alone.
+After #57 merged, 37412426407 passed `scripts/check_correction_candidate.py` under
+the revised validator, with the separate OM-044 and OM-046 remarks. Its performance
+status is `warn`, and the report pins APP commit `2351291`, the current answer code
+before the validator-only change. It is **counted run 1**. The archived workflow
+artifact's SHA-256 is `be16e324b6247472b87416e60cae1a1171371a2920a068e3cb5818be13cec171`.
+The report and artifact are also retained outside Git. Run 37415662357 was
+dispatched separately after the owner's authorization. It returned 77 pass, 5 fail,
+and 8 manual review, with 8/8 refusals, 2/2 safe-boundary cases, RT-06 passing,
+zero infrastructure failures, and `warn` performance. It used APP commit `fe27251`
+and the same pinned configuration. Its artifact SHA-256 is
+`2c0364af77d684310cd6252f6f6c41dcce3d594a24ba1c2c64931ca973cbb886`.
+
+**Run 37415662357 does not count.** OM-044 was marked `fail` because the judge
+classified the duration assertion as `contradicted`: it said the answer's statement
+that four minutes does not meet a more-than-five-minute definition contradicted the
+reference. The answer itself states the definition and correctly concludes "No," but
+the strict exception permits only unverifiable judge quotes and cannot override a
+contradicted assertion. `validate_correction_report` reports `mandatory correctness
+blocker: OM-044`. OM-046 passed in this run. The owner must decide whether to change
+the grading approach (which would reset the count) or leave v2 unapproved. No further
+paid run is authorized or planned under this stopped batch.
