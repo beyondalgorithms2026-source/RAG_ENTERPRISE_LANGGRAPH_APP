@@ -136,6 +136,10 @@ The other two repositories:
 - **[RAG_ENTERPRISE_STARTER](https://github.com/beyondalgorithms2026-source/RAG_ENTERPRISE_STARTER)** — the data layer: PostgreSQL + pgvector, SQL-level access control, retrieval and citations
 - **[RAG_Langgraph_MCP_server](https://github.com/beyondalgorithms2026-source/RAG_Langgraph_MCP_server)** — the integration layer
 
+## How this was built
+
+AI tools assisted with drafting, implementation and review. The linked source, tests and evaluation evidence show what was checked; AI-generated suggestions are not treated as proof of correctness.
+
 ## Setup
 
 Requires Python 3.12. A full local stack also needs Docker (PostgreSQL/pgvector for the
