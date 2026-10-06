@@ -22,6 +22,12 @@ HUMAN_REVIEW_EXCEPTIONS = {
         "to grade this case automatically; adopting one was deferred by the owner "
         "(6 October 2026)."
     ),
+    "OM-046": (
+        "OM-046 counted as human review: the answer was not shown wrong, but the "
+        "gpt-4o-mini judge's quotes could not be verified. A better judge model is needed "
+        "to grade this case automatically; adopting one was deferred by the owner "
+        "(6 October 2026)."
+    ),
 }
 
 

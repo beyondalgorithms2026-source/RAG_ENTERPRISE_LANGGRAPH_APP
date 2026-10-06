@@ -603,8 +603,29 @@ def test_om_044_still_blocks_when_the_answer_is_shown_wrong(row):
         validate_correction_report(report, ids)
 
 
-def test_om_046_has_no_human_review_exception():
+def test_om_046_judge_quoting_review_counts_with_its_own_remark():
+    from rag_enterprise_langgraph.eval_calibration import calibration_remarks
+
     report, ids = _valid_report()
     next(r for r in report["rows"] if r["case_id"] == "OM-046").update(_judge_review())
+    validate_correction_report(report, ids)
+    [remark] = calibration_remarks(report)
+    assert remark.startswith("OM-046 counted as human review:")
+    assert "better judge model is needed" in remark and "deferred by the owner" in remark
+
+
+@pytest.mark.parametrize(
+    "row",
+    [
+        _judge_review(states=("missing", "supported")),  # €260,000 exposure is missing
+        _judge_review(states=("contradicted",)),  # exposure is contradicted
+        _judge_review(forbidden_fact_matches=["wrong"]),
+        _judge_review(judge_error="judge unavailable"),
+        {"eval_status": "fail", "expected_eval": _judge_review()["expected_eval"]},
+    ],
+)
+def test_om_046_still_blocks_when_exposure_is_missing_or_answer_is_shown_wrong(row):
+    report, ids = _valid_report()
+    next(r for r in report["rows"] if r["case_id"] == "OM-046").update(row)
     with pytest.raises(CalibrationError, match="OM-046"):
         validate_correction_report(report, ids)
