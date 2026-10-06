@@ -844,6 +844,12 @@ def _definition_rows(text: str, terms: Sequence[str]) -> list[str]:
     return [found[term.casefold()] for term in terms if term.casefold() in found]
 
 
+def _asks_for_sequence(question: str) -> bool:
+    return bool(
+        re.search(r"\b(sequence|ordered|in order|steps|actions|walk through)\b", question, re.I)
+    )
+
+
 def _focused_evidence_text(
     *,
     question: str,
@@ -854,9 +860,7 @@ def _focused_evidence_text(
 ) -> str:
     # Recovery quotes are evidence presentation, not new retrieval. Preserve a
     # complete authorized procedure instead of scoring away all but its opener.
-    wants_sequence = bool(
-        re.search(r"\b(sequence|ordered|in order|steps|actions|walk through)\b", question, re.I)
-    )
+    wants_sequence = _asks_for_sequence(question)
     wants_prohibitions = bool(
         re.search(r"\b(?:may|must|can)\b.*\bnot\b", question, re.I)
     ) and bool(getattr(shape, "item_count", None))
@@ -1343,7 +1347,15 @@ class EnterpriseRagOrchestrator:
         reason = (
             "disabled" if not getattr(self.settings, "enable_synthesis", False) else "no_evidence"
         )
-        if getattr(self.settings, "enable_synthesis", False) and evidence:
+        if (
+            getattr(self.settings, "enable_synthesis", False)
+            and evidence
+            and _asks_for_sequence(question)
+        ):
+            # A 1-3 sentence rewrite drops steps from an ordered procedure (OM-068); the
+            # verbatim procedure is the complete answer.
+            reason = "kept_verbatim_sequence"
+        elif getattr(self.settings, "enable_synthesis", False) and evidence:
             result = await synthesize_and_verify(
                 question=question,
                 evidence=list(evidence),

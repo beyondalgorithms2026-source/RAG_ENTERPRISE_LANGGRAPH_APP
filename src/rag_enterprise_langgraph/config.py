@@ -55,6 +55,9 @@ class Settings(BaseSettings):
     model_provider: str = "ollama"
     model_name: str = "llama3.2:3b"
     model_temperature: float = 0.0
+    # OpenAI's best-effort reproducibility: temperature 0 alone still varied answers
+    # between identical calibration runs (5-6 Oct 2026). Ignored for other providers.
+    model_seed: int | None = 20261006
 
     mcp_server_name: str = "rag-enterprise-mcp"
     mcp_server_python: Path = Field(default_factory=_default_mcp_python)
