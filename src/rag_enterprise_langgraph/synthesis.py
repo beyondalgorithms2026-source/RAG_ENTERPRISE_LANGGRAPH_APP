@@ -142,13 +142,57 @@ async def synthesize_and_verify(
         f'SOURCE:\n"""\n{evidence_text[:4000]}\n"""\n\n'
         "Write the answer now."
     )
+    messages = [
+        {"role": "system", "content": SYNTHESIS_SYSTEM_PROMPT},
+        {"role": "user", "content": prompt},
+    ]
+    first = await _attempt(model, messages, question, evidence, question_profile)
+    missing = _unstated_question_values(question, first["answer"]) if first["verified"] else []
+    if not missing:
+        return first
+    # A yes/no comparison answer should state the value it compares (OM-046 kept omitting
+    # "EUR 260,000"). One retry names the value; it is used only if it verifies and states it.
+    retry = await _attempt(
+        model,
+        [
+            *messages,
+            {"role": "assistant", "content": first["answer"]},
+            {
+                "role": "user",
+                "content": "Rewrite the answer so it states the value given in the QUESTION ("
+                + ", ".join(missing)
+                + ") when comparing it with the SOURCE rule. Keep every other rule.",
+            },
+        ],
+        question,
+        evidence,
+        question_profile,
+    )
+    if retry["verified"] and not _unstated_question_values(question, retry["answer"]):
+        return retry
+    return first
+
+
+_COMPARISON_OPENER = re.compile(
+    r"^(is|are|does|do|did|would|will|can|could|has|have|should|must|may)\b", re.IGNORECASE
+)
+
+
+def _unstated_question_values(question: str, answer: str | None) -> list[str]:
+    """Numbers a yes/no comparison question gives that the answer does not state."""
+    sentences = re.split(r"(?<=[.?!])\s+", question.strip())
+    if not any(_COMPARISON_OPENER.match(sentence) for sentence in sentences):
+        return []
+    given = list(dict.fromkeys(_numeric_tokens(question)))
+    stated = {token.rstrip("%") for token in _numeric_tokens(answer or "")}
+    if not given or any(token.rstrip("%") in stated for token in given):
+        return []
+    return given
+
+
+async def _attempt(model, messages, question, evidence, question_profile) -> dict[str, Any]:
     try:
-        response = await model.ainvoke(
-            [
-                {"role": "system", "content": SYNTHESIS_SYSTEM_PROMPT},
-                {"role": "user", "content": prompt},
-            ]
-        )
+        response = await model.ainvoke(messages)
     except Exception as exc:
         return {
             "answer": None,
