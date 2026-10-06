@@ -11,7 +11,12 @@ import urllib.error
 import urllib.request
 from typing import Any
 
-from rag_enterprise_langgraph.eval_assertions import _answer_span, _literal_span, judge_payload
+from rag_enterprise_langgraph.eval_assertions import (
+    _answer_span,
+    _elided_span,
+    _literal_span,
+    judge_payload,
+)
 
 MODEL = "gpt-4o-mini-2024-07-18"
 SYSTEM = (
@@ -226,6 +231,7 @@ def _request_once(payload: str, feedback: str | None = None) -> dict[str, Any]:
                 )
             if not any(
                 _literal_span(reference, row.get("evidence_span")) is not None
+                or _elided_span(reference, row.get("evidence_span")) is not None
                 for reference in evidence_texts[schema_key]
             ):
                 raise _span_rejection(

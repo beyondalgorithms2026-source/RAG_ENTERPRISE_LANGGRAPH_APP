@@ -343,3 +343,38 @@ def test_rejected_judge_spans_are_recorded_without_changing_the_verdict(tmp_path
     row = report["rows"][0]
     assert row["eval_status"] == "manual_review"
     assert row["expected_eval"]["judge_rejected_spans"][0]["answer_span"] == "65 euros"
+
+
+def test_om_044_passes_with_the_judges_recorded_stitched_quote(tmp_path):
+    # Calibration runs 37348730282 and 37350896514 recorded exactly this evidence quote.
+    async def judge(*, assertions, **_kwargs):
+        spans = {
+            "threshold": (
+                "more than 5 consecutive minutes",
+                "Temperature Excursion...for more than 5 consecutive minutes.",
+            ),
+            "duration": ("+9°C for four minutes", "+9°C for four minutes"),
+        }
+        return {
+            "judgement": {
+                "assertions": [
+                    {
+                        "id": a["id"],
+                        "state": "supported",
+                        "answer_span": spans[a["id"]][0],
+                        "evidence_span": spans[a["id"]][1],
+                        "explanation": "Literal support.",
+                    }
+                    for a in assertions
+                ]
+            }
+        }
+
+    report = asyncio.run(
+        run_eval(
+            eval_path=_om_044_pack(tmp_path),
+            orchestrator=_Om044Orchestrator(),
+            semantic_judge=judge,
+        )
+    )
+    assert report["rows"][0]["eval_status"] == "pass", report["rows"][0]["expected_eval"]

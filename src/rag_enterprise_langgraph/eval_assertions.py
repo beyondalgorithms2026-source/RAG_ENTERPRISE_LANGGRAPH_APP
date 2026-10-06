@@ -7,7 +7,7 @@ import re
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
-GRADER_VERSION = "2.0.3"
+GRADER_VERSION = "2.0.4"
 TYPES = {"concept", "identifier", "numeric", "polarity", "classification", "citation"}
 
 
@@ -315,7 +315,7 @@ def evaluate(
     }
 
 
-def _literal_span(text: str, quote: Any) -> str | None:
+def _literal_match(text: str, quote: Any) -> re.Match[str] | None:
     """Resolve copied evidence with formatting variation only, never paraphrases.
 
     Allowed: whitespace differences, spacing around table pipes, and the case of the
@@ -334,8 +334,42 @@ def _literal_span(text: str, quote: Any) -> str | None:
             first = part[0]
             piece = f"[{first.lower()}{first.upper()}]" + re.escape(part[1:])
         pattern += piece
-    match = re.search(pattern, text)
+    return re.search(pattern, text)
+
+
+def _literal_span(text: str, quote: Any) -> str | None:
+    match = _literal_match(text, quote)
     return match.group() if match else None
+
+
+_ELLIPSIS = re.compile(r"\s*(?:\.\.\.|…)\s*")
+
+
+def _elided_span(reference_text: str, quote: Any) -> str | None:
+    """Accept an evidence quote shortened with "..." only when every piece is literal.
+
+    Owner decision (5 Oct, option X): judges join a table term and its meaning
+    ("Temperature Excursion...for more than 5 consecutive minutes."). The quote passes
+    only if it has 2-3 pieces of at least two words each, every piece matches literally
+    (with _literal_match's formatting allowances), and the pieces occur in order inside
+    one block: a single table row or a single paragraph. Never used for answer quotes.
+    """
+    if not isinstance(quote, str) or not _ELLIPSIS.search(quote):
+        return None
+    pieces = [piece.strip() for piece in _ELLIPSIS.split(quote.strip())]
+    if not 2 <= len(pieces) <= 3 or any(len(piece.split()) < 2 for piece in pieces):
+        return None
+    for block in _factual_text([{"text": reference_text}]).split(_BLOCK_BREAK):
+        position, found = 0, []
+        for piece in pieces:
+            match = _literal_match(block[position:], piece)
+            if match is None:
+                break
+            found.append(match.group())
+            position += match.end()
+        else:
+            return " … ".join(found)
+    return None
 
 
 _CITATION_MARKER = re.compile(r"\s*\[S\d+\]")
@@ -427,6 +461,15 @@ def apply_judgement(
         source_ids = contracts.get(row["id"], {}).get("source_refs")
         scoped = [r for r in references if source_ids is None or r["id"] in source_ids]
         evidence_span = _literal_span(_factual_text(scoped), row.get("evidence_span"))
+        if evidence_span is None:
+            evidence_span = next(
+                (
+                    span
+                    for r in scoped
+                    if (span := _elided_span(r["text"], row.get("evidence_span"))) is not None
+                ),
+                None,
+            )
         if evidence_span is None and contracts.get(row["id"], {}).get("question_sourced"):
             # Facts supplied by the question (evidence_required=false) are quoted from it.
             evidence_span = _literal_span(question, row.get("evidence_span"))
