@@ -8,11 +8,15 @@ class PerformanceReportError(ValueError):
     """Performance inputs cannot produce a trustworthy regression result."""
 
 
+# Owner decision, 6 October 2026: set from the eight full-stack v2 runs of 5-6 October
+# (recovery 0.267-0.289, mean 2.79-2.99 s, p95 4.83-5.54 s, cost $0.0004 per query),
+# each with a margin. One outlier run (mean 3.72 s, p95 7.22 s, a 26.5 s request) still
+# breaches, as intended. Previous candidates: 5000 ms, 3000 ms, 0.25.
 DEFAULT_THRESHOLDS = {
-    "p95_latency_ms": 5000.0,
-    "mean_latency_ms": 3000.0,
+    "p95_latency_ms": 6000.0,
+    "mean_latency_ms": 3500.0,
     "average_cost_usd_per_query": 0.02,
-    "recovery_rate": 0.25,
+    "recovery_rate": 0.30,
 }
 
 
