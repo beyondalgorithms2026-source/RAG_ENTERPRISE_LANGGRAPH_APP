@@ -536,3 +536,75 @@ def test_calibration_fails_closed(change):
         report["configuration"].pop("grader_version")
     with pytest.raises(CalibrationError):
         validate_correction_report(report, ids)
+
+
+def _valid_report():
+    ids = {f"NW-{n:03}" for n in range(1, 26)} | {f"OM-{n:03}" for n in range(26, 91)}
+    report = {
+        "scope": "full-stack",
+        "total": 90,
+        "refusal_total": 8,
+        "refusal_passed": 8,
+        "rt06": {"status": "pass"},
+        "configuration": {
+            k: "present"
+            for k in (
+                "grader_version",
+                "suite_version",
+                "app_prompts",
+                "starter_prompts",
+                "corpus_manifest_sha256",
+            )
+        },
+        "rows": [{"case_id": c, "eval_status": "pass"} for c in sorted(ids)],
+    }
+    return report, ids
+
+
+def _judge_review(states=("uncertain", "supported"), **expected):
+    return {
+        "eval_status": "manual_review",
+        "expected_eval": {
+            "judge_unverifiable": "offline judge retry budget exhausted: invalid scoped evidence span",
+            "typed": {
+                "hard_failure": False,
+                "assertions": [{"id": f"a{i}", "state": s} for i, s in enumerate(states)],
+            },
+            **expected,
+        },
+    }
+
+
+def test_om_044_judge_quoting_review_counts_with_a_remark():
+    from rag_enterprise_langgraph.eval_calibration import calibration_remarks
+
+    report, ids = _valid_report()
+    assert calibration_remarks(report) == []
+    next(r for r in report["rows"] if r["case_id"] == "OM-044").update(_judge_review())
+    validate_correction_report(report, ids)
+    [remark] = calibration_remarks(report)
+    assert "better judge model is needed" in remark and "deferred by the owner" in remark
+
+
+@pytest.mark.parametrize(
+    "row",
+    [
+        _judge_review(states=("missing", "supported")),  # a fact is missing
+        _judge_review(states=("contradicted",)),  # a fact is contradicted
+        _judge_review(forbidden_fact_matches=["wrong"]),
+        {**_judge_review(), "expected_eval": {"typed": {"assertions": []}}},  # no judge reason
+        {"eval_status": "fail", "expected_eval": _judge_review()["expected_eval"]},
+    ],
+)
+def test_om_044_still_blocks_when_the_answer_is_shown_wrong(row):
+    report, ids = _valid_report()
+    next(r for r in report["rows"] if r["case_id"] == "OM-044").update(row)
+    with pytest.raises(CalibrationError, match="OM-044"):
+        validate_correction_report(report, ids)
+
+
+def test_om_046_has_no_human_review_exception():
+    report, ids = _valid_report()
+    next(r for r in report["rows"] if r["case_id"] == "OM-046").update(_judge_review())
+    with pytest.raises(CalibrationError, match="OM-046"):
+        validate_correction_report(report, ids)
