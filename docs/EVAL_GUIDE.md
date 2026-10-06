@@ -65,8 +65,10 @@ the existing safe-refusal statuses without restricted or invented content. A
 unavailable or restricted boundary.
 
 P19 adds end-to-end latency, recovery, request count, and sanitized STARTER generation
-cost. The initial limits are P95 ≤ 5,000 ms, mean ≤ 3,000 ms, average generation cost
-≤ USD 0.02 per eval case, and recovery rate ≤ 25%; 80% of a limit is a warning. Corpus
+cost. The limits are P95 ≤ 6,000 ms, mean ≤ 3,500 ms, average generation cost
+≤ USD 0.02 per eval case, and recovery rate ≤ 30%; 80% of a limit is a warning. They were
+set on 6 October 2026 from the measured v2 runs (initial candidates: 5,000 ms, 3,000 ms,
+25%); see `docs/V2_CALIBRATION_2026-10-05.md`. Corpus
 embedding cost is excluded.
 
 ## Grow the suite

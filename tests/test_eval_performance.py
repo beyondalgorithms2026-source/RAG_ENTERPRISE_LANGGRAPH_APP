@@ -46,9 +46,10 @@ def test_performance_summary_calculates_latency_cost_and_recovery():
 
 
 def test_warning_and_breach_thresholds_are_distinct():
-    warning = build_performance_summary(_report(latency=4100), _usage())
+    # p95 limit 6000 ms (owner decision, 6 Oct 2026); warning from 80% of the limit.
+    warning = build_performance_summary(_report(latency=5000), _usage())
     assert warning["metric_status"]["p95_latency_ms"] == "warn"
-    breach = build_performance_summary(_report(latency=5100), _usage())
+    breach = build_performance_summary(_report(latency=6100), _usage())
     assert breach["status"] == "breach"
 
 

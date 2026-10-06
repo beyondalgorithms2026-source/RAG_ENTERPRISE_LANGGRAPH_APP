@@ -97,6 +97,21 @@ approval, so this is an owner decision.
 | Mean latency | 3,000 ms | 2,828 ms (warn) | 2,787 ms (warn) |
 | Cost per query | $0.02 | $0.00042 | $0.00042 |
 
-The recovery-rate breach predates this work: 26 of 90 questions need recovery. Running the
-nine remaining counted runs (about $0.34) makes sense only after the thresholds are set
-or the recovery rate is reduced.
+The recovery-rate breach predates this work: 26 of 90 questions need recovery.
+
+## Owner decision (6 October 2026): limits set from measured values
+
+The limits in `eval_performance.DEFAULT_THRESHOLDS` were set from the eight full-stack v2 runs,
+each with a margin:
+
+| Metric | Old | New | Measured (8 runs) |
+|---|---|---|---|
+| Recovery rate | 0.25 | 0.30 | 0.267–0.289 |
+| p95 latency | 5,000 ms | 6,000 ms | 4,830–5,541 ms, outlier 7,224 ms |
+| Mean latency | 3,000 ms | 3,500 ms | 2,787–2,986 ms, outlier 3,723 ms |
+| Cost per query | $0.02 | $0.02 | $0.00042 |
+
+The outlier run (one 26.5 s request) still breaches, as intended. Counted run 1
+(37396288591) had its performance summary recomputed with `scripts/attach_eval_performance.py`
+from its unchanged measurements and usage. It is now `warn`; only the `performance` block
+changed. The nine remaining counted runs use the new limits from the start.
