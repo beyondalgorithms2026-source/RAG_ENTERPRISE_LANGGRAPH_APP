@@ -32,7 +32,7 @@ jobs:
         run: python -m pip install -e .
 
       - name: Download preserved 90-answer artifact
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v7
         with:
           artifact-ids: "10482194231"
           github-token: ${{ github.token }}
