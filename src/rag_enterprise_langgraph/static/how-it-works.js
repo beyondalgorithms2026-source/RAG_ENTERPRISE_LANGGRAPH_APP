@@ -29,8 +29,8 @@
       owns: ["Executes the access clause with every search", "42 synthetic documents across two companies", "No public access; reached only by the data layer"],
       files: [["schema.sql", ST + "db/schema.sql"]], meta: ["Supabase", "Singapore"] },
     claude: { kind: "External API", name: "Claude", short: "pinned",
-      summary: "Called by the agent layer for answers, with a pinned model version and prepaid credits on the Anthropic account.",
-      owns: ["claude-haiku-5-5, temperature 0", "Prepaid API credits; no open credit line", "Embeddings still use OpenAI text-embedding-3-small at 384 dimensions in the data layer"],
+      summary: "Writes answers in two places: the data layer writes grounded answers, and this app calls the model only when a question needs recovery and synthesis. Prepaid credits on the Anthropic account.",
+      owns: ["claude-haiku-5-5, temperature 0", "Grounded answers come from the data layer's model; this app calls it only when recovery needs synthesis", "Prepaid API credits; no open credit line", "Embeddings still use OpenAI text-embedding-3-small at 384 dimensions in the data layer"],
       files: [], meta: ["pinned", "prepaid credits"] },
   };
   const els = { kind: i("i-kind"), name: i("i-name"), summary: i("i-summary"), owns: i("i-owns"), files: i("i-files"), meta: i("i-meta") };
