@@ -28,10 +28,10 @@
       summary: "Sources, chunks, 384-dimension embeddings and the access-control tables, hosted on Supabase.",
       owns: ["Executes the access clause with every search", "42 synthetic documents across two companies", "No public access; reached only by the data layer"],
       files: [["schema.sql", ST + "db/schema.sql"]], meta: ["Supabase", "Singapore"] },
-    openai: { kind: "External API", name: "OpenAI", short: "pinned",
-      summary: "Called only by the data layer, with pinned model versions and a hard monthly spend limit on the project.",
-      owns: ["text-embedding-3-small at 384 dimensions", "gpt-4o-mini-2024-07-18, max 600 output tokens", "USD 1/month project limit; a full eval run costs about $0.03"],
-      files: [], meta: ["pinned", "$1/month cap"] },
+    claude: { kind: "External API", name: "Claude", short: "pinned",
+      summary: "Called by the agent layer for answers, with a pinned model version and prepaid credits on the Anthropic account.",
+      owns: ["claude-haiku-5-5, temperature 0", "Prepaid API credits; no open credit line", "Embeddings still use OpenAI text-embedding-3-small at 384 dimensions in the data layer"],
+      files: [], meta: ["pinned", "prepaid credits"] },
   };
   const els = { kind: i("i-kind"), name: i("i-name"), summary: i("i-summary"), owns: i("i-owns"), files: i("i-files"), meta: i("i-meta") };
   function i(id) { return document.getElementById(id); }
