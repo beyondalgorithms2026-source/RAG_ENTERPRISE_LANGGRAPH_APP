@@ -50,8 +50,8 @@ class Settings(BaseSettings):
     debug: bool = False
 
     # Local by default: the whole system is designed to run on your own hardware
-    # with no data leaving it. Set RAG_AGENT_MODEL_PROVIDER=openai (or any other
-    # provider supported by init_chat_model) to use a hosted model instead.
+    # with no data leaving it. Set RAG_AGENT_MODEL_PROVIDER=anthropic (the hosted demo,
+    # claude-haiku-5-5) or any other provider supported by init_chat_model instead.
     model_provider: str = "ollama"
     model_name: str = "llama3.2:3b"
     model_temperature: float = 0.0
