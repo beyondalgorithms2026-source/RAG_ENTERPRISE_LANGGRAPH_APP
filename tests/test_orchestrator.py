@@ -826,3 +826,17 @@ def test_needs_review_answer_uses_full_snippet_not_preview_truncation():
     assert "two percent of the total cost" in result.answer
     assert "requires human review" not in result.answer.lower()
     assert result.review_guidance
+
+
+def test_conditional_when_answer_is_not_missing_a_requested_date():
+    from rag_enterprise_langgraph.orchestrator import _answer_misses_requested_field
+
+    # WQ-14: a condition answers "When must ...", so no date is required.
+    assert not _answer_misses_requested_field(
+        "When must Security review a new vendor, even if spend is low?",
+        "Security must review a new vendor regardless of spend when it handles customer data.",
+    )
+    # A deadline question still needs a date in the answer.
+    assert _answer_misses_requested_field(
+        "By when must an advance be cleared?", "It must be cleared promptly."
+    )

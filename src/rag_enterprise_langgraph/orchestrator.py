@@ -13,6 +13,7 @@ from langchain_core.tools import BaseTool
 from rag_enterprise_langgraph.answer_quality import (
     AnswerReview,
     classify_question,
+    question_requests_date,
     review_answer,
     review_guidance,
     review_note,
@@ -427,9 +428,13 @@ def _answer_misses_requested_field(question: str, answer: str) -> bool:
     lowered_answer = answer.lower()
     if "percentage" in lowered_question or "percent" in lowered_question:
         return "%" not in answer and "percent" not in lowered_answer
-    if "when" in lowered_question and not re.search(
-        r"\b(?:\d{4}|\d{1,2}[/-]\d{1,2}|january|february|march|april|may|june|july|august|september|october|november|december)\b",
-        lowered_answer,
+    if (
+        question_requests_date(question)
+        and "when" in lowered_question
+        and not re.search(
+            r"\b(?:\d{4}|\d{1,2}[/-]\d{1,2}|january|february|march|april|may|june|july|august|september|october|november|december)\b",
+            lowered_answer,
+        )
     ):
         return True
     return False
