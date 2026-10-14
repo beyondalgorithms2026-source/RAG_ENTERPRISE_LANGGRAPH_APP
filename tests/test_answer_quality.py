@@ -125,3 +125,37 @@ def test_day_and_month_is_accepted_for_date_answer_shape():
     )
 
     assert review.status == "verified"
+
+
+def test_named_period_year_does_not_require_a_date_answer():
+    # WQ-04: "in a holiday year" scopes the rate; the correct answer has no date.
+    review = review_answer(
+        question=(
+            "What is the UK personal-vehicle mileage reimbursement rate for the first "
+            "10,000 business miles in a holiday year?"
+        ),
+        answer="The rate is £0.45 per business mile for the first 10,000 business miles.",
+        evidence=[
+            {"snippet": "UK car: £0.45 per business mile for the first 10,000 business miles."}
+        ],
+    )
+
+    assert "date_or_time" not in review.question_profile.question_types
+    assert review.reason != "missing_date_answer"
+
+
+def test_conditional_when_question_does_not_require_a_date_answer():
+    # WQ-14: "When must ..." asks for the triggering condition, not a time.
+    profile = classify_question("When must Security review a new vendor, even if spend is low?")
+
+    assert profile.expected_answer_shape.requires_date is False
+
+
+def test_time_questions_still_require_a_date_answer():
+    for question in (
+        "How many days of annual leave can be carried over, and by when must they be used?",
+        "When does Operations Manual Version 3.2 take effect, and which version does it supersede?",
+        "What was Northwind Logistics' revenue last year?",
+        "In what year was the company founded?",
+    ):
+        assert classify_question(question).expected_answer_shape.requires_date is True, question

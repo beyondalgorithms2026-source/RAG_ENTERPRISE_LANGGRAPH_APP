@@ -144,6 +144,25 @@ def _normalize(value: Any) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
+# A named period ("holiday year", "per year") scopes the question; it does not ask for a date (WQ-04).
+_PERIOD_YEAR = re.compile(
+    r"\b(?:holiday|leave|financial|fiscal|calendar|tax|academic)\s+year\b|"
+    r"\b(?:per|a|each|every)\s+year\b"
+)
+# "When must/should/may ..." asks for the condition that triggers a rule, not a time (WQ-14).
+# "By when" still asks for a deadline.
+_CONDITIONAL_WHEN = re.compile(r"^when\s+(?:must|should|may|can|could|would|need|needs)\b")
+
+
+def question_requests_date(question: str) -> bool:
+    lowered = _normalize(question)
+    if "by when" in lowered or any(marker in lowered for marker in ("date", "formed", "founded")):
+        return True
+    if "when" in lowered and not _CONDITIONAL_WHEN.search(lowered):
+        return True
+    return "year" in _PERIOD_YEAR.sub(" ", lowered)
+
+
 def _answer_text(evidence: Sequence[dict[str, Any]]) -> str:
     return " ".join(str(item.get("snippet") or item.get("excerpt") or "") for item in evidence)
 
@@ -209,9 +228,7 @@ def classify_question(question: str) -> QuestionProfile:
         bool(re.search(r"\b(?:percentage|percent|ratio)\b|%|\brent\s+to\s+sales\b", lowered))
         or material_cost_share
     )
-    requires_date = any(
-        marker in lowered for marker in ("when", "date", "year", "formed", "founded")
-    )
+    requires_date = question_requests_date(question)
     requires_location = (
         lowered.startswith("where") or " based in" in lowered or " located" in lowered
     )

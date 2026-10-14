@@ -8,6 +8,16 @@ on:
         required: true
         default: false
         type: boolean
+      app_ref:
+        description: APP commit to evaluate (empty = the commit this run was started on)
+        required: false
+        default: ""
+        type: string
+      starter_ref:
+        description: STARTER branch or commit to evaluate against
+        required: false
+        default: codex/eval-correction
+        type: string
 
 jobs:
   scope:
@@ -50,8 +60,9 @@ jobs:
     uses: ./.github/workflows/eval-correction-reusable.yml
     with:
       candidate: app
-      candidate_ref: ${{ github.event.pull_request.head.sha || github.sha }}
-      starter_ref: codex/eval-correction
+      candidate_ref: ${{ inputs.app_ref || github.event.pull_request.head.sha || github.sha }}
+      # codex/eval-correction allows SQLAlchemy 2.1, which needs psycopg v3; STARTER main pins <2.1.
+      starter_ref: ${{ inputs.starter_ref || 'codex/eval-correction' }}
       # One evidence run records honest quality outcomes but fails closed on
       # incomplete execution, grader/transport failures, or ACL controls.
       mode: evidence

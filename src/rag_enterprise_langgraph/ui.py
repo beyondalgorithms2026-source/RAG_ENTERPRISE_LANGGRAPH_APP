@@ -169,8 +169,9 @@ COMPANIES: dict[str, dict] = {
 SECURITY_EVIDENCE_NOTE = (
     "These checks test the governance layer, so they apply to both companies. The two live"
     " access-control checks (RT-06, RT-16) were recorded on Northwind's restricted salary"
-    " document; Northline's equivalents are the WQ-12 access denial and the WQ-19"
-    " poison-document test in its {scorecard}. Running checks is disabled in this public demo."
+    " document; Northline's equivalents are the WQ-12 access denial, the WQ-19 direct-injection"
+    " block and the poisoned-document probes in its {scorecard}. Release recorded 17 Sep 2026."
+    " Running checks is disabled in this public demo."
 )
 NORTHLINE_SCORECARD_URL = (
     "https://github.com/beyondalgorithms2026-source/RAG_ENTERPRISE_STARTER/blob/main/"
@@ -412,7 +413,7 @@ def build_ui_router(settings: Settings | None = None) -> APIRouter:
                 page="compare",
                 active="/app/compare",
                 body=f"""
-<header class="page-header"><p class="eyebrow">Recorded comparison evidence</p><h1>Same question, same model, two paths</h1><p class="page-summary">Recorded side-by-side runs: a raw first pass next to the governed workflow that validates evidence, applies approval gates, and records an audit trail.</p>{banner}</header><section class="page-content"><div id="demo-result" class="compare-empty"><div class="spinner">Loading recorded comparisons…</div></div></section>""",
+<header class="page-header"><p class="eyebrow">Recorded comparison evidence</p><h1>Same question, same model, two paths</h1><p class="page-summary">Recorded side-by-side runs: a raw first pass next to the governed workflow that validates evidence, applies approval gates, and records an audit trail. Recorded 23 Sep 2026 with gpt-4o-mini, the answer model before 12 Oct 2026.</p>{banner}</header><section class="page-content"><div id="demo-result" class="compare-empty"><div class="spinner">Loading recorded comparisons…</div></div></section>""",
             )
         return _shell(
             settings=runtime_settings,
