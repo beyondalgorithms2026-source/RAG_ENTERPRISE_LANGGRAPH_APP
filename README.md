@@ -45,11 +45,13 @@ hand or inferred from an unapproved local run.
 | | |
 |---|---|
 | Correct refusals | **5 of 5** |
-| Overall quality | **25 of 25** in the approved full-stack baseline |
-| Candidate v2 snapshot | **82 passed, 3 failed, 5 manual review** across 90 cases; not an approved baseline |
+| Answer model (live demo) | **Claude Haiku 5.5** since 12 Oct 2026; embeddings OpenAI `text-embedding-3-small` (384 dims). Results below are labelled with the model that produced them |
+| Overall quality | **25 of 25** in the approved full-stack baseline (gpt-4o-mini, 12 Sep 2026) |
+| Candidate v2 snapshot | **82 passed, 3 failed, 5 manual review** across 90 cases (gpt-4o-mini, 17 Sep 2026); not an approved baseline |
 | Candidate safety cases | **8/8 refusals** and **2/2 safe-boundary cases** |
-| Red-team scenarios | **18 deterministic defenses plus RT-06 and RT-16 live backend controls; 20/20 defended** |
-| Current offline APP suite | **277 passed** on `main` |
+| Red-team scenarios | **18 deterministic defenses plus RT-06 and RT-16 live full-stack controls in CI; 20/20 defended** (release 17 Sep 2026; RT-06/RT-16 re-passed 14 Oct 2026) |
+| Northline demo set | **19 of 20** (Claude Haiku 5.5, 14 Oct 2026); the one miss, WQ-19, is blocked by input screening and the planted instruction is not obeyed |
+| Current offline APP suite | **358 passed** |
 
 The report publishes the pinned model, embedding, chunking, retrieval, prompt, and corpus
 metadata needed to interpret the result. Baseline changes require an explicit reviewed
@@ -93,8 +95,8 @@ policies. The governed UI has seven pages a visitor can inspect:
 |:--|:--|
 | **Ask** | Submit a policy question. The answer appears beside a governance panel showing evidence status, cited passages, source links, and the full audit timeline with latencies per tool call. Four preset scenarios per company demonstrate a grounded answer, an explicit refusal, approval withholding, and restricted-data denial. |
 | **Documents** | Browse the anonymous-visible synthetic policy documents of the selected company (14 Northwind, 13 Northline). Each shows metadata, a preview, and a link to the full source. Internal and restricted documents are excluded by SQL before retrieval — their names do not appear. |
-| **Quality** | Per company. Northwind: the approved v1 baseline (25/25) beside the v2 candidate snapshot (82/90), with failed and manual-review case IDs disclosed. Northline: the 20-question demo scorecard (single run) with its misses and links to the full scorecard and traces. |
-| **Security** | All 20 red-team scenarios grouped by attack category (prompt injection, grounding, faithfulness, access control). Each card shows the defense mechanism and whether it was proved deterministically or against the live backend. The checks test the governance layer, so they apply to both companies; the two live access-control checks were recorded on Northwind. |
+| **Quality** | Per company. Northwind: the approved v1 baseline (25/25) beside the v2 candidate snapshot (82/90); both gpt-4o-mini and labelled with their dates, with failed and manual-review case IDs disclosed. Northline: the 20-question demo scorecard (single run, Claude Haiku 5.5, 14 Oct 2026) with its misses, earlier runs, and links to the full scorecard and traces. |
+| **Security** | All 20 red-team scenarios grouped by attack category (prompt injection, grounding, faithfulness, access control). Each card shows the defense mechanism and whether it was proved deterministically or by a live full-stack check in CI. The checks test the governance layer, so they apply to both companies; the two live access-control checks were recorded on Northwind. |
 | **Audit** | Hash-chained event timeline for each orchestrated run — every tool call, decision, and latency is recorded. Filtered by company. Demo only: recorded runs for both companies plus runs from any visitor, shared by everyone and reset on redeploy. |
 | **Approvals** | The human-oversight queue, filtered by company. High-risk answers sit here as `pending_approval` until a named reviewer decides. Public visitors can inspect but not approve — the greyed-out buttons are the proof. |
 | **Compare** | Recorded side-by-side runs on the Northwind corpus: a raw first pass next to the governed workflow, same model. Demo only; running new comparisons is disabled on the public demo. |

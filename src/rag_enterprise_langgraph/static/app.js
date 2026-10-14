@@ -506,13 +506,13 @@ function renderQuality(status) {
     stage: "Approved baseline", tone: "core", title: "Northwind v1 core suite",
     passed: approved.passed ?? 25, total: approved.case_count ?? 25,
     statement: approved.statement || "The approved 25-case baseline remains unchanged.",
-    rows: [["Refusals correct", `${approved.refusal_passed ?? 5}/${approved.refusal_total ?? 5}`], ["Baseline ID", approved.id || "northwind-openai-v1"], ["Changes only by", "reviewed release"]],
+    rows: [["Refusals correct", `${approved.refusal_passed ?? 5}/${approved.refusal_total ?? 5}`], ["Model · date", "gpt-4o-mini-2024-07-18 · 2026-09-12"], ["Baseline ID", approved.id || "northwind-openai-v1"], ["Changes only by", "reviewed release"]],
     misses: [],
   })}${qualityCard({
     stage: "Candidate · not approved", tone: "calibration", title: "Northwind v2 expanded suite",
     passed: candidate.passed ?? 0, total: candidate.total ?? 90,
     statement: status.approval_statement || "Candidate evidence only; no baseline promotion.",
-    rows: [["Refusals correct", `${candidate.refusal_passed ?? 0}/${candidate.refusal_total ?? 0}`], ["Safe boundaries", `${candidate.safe_boundary_passed ?? 0}/${candidate.safe_boundary_total ?? 0}`], ["Failed · manual review", `${candidate.failed ?? 0} · ${candidate.manual_review ?? 0}`]],
+    rows: [["Refusals correct", `${candidate.refusal_passed ?? 0}/${candidate.refusal_total ?? 0}`], ["Model · date", `${status.configuration?.llm?.model || "gpt-4o-mini-2024-07-18"} · ${String(status.generated_at || "2026-09-17").slice(0, 10)}`], ["Safe boundaries", `${candidate.safe_boundary_passed ?? 0}/${candidate.safe_boundary_total ?? 0}`], ["Failed · manual review", `${candidate.failed ?? 0} · ${candidate.manual_review ?? 0}`]],
     misses, missesNote: "by outcome",
   })}</div>`;
 }
@@ -526,7 +526,7 @@ function renderNorthlineQuality(card) {
     stage: "Demo run · single run", tone: "calibration", title: card.title || "Northline demo scorecard",
     passed: card.passed ?? 0, total: card.total ?? 0,
     statement: card.statement || "",
-    rows: [["Refusals correct", `${card.refusal_passed ?? 0}/${card.refusal_total ?? 0}`], ["Exact facts", `${split("exact_fact")} · gate ${card.gate} ${card.gate_passed ? "met" : "not met"}`], ["Open questions", split("open")], ["Adversarial", split("adversarial")], ["Model", `${card.model || "n/a"} · ${card.max_recovery_steps || "n/a"} recovery step`]],
+    rows: [["Refusals correct", `${card.refusal_passed ?? 0}/${card.refusal_total ?? 0}`], ["Exact facts", `${split("exact_fact")} · gate ${card.gate} ${card.gate_passed ? "met" : "not met"}`], ["Open questions", split("open")], ["Adversarial", split("adversarial")], ["Model", `${card.model || "n/a"} · ${card.max_recovery_steps || "n/a"} recovery step`], ...(card.history || []).map((item) => ["Earlier run", `${item.result} · ${item.date} · ${item.model} · ${item.note}`])],
     misses: (card.misses || []).map((miss) => ({ id: `${miss.qid} · ${miss.split}`, outcome: miss.outcome || miss.note })),
     missesNote: card.invented_answers === 0 ? "none invented" : "by outcome",
     footer,
@@ -559,7 +559,7 @@ const APP_REPO_URL = "https://github.com/beyondalgorithms2026-source/RAG_ENTERPR
 function proofLine(finding) {
   const reference = String(finding.verification_reference || "");
   if (/^https:\/\/github\.com\//.test(reference)) {
-    return `<span>Proof: live backend check ·</span> <a href="${esc(reference)}" target="_blank" rel="noopener noreferrer">recorded CI run</a>`;
+    return `<span>Proof: live full-stack check in CI ·</span> <a href="${esc(reference)}" target="_blank" rel="noopener noreferrer">recorded CI run</a>`;
   }
   const test = String(finding.linked_test || reference);
   const [file, name = ""] = test.split("::");
@@ -585,7 +585,7 @@ async function loadRedTeam() {
     const report = (await fetchJSON("/red-team/latest", { cache: "no-store" })).report;
     if (!report) throw new Error("Committed red-team release artifact is unavailable");
     const findings = report.findings || [];
-    summary.innerHTML = `<div class="security-summary-bar"><span>${pill(report.overall_status)}</span><strong>${esc(findings.length)} scenarios</strong><span>${esc(report.defended || 0)} deterministic defenses · ${esc(report.live_verified || 2)} live controls</span></div>`;
+    summary.innerHTML = `<div class="security-summary-bar"><span>${pill(report.overall_status)}</span><strong>${esc(findings.length)} scenarios</strong><span>${esc(report.deterministic_verified ?? 18)} deterministic defenses · ${esc(report.live_verified ?? 2)} live controls · release ${esc(String(report.generated_at || "").slice(0, 10))}</span></div>`;
     const detail = (finding) => `<aside class="security-detail"><span class="chip chip-defended">${esc(evidenceMode(finding))}</span><h2>${esc(finding.finding_id || "RT")}</h2><h3>${esc(finding.scenario || "Governance check")}</h3><pre class="attack-block">${esc(finding.actual_result || "The attack path was evaluated without exposing protected corpus content.")}</pre><div class="acl-card"><strong>Verified defense</strong><p>${esc(finding.expected_defense || "The governed route enforces access and evidence controls before release.")}</p></div><p class="proof-line">${pill(finding.status)} ${proofLine(finding)}</p></aside>`;
     const render = (selected) => {
       target.innerHTML = `<div class="security-layout"><div class="security-groups">${groupFindings(findings).map((group) => `<section class="security-group"><h2>${esc(group.label)}</h2><div class="check-grid">${group.items.map((finding) => `<button class="check-tile ${finding === selected ? "active" : ""}" data-finding="${esc(finding.finding_id)}"><code>${esc(finding.finding_id)}</code><span>${esc(finding.scenario)}</span><small>${esc(evidenceMode(finding))}</small></button>`).join("")}</div></section>`).join("")}</div>${detail(selected)}</div>`;
