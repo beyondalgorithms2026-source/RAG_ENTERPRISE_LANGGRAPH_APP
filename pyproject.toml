@@ -18,7 +18,7 @@ dependencies = [
   # Provider packages are declared because the model provider is selected at
   # runtime by RAG_AGENT_MODEL_PROVIDER. Ollama is the default for local use.
   "langchain-ollama>=1.1,<2",
-  "langchain-openai>=1.2.2,<1.3",
+  "langchain-openai>=1.2.2,<1.8",
   # Required for RAG_AGENT_MODEL_PROVIDER=anthropic (the hosted demo model).
   "langchain-anthropic>=1.0,<2",
   "langgraph>=1.2.2,<1.3",
