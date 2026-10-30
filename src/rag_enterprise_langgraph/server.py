@@ -12,6 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from rag_enterprise_langgraph.agent import RagEnterpriseAgent
 from rag_enterprise_langgraph.approval import ApprovalStore, build_approval_router
 from rag_enterprise_langgraph.audit import AuditLog, build_audit_router
+from rag_enterprise_langgraph import deploy
 from rag_enterprise_langgraph.config import Settings
 from rag_enterprise_langgraph.demo_proof import build_demo_proof, resolve_demo_questions
 from rag_enterprise_langgraph.eval_store import EvalStore, build_eval_router
@@ -266,6 +267,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
     )
     app.include_router(build_ui_router(runtime_settings))
+    deploy.install(app)  # daily/monthly spend caps (429) and the ALLOWED_ORIGINS browser allow-list
 
     return app
 

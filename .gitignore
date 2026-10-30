@@ -6,7 +6,10 @@ __pycache__/
 *.pyc
 *.egg-info/
 .env
+.env.*
+!.env.example
 runs/
+data/
 
 
 # Generated evaluation report is committed (GitHub Pages serves it from docs/)

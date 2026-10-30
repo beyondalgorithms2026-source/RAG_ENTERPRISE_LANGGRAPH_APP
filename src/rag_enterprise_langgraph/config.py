@@ -93,7 +93,8 @@ class Settings(BaseSettings):
     # Hosted portfolio mode keeps the governed question path available while
     # disabling operator-only mutations such as approval decisions and evals.
     public_demo: bool = False
-    public_backend_url: str = ""
+    # Env: RAG_AGENT_PUBLIC_BACKEND_URL. Shown to the browser UI as the data-layer address.
+    public_backend_url: str = "https://ragapi.spanfold.com"
 
     # Corpus (fictional company) every tool call is scoped to when a request does not
     # name one, e.g. "western_northline". Empty leaves retrieval unscoped.
